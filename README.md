@@ -67,7 +67,7 @@ tests/          testes automáticos
 ## Roadmap
 - [x] Estrutura, catálogo de itens, reconhecimento (CLIP), fotos sem GPS, lugares (OSM), links
 - [ ] Login + salvar desejos no Supabase
-- [ ] Página "Meus Desejos" (gráficos)
+- [x] Interface: Home, Meus Desejos (gráficos) e Comparar (similaridade do cosseno), com dados de exemplo
 - [ ] Coleta com colegas + EDA (Olist + dados do app)
-- [ ] Clustering de perfis + página "Comparar"
+- [ ] Clustering de perfis
 - [ ] Avaliação e vídeo final

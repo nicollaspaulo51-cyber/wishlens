@@ -43,3 +43,13 @@ def test_distancia_e_consulta():
     assert 1 < d < 10
     q = montar_consulta(ITENS[-1], -20.3, -40.3, 2000)
     assert "animal_shelter" in q or "pet" in q
+
+
+def test_similaridade_cosseno():
+    import pandas as pd
+    from src.perfil import similaridade_cosseno, vetor_perfil
+    a = vetor_perfil(pd.DataFrame({"categoria": ["comida", "comida", "animais"]}))
+    b = vetor_perfil(pd.DataFrame({"categoria": ["comida", "comida", "animais"] * 3}))
+    c = vetor_perfil(pd.DataFrame({"categoria": ["eletrônicos"]}))
+    assert abs(similaridade_cosseno(a, b) - 1) < 1e-9   # mesmo perfil -> 100%
+    assert similaridade_cosseno(a, c) == 0               # nada em comum -> 0%
