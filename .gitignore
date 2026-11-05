@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+.streamlit/secrets.toml
+.env
+# fotos brutas nunca vão para o Git (privacidade)
+data/raw/
+*.jpg
+*.jpeg
+*.png
+*.heic
