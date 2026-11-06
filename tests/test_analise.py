@@ -20,7 +20,7 @@ def _df():
 def test_matriz_perfis_soma_um():
     X = matriz_perfis(_df())
     assert list(X.columns) == CATEGORIAS
-    assert len(X) == 5
+    assert len(X) == 13          # 12 pessoas fictícias + "exemplo:eu"
     assert ((X.sum(axis=1) - 1).abs() < 1e-9).all()
 
 
@@ -35,6 +35,12 @@ def test_escolha_de_k_e_rotulos_estaveis():
     r2, _ = agrupar(X, k)
     assert (r1["cluster"] == r2["cluster"]).all()          # mesma semente -> mesmo resultado
     assert len(centros) == k and centros["perfil"].str.len().gt(0).all()
+    # os 4 estilos fictícios devem virar 4 grupos, cada um com as 3 pessoas do estilo
+    from src.exemplo import PESSOAS_EXEMPLO
+    rot = r1.set_index("usuario")["cluster"]
+    for estilo in set(PESSOAS_EXEMPLO.values()):
+        membros = [u for u, e in PESSOAS_EXEMPLO.items() if e == estilo]
+        assert rot[membros].nunique() == 1
 
 
 def test_nomes_de_perfil():
@@ -54,7 +60,7 @@ def test_anonimizar_remove_dados_pessoais():
     df.loc[0, "cidade"] = "Jardim da Penha, Vitória - ES"
     anon = anonimizar(df)
     assert not {"id", "foto_url"} & set(anon.columns)
-    assert set(anon["usuario"]) == {"u01", "u02", "u03", "u04", "u05"}
+    assert set(anon["usuario"]) == {f"u{i:02d}" for i in range(1, 14)}
     assert not anon["usuario"].str.contains("exemplo").any()
     assert (anon["criado_em"].dt.minute == 0).all()
     assert "Jardim da Penha" not in " ".join(anon["cidade"].dropna())

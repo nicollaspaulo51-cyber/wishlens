@@ -12,13 +12,30 @@ from datetime import datetime, timedelta
 
 from src.categorias import FAIXA_PRECO, ITENS
 
-# Peso de cada categoria em cada perfil fictício
-PERFIS_EXEMPLO = {
-    "exemplo:ana": {"comida": 6, "bebidas": 3, "casa e decoração": 2, "animais": 1},
-    "exemplo:bruno": {"eletrônicos": 6, "brinquedos e games": 4, "esporte e lazer": 1},
-    "exemplo:carla": {"vestuário": 5, "calçados": 3, "beleza": 3, "comida": 1},
-    "exemplo:davi": {"animais": 5, "esporte e lazer": 3, "comida": 2},
+# Quatro estilos de desejo (peso de cada categoria). Cada pessoa fictícia parte de um estilo
+# e ganha variações próprias, para existirem grupos de verdade para o clustering encontrar.
+ESTILOS = {
+    "gastronômico": {"comida": 6, "bebidas": 3, "casa e decoração": 2},
+    "tech": {"eletrônicos": 6, "brinquedos e games": 4, "esporte e lazer": 1},
+    "moda": {"vestuário": 5, "calçados": 3, "beleza": 3},
+    "pet": {"animais": 6, "esporte e lazer": 2, "comida": 1},
 }
+
+PESSOAS_EXEMPLO = {
+    "exemplo:ana": "gastronômico", "exemplo:bia": "gastronômico", "exemplo:caio": "gastronômico",
+    "exemplo:bruno": "tech", "exemplo:diego": "tech", "exemplo:enzo": "tech",
+    "exemplo:carla": "moda", "exemplo:fernanda": "moda", "exemplo:gabi": "moda",
+    "exemplo:davi": "pet", "exemplo:helena": "pet", "exemplo:igor": "pet",
+}
+
+
+def _variar(estilo: dict[str, int], rng: random.Random) -> dict[str, int]:
+    """Cópia do estilo com pesos levemente alterados e 1-2 categorias extras de baixo peso."""
+    from src.categorias import CATEGORIAS
+    pesos = {c: max(1, p + rng.randint(-1, 1)) for c, p in estilo.items()}
+    for extra in rng.sample([c for c in CATEGORIAS if c not in pesos], rng.randint(1, 2)):
+        pesos[extra] = 1
+    return pesos
 
 
 def _gerar(usuario: str, pesos: dict[str, int], n: int, rng: random.Random,
@@ -44,8 +61,8 @@ def gerar_exemplos(incluir_eu: bool = True, semente: int = 42) -> list[dict]:
     rng = random.Random(semente)
     fim = datetime.now().replace(hour=22, minute=0, second=0, microsecond=0)
     registros = []
-    for usuario, pesos in PERFIS_EXEMPLO.items():
-        registros += _gerar(usuario, pesos, rng.randint(25, 40), rng, "Vitória - ES", fim)
+    for usuario, estilo in PESSOAS_EXEMPLO.items():
+        registros += _gerar(usuario, _variar(ESTILOS[estilo], rng), rng.randint(22, 36), rng, "Vitória - ES", fim)
     if incluir_eu:
         meus = {"comida": 4, "eletrônicos": 3, "animais": 2, "vestuário": 1}
         registros += _gerar("exemplo:eu", meus, 30, rng, "Vitória - ES", fim)
