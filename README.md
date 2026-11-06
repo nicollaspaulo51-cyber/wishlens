@@ -68,6 +68,7 @@ Notebooks de análise ◄── CSV anonimizado (data/processed/)
 | Publicação no Streamlit Cloud | ⏳ a fazer (precisa de conta) |
 
 ## Documentação
+- [Prévia da interface](docs/previa.html): página estática, baixe e abra no navegador (dados fictícios)
 - [Plano do projeto](docs/PLANO.md)
 - [Dicionário de dados](docs/DICIONARIO_DE_DADOS.md)
 - [Roteiro do vídeo](docs/ROTEIRO_VIDEO.md)

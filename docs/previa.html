@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Prévia estática da interface do WishLens (dados fictícios). Abra este arquivo no navegador. -->
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>WishLens</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: uma coluna central estilo app, cabeçalho fixo com abas e o botão sol/lua; o visor da câmera é o elemento de destaque. */
+:root{
+  --bg:#F6F5FB; --surface:#FFFFFF; --ink:#1B1830; --muted:#666180; --line:#E3E0EE;
+  --accent:#6D4AFF; --accent-ink:#FFFFFF; --accent-soft:#EEE9FF;
+  --buy:#6D4AFF; --food:#E8701F; --adopt:#17975F;
+  --icon:#E9A100; --heat0:#EEE9FF;
+  --display:"Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --body:"Figtree", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12101B; --surface:#1B1828; --ink:#EEEBFA; --muted:#A39EBE; --line:#2D2942;
+    --accent:#9C86FF; --accent-ink:#14111F; --accent-soft:#272043;
+    --buy:#9C86FF; --food:#FF9B57; --adopt:#3FCB8B;
+    --icon:#DCD6FF; --heat0:#221D36; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12101B; --surface:#1B1828; --ink:#EEEBFA; --muted:#A39EBE; --line:#2D2942;
+  --accent:#9C86FF; --accent-ink:#14111F; --accent-soft:#272043;
+  --buy:#9C86FF; --food:#FF9B57; --adopt:#3FCB8B;
+  --icon:#DCD6FF; --heat0:#221D36; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;transition:background .35s,color .35s}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+a{color:var(--accent)}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Cabeçalho */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);transition:background .35s}
+.top-in{max-width:980px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.lens{width:30px;height:30px;border-radius:50%;border:3px solid var(--accent);position:relative;flex:none}
+.lens::after{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--accent)}
+.brand b{font-family:var(--display);font-size:1.35rem;font-weight:800}
+.brand small{display:block;font-size:.72rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:-4px}
+nav{display:flex;gap:4px;background:var(--bg);padding:4px;border-radius:999px;order:3;flex-basis:100%;justify-content:center}
+@media (min-width:640px){nav{order:0;flex-basis:auto}}
+nav a{text-decoration:none;color:var(--muted);font-weight:600;padding:6px 14px;border-radius:999px;font-size:.92rem}
+nav a[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+/* Botão sol / lua */
+.theme{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--icon);cursor:pointer;display:grid;place-items:center;flex:none}
+.theme svg{width:24px;height:24px;overflow:visible}
+.theme .core{transform-origin:12px 12px;transition:transform .5s cubic-bezier(.5,1.6,.4,1)}
+.theme .cut{transition:transform .5s ease}
+.theme .rays{transform-origin:12px 12px;transition:transform .5s ease,opacity .3s}
+.is-dark .theme .core{transform:scale(1.7)}
+.is-dark .theme .cut{transform:translate(-8px,7px)}
+.is-dark .theme .rays{transform:rotate(-90deg) scale(.4);opacity:0}
+
+main{max-width:980px;margin:0 auto;display:grid;gap:20px;
+  padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;min-width:0;transition:background .35s,border-color .35s}
+.eyebrow{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.demo{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted);background:var(--bg);border:1px dashed var(--line);border-radius:999px;padding:2px 10px}
+.grid2{display:grid;gap:20px}
+@media (min-width:760px){.grid2{grid-template-columns:1fr 1fr}}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:600;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* Início */
+.hero h1{font-size:clamp(1.7rem,4.5vw,2.6rem);font-weight:800;line-height:1.1}
+.hero p{color:var(--muted);margin:6px 0 0;max-width:60ch}
+.viewfinder{position:relative;aspect-ratio:4/3;max-width:100%;border-radius:16px;overflow:hidden;background:var(--bg);display:grid;place-items:center}
+.viewfinder img{width:100%;height:100%;object-fit:cover}
+.viewfinder .corner{position:absolute;width:28px;height:28px;border:3px solid var(--accent)}
+.c1{top:12px;left:12px;border-right:0!important;border-bottom:0!important;border-radius:8px 0 0 0}
+.c2{top:12px;right:12px;border-left:0!important;border-bottom:0!important;border-radius:0 8px 0 0}
+.c3{bottom:12px;left:12px;border-right:0!important;border-top:0!important;border-radius:0 0 0 8px}
+.c4{bottom:12px;right:12px;border-left:0!important;border-top:0!important;border-radius:0 0 8px 0}
+.placeholder{font-size:5rem;line-height:1}
+.scan{position:absolute;left:8%;right:8%;height:2px;background:var(--accent);opacity:.7;top:20%;animation:scan 2.6s ease-in-out infinite alternate}
+@keyframes scan{to{top:80%}}
+.vf-tag{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:.8rem;font-weight:600;white-space:nowrap}
+.file{position:relative;overflow:hidden}
+.file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 12px;cursor:pointer;font-weight:500;font-size:.9rem;display:inline-flex;gap:6px;align-items:baseline}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.chip .pct{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.result{display:grid;gap:14px}
+.result h2{font-size:1.9rem;font-weight:800}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:.8rem;padding:3px 10px;border-radius:999px;background:var(--accent-soft);font-weight:500}
+.tag.price{font-family:var(--mono);font-size:.76rem}
+.kind{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:.85rem}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.links{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.links a{text-decoration:none;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:600;font-size:.9rem;display:flex;justify-content:space-between;gap:8px;background:var(--bg)}
+.links a:hover{border-color:var(--accent)}
+.places{list-style:none;margin:0;padding:0;display:grid}
+.places li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.places li:last-child{border-bottom:0}
+.places .km{font-family:var(--mono);font-size:.82rem;color:var(--muted);white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,120%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;transition:transform .3s;z-index:20}
+.toast.show{transform:translate(-50%,0)}
+
+/* Meus desejos */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media (min-width:700px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;min-width:0}
+.stat b{display:block;font-family:var(--display);font-size:1.8rem;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.stat span{color:var(--muted);font-size:.85rem}
+.bars{display:grid;gap:10px}
+.bar{display:grid;grid-template-columns:minmax(90px,140px) 1fr 32px;gap:10px;align-items:center;font-size:.9rem}
+.bar .track{height:14px;background:var(--bg);border-radius:999px;overflow:hidden}
+.bar .fill{height:100%;background:var(--accent);border-radius:999px;transition:width .6s}
+.bar .n{font-family:var(--mono);font-size:.8rem;text-align:right;color:var(--muted)}
+.donut-wrap{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.donut{width:150px;height:150px;flex:none}
+.legend{display:grid;gap:8px;font-size:.9rem}
+.heat-scroll{overflow-x:auto}
+.heat{display:grid;grid-template-columns:36px repeat(16,minmax(16px,1fr));gap:3px;min-width:420px;font-size:.72rem;color:var(--muted)}
+.heat .cell{aspect-ratio:1;border-radius:4px;background:var(--heat0);position:relative;overflow:hidden}
+.heat .cell i{position:absolute;inset:0;background:var(--accent)}
+.heat .lbl{display:flex;align-items:center;font-family:var(--mono)}
+.heat .h{font-family:var(--mono);text-align:center}
+.select{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 10px}
+
+/* Comparar */
+.score{text-align:center;display:grid;gap:4px;justify-items:center}
+.score b{font-family:var(--display);font-size:4rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.meter{width:100%;height:10px;background:var(--bg);border-radius:999px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent);transition:width .6s}
+.radar{width:100%;max-width:420px;margin:0 auto;display:block}
+.consent{display:flex;gap:10px;align-items:center;font-size:.92rem}
+.consent input{width:18px;height:18px;accent-color:var(--accent)}
+.muted{color:var(--muted)}
+.list{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.list li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding:6px 0}
+.list li:last-child{border-bottom:0}
+footer{text-align:center;color:var(--muted);font-size:.82rem}
+
+/* Perfil */
+.profile{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.profile b{font-family:var(--display);font-size:1.7rem;font-weight:800;color:var(--accent);line-height:1.1}
+
+/* Descobrir (feed) */
+.feed{display:grid;gap:16px;max-width:620px;width:100%;margin:0 auto}
+.fcard{background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden;display:grid;
+  transition:opacity .35s,transform .35s,background .35s,border-color .35s;animation:entra .45s ease both}
+@keyframes entra{from{opacity:0;transform:translateY(14px)}}
+.fcard.sai{opacity:0;transform:translateX(40px) scale(.97)}
+.fcard.quero{opacity:0;transform:scale(1.04)}
+.ftile{aspect-ratio:16/7;display:grid;place-items:center;font-size:clamp(3.5rem,12vw,5.2rem);position:relative;
+  background:radial-gradient(circle at 30% 30%,var(--accent-soft),var(--bg) 70%)}
+.ftile .tag{position:absolute;top:12px;left:12px;background:var(--surface)}
+.fbody{padding:14px 18px 18px;display:grid;gap:8px;min-width:0}
+.fbody h3{font-size:1.45rem;font-weight:800}
+.fbody p{margin:0;color:var(--muted);font-size:.92rem}
+.factions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px}
+.factions a,.factions button{border-radius:12px;padding:10px 8px;font-weight:600;font-size:.88rem;text-align:center;cursor:pointer;
+  text-decoration:none;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.factions .love{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+@media (max-width:420px){.factions{grid-template-columns:1fr 1fr}.factions a{grid-column:1/-1}}
+.sentinel{text-align:center;color:var(--muted);padding:12px 0 4px;font-size:.88rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><span class="lens" aria-hidden="true"></span><div><b>WishLens</b><small>Point. Snap. Want.</small></div></div>
+    <nav aria-label="Páginas">
+      <a href="#inicio" data-view="inicio">Início</a>
+      <a href="#desejos" data-view="desejos">Meus desejos</a>
+      <a href="#descobrir" data-view="descobrir">Descobrir</a>
+      <a href="#comparar" data-view="comparar">Comparar</a>
+    </nav>
+    <button class="theme" id="themeBtn" type="button" aria-label="Mudar para o tema escuro">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <mask id="moonMask"><rect x="-6" y="-6" width="36" height="36" fill="white"/><circle class="cut" cx="25" cy="-1" r="6" fill="black"/></mask>
+        <circle class="core" cx="12" cy="12" r="5" fill="currentColor" mask="url(#moonMask)"/>
+        <g class="rays" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="12" y1="1.5" x2="12" y2="3.5"/><line x1="12" y1="20.5" x2="12" y2="22.5"/>
+          <line x1="1.5" y1="12" x2="3.5" y2="12"/><line x1="20.5" y1="12" x2="22.5" y2="12"/>
+          <line x1="4.6" y1="4.6" x2="6" y2="6"/><line x1="18" y1="18" x2="19.4" y2="19.4"/>
+          <line x1="4.6" y1="19.4" x2="6" y2="18"/><line x1="18" y1="6" x2="19.4" y2="4.6"/>
+        </g>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- ================= INÍCIO ================= -->
+  <section data-page="inicio" class="grid2" aria-label="Início">
+    <div class="panel" style="display:grid;gap:16px">
+      <div class="hero">
+        <h1>Aponte para qualquer coisa.</h1>
+        <p>Descubra onde comprar, como fazer ou onde adotar.</p>
+      </div>
+      <div class="viewfinder" id="vf">
+        <span class="placeholder" id="vfEmoji" aria-hidden="true">🍕</span>
+        <img id="vfImg" alt="Foto enviada" hidden>
+        <span class="scan" aria-hidden="true"></span>
+        <span class="corner c1"></span><span class="corner c2"></span><span class="corner c3"></span><span class="corner c4"></span>
+        <span class="vf-tag" id="vfTag">foto de exemplo</span>
+      </div>
+      <div class="row">
+        <label class="btn file" for="foto">📷 Tirar ou enviar foto<input id="foto" type="file" accept="image/*"></label>
+        <span class="demo">Prévia: no app real, a câmera abre aqui</span>
+      </div>
+    </div>
+
+    <div class="panel result">
+      <div class="row" style="justify-content:space-between">
+        <span class="eyebrow">O que é isso?</span>
+        <span class="demo">reconhecimento simulado</span>
+      </div>
+      <div class="chips" id="chips"></div>
+      <label class="muted" for="itemSel" style="font-size:.85rem">Não é nenhum desses? Escolha:</label>
+      <select class="select" id="itemSel"></select>
+      <div>
+        <span class="kind" id="kind"></span>
+        <h2 id="itemName">Pizza</h2>
+        <div class="tags" id="itemTags"></div>
+      </div>
+      <button class="btn" id="saveBtn" type="button">★ Salvar nos meus desejos</button>
+      <div>
+        <div class="eyebrow" id="linksTitle" style="margin-bottom:8px">Onde conseguir</div>
+        <div class="links" id="links"></div>
+      </div>
+      <div>
+        <div class="row" style="justify-content:space-between;margin-bottom:4px">
+          <span class="eyebrow">Perto de você · Vitória, ES</span>
+          <span class="demo">lugares de exemplo</span>
+        </div>
+        <ul class="places" id="places"></ul>
+        <p class="muted" style="font-size:.8rem;margin:6px 0 0">No app, os lugares vêm do OpenStreetMap a partir da sua localização.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MEUS DESEJOS ================= -->
+  <section data-page="desejos" hidden aria-label="Meus desejos" style="display:grid;gap:20px">
+    <div class="row" style="justify-content:space-between">
+      <h1 style="font-size:2rem;font-weight:800">Meus desejos</h1>
+      <span class="demo">dados fictícios de demonstração</span>
+    </div>
+    <div class="panel profile">
+      <div style="display:grid;gap:2px;min-width:0">
+        <span class="eyebrow">Seu perfil de desejo</span>
+        <b id="perfilNome">—</b>
+        <span class="muted" style="font-size:.85rem" id="perfilTxt"></span>
+      </div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="grid2">
+      <div class="panel"><h3 style="margin-bottom:14px">O que você mais deseja</h3><div class="bars" id="bars"></div></div>
+      <div class="panel"><h3 style="margin-bottom:14px">Comprar, comer ou adotar?</h3><div class="donut-wrap" id="donut"></div></div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-bottom:4px">Quando você deseja</h3>
+      <p class="muted" style="margin:0 0 12px;font-size:.88rem">Desejos por dia da semana e hora do dia</p>
+      <div class="heat-scroll"><div class="heat" id="heat"></div></div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-bottom:10px">Últimos desejos</h3>
+      <ul class="list" id="recent"></ul>
+    </div>
+  </section>
+
+  <!-- ================= DESCOBRIR ================= -->
+  <section data-page="descobrir" hidden aria-label="Descobrir" style="display:grid;gap:16px">
+    <div class="feed">
+      <div class="row" style="justify-content:space-between">
+        <h1 style="font-size:2rem;font-weight:800">Descobrir</h1>
+        <span class="demo">feed com dados fictícios</span>
+      </div>
+      <p class="muted" style="margin:0">Role para ver coisas ligadas aos seus desejos. <b>♥ Quero</b> salva nos seus desejos e o feed se ajusta; <b>Não curti</b> esconde o item.</p>
+      <div id="feed" style="display:grid;gap:16px"></div>
+      <div class="sentinel" id="sentinel"><button class="btn ghost" id="maisBtn" type="button">Ver mais</button></div>
+    </div>
+  </section>
+
+  <!-- ================= COMPARAR ================= -->
+  <section data-page="comparar" hidden aria-label="Comparar" style="display:grid;gap:20px">
+    <div class="row" style="justify-content:space-between">
+      <h1 style="font-size:2rem;font-weight:800">Comparar desejos</h1>
+      <span class="demo">perfis fictícios de demonstração</span>
+    </div>
+    <div class="panel row" style="justify-content:space-between">
+      <label class="row" for="other"><span class="muted">Comparar você com</span>
+        <select class="select" id="other"></select></label>
+      <label class="consent" for="consent"><input type="checkbox" id="consent" checked> A pessoa aceitou compartilhar os desejos</label>
+    </div>
+    <div id="cmpBlocked" class="panel" hidden><b>Comparação bloqueada.</b> <span class="muted">Sem o aceite da outra pessoa, nada é exibido (LGPD).</span></div>
+    <div id="cmp" style="display:grid;gap:20px">
+      <div class="grid2">
+        <div class="panel score">
+          <span class="eyebrow">Combinação</span>
+          <b id="simPct">0%</b>
+          <span id="simText" class="muted"></span>
+          <div class="meter"><i id="simBar" style="width:0"></i></div>
+          <span class="muted" style="font-size:.8rem">Calculada pela similaridade do cosseno entre os perfis (proporção de desejos por categoria).</span>
+        </div>
+        <div class="panel">
+          <h3 style="margin-bottom:6px">Perfis lado a lado</h3>
+          <div class="row" style="font-size:.85rem;margin-bottom:6px">
+            <span class="kind"><span class="dot" style="background:var(--accent)"></span>Você</span>
+            <span class="kind"><span class="dot" style="background:var(--food)"></span><span id="otherName"></span></span>
+          </div>
+          <svg class="radar" id="radar" viewBox="-170 -150 340 300" role="img" aria-label="Gráfico radar dos dois perfis"></svg>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="panel"><h3 style="margin-bottom:10px">Em comum</h3><div class="tags" id="common"></div></div>
+        <div class="panel"><h3 style="margin-bottom:10px" id="sugTitle">Ela deseja, você ainda não</h3><ul class="list" id="sug"></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>Prévia da interface do WishLens · Projeto de Ciência de Dados I · Os dados desta página são fictícios.</footer>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  /* ---------- Tema: sol (claro) / lua (escuro) ---------- */
+  const root=document.documentElement, btn=document.getElementById('themeBtn');
+  const mq=window.matchMedia('(prefers-color-scheme: dark)');
+  function current(){return root.dataset.theme||(mq.matches?'dark':'light')}
+  function paint(){
+    const dark=current()==='dark';
+    document.body.classList.toggle('is-dark',dark);
+    btn.setAttribute('aria-label',dark?'Mudar para o tema claro':'Mudar para o tema escuro');
+    btn.title=dark?'Tema escuro (clique para clarear)':'Tema claro (clique para escurecer)';
+  }
+  try{const s=localStorage.getItem('wl-theme'); if(s==='dark'||s==='light') root.dataset.theme=s;}catch(e){}
+  btn.addEventListener('click',()=>{
+    const next=current()==='dark'?'light':'dark';
+    root.dataset.theme=next; try{localStorage.setItem('wl-theme',next)}catch(e){}
+    paint();
+  });
+  mq.addEventListener('change',paint); paint();
+
+  /* ---------- Catálogo (o mesmo do app) ---------- */
+  const FAIXA={"vestuário":"R$ 50–300","calçados":"R$ 100–500","eletrônicos":"R$ 300–5.000","casa e decoração":"R$ 50–1.000","esporte e lazer":"R$ 50–1.500","beleza":"R$ 20–200","livros e papelaria":"R$ 10–150","brinquedos e games":"R$ 50–3.000","comida":"R$ 15–80","bebidas":"R$ 5–60","animais":"adoção gratuita"};
+  const I=(nome,cat,tipo,emoji)=>({nome,cat,tipo,emoji});
+  const ITENS=[
+    I("camiseta","vestuário","comprar","👕"),I("jaqueta","vestuário","comprar","🧥"),I("vestido","vestuário","comprar","👗"),I("mochila","vestuário","comprar","🎒"),I("óculos de sol","vestuário","comprar","🕶️"),
+    I("tênis","calçados","comprar","👟"),I("sandália","calçados","comprar","🩴"),
+    I("celular","eletrônicos","comprar","📱"),I("notebook","eletrônicos","comprar","💻"),I("fone de ouvido","eletrônicos","comprar","🎧"),I("câmera fotográfica","eletrônicos","comprar","📷"),I("smartwatch","eletrônicos","comprar","⌚"),
+    I("videogame","brinquedos e games","comprar","🎮"),I("brinquedo","brinquedos e games","comprar","🧸"),
+    I("sofá","casa e decoração","comprar","🛋️"),I("planta","casa e decoração","comprar","🪴"),I("luminária","casa e decoração","comprar","💡"),I("caneca","casa e decoração","comprar","☕"),
+    I("bicicleta","esporte e lazer","comprar","🚲"),I("bola de futebol","esporte e lazer","comprar","⚽"),I("violão","esporte e lazer","comprar","🎸"),I("prancha de surfe","esporte e lazer","comprar","🏄"),
+    I("perfume","beleza","comprar","🧴"),I("maquiagem","beleza","comprar","💄"),I("livro","livros e papelaria","comprar","📚"),
+    I("pizza","comida","receita","🍕"),I("hambúrguer","comida","receita","🍔"),I("sushi","comida","receita","🍣"),I("arroz e feijão","comida","receita","🍛"),I("macarrão","comida","receita","🍝"),I("bolo","comida","receita","🍰"),I("açaí","comida","receita","🫐"),I("pastel","comida","receita","🥟"),I("churrasco","comida","receita","🥩"),I("sorvete","comida","receita","🍨"),
+    I("café","bebidas","receita","☕"),I("suco","bebidas","receita","🧃"),
+    I("cachorro","animais","adotar","🐶"),I("gato","animais","adotar","🐱"),I("coelho","animais","adotar","🐰"),I("pássaro","animais","adotar","🐦")
+  ];
+  const CATS=Object.keys(FAIXA);
+  const TIPO={comprar:{label:"Para comprar",cor:"var(--buy)",links:"Lojas online"},receita:{label:"Para comer",cor:"var(--food)",links:"Receitas e delivery"},adotar:{label:"Para adotar",cor:"var(--adopt)",links:"Adoção"}};
+  const byName=n=>ITENS.find(i=>i.nome===n);
+
+  function links(it){
+    const q=encodeURIComponent(it.nome);
+    if(it.tipo==="comprar") return [["Mercado Livre","https://lista.mercadolivre.com.br/"+encodeURIComponent(it.nome.replace(/ /g,'-'))],["Amazon","https://www.amazon.com.br/s?k="+q],["Magazine Luiza","https://www.magazineluiza.com.br/busca/"+q+"/"],["Google Shopping","https://www.google.com/search?tbm=shop&q="+q]];
+    if(it.tipo==="receita") return [["Receita (TudoGostoso)","https://www.tudogostoso.com.br/busca?q="+q],["Receita (Google)","https://www.google.com/search?q=receita+de+"+q],["Delivery (iFood)","https://www.ifood.com.br/busca?q="+q]];
+    return [["Adoção perto de mim","https://www.google.com/search?q=adoção+de+"+q+"+perto+de+mim"],["#adote no Instagram","https://www.instagram.com/explore/tags/adote/"]];
+  }
+  const LUGARES={comprar:[["Loja de exemplo — Centro","0,6 km"],["Shopping de exemplo — Praia do Canto","2,1 km"],["Loja de exemplo — Jardim da Penha","3,4 km"]],
+    receita:[["Restaurante de exemplo — Centro","0,4 km"],["Lanchonete de exemplo — Praia do Suá","1,8 km"],["Restaurante de exemplo — Jardim Camburi","4,9 km"]],
+    adotar:[["Abrigo de animais de exemplo","2,7 km"],["Pet shop de exemplo — Bento Ferreira","1,3 km"],["Clínica veterinária de exemplo","3,0 km"]]};
+
+  /* ---------- Dados fictícios (mesmos perfis do app) ---------- */
+  function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+  // 12 pessoas fictícias a partir de 4 estilos de desejo (como no app), cada uma com variações próprias
+  const ESTILOS={"gastronômico":{"comida":6,"bebidas":3,"casa e decoração":2},
+    "tech":{"eletrônicos":6,"brinquedos e games":4,"esporte e lazer":1},
+    "moda":{"vestuário":5,"calçados":3,"beleza":3},
+    "pet":{"animais":6,"esporte e lazer":2,"comida":1}};
+  const PESSOAS={"Ana":"gastronômico","Bia":"gastronômico","Caio":"gastronômico","Bruno":"tech","Diego":"tech","Enzo":"tech",
+    "Carla":"moda","Fernanda":"moda","Gabi":"moda","Davi":"pet","Helena":"pet","Igor":"pet"};
+  function variar(est,r){
+    const p={}; for(const [c,w] of Object.entries(est)) p[c]=Math.max(1,w+Math.floor(r()*3)-1);
+    const resto=CATS.filter(c=>!(c in p)); for(let k=0;k<1+Math.floor(r()*2);k++){p[resto.splice(Math.floor(r()*resto.length),1)[0]]=1}
+    return p;
+  }
+  function gerar(nome,pesos,n,r){
+    const cats=Object.keys(pesos), tot=cats.reduce((s,c)=>s+pesos[c],0), out=[], agora=new Date();
+    for(let k=0;k<n;k++){
+      let x=r()*tot, cat=cats[0]; for(const c of cats){x-=pesos[c]; if(x<=0){cat=c;break}}
+      const op=ITENS.filter(i=>i.cat===cat), it=op[Math.floor(r()*op.length)];
+      const d=new Date(agora); d.setDate(d.getDate()-Math.floor(r()*21)); d.setHours(8+Math.floor(Math.pow(r(),.7)*15),Math.floor(r()*60));
+      out.push({quem:nome,item:it.nome,cat:it.cat,tipo:it.tipo,quando:d});
+    }
+    return out;
+  }
+  const r=rng(42); let DADOS=[];
+  DADOS=gerar("Você",{"comida":4,"eletrônicos":3,"animais":2,"vestuário":1},30,r);
+  for(const [nome,est] of Object.entries(PESSOAS)) DADOS=DADOS.concat(gerar(nome,variar(ESTILOS[est],r),22+Math.floor(r()*15),r));
+  const de=q=>DADOS.filter(d=>d.quem===q);
+
+  /* ---------- Início ---------- */
+  let atual=byName("pizza"), sugestoes=[["pizza",.71],["pastel",.14],["bolo",.06]];
+  const $=id=>document.getElementById(id);
+  const sel=$("itemSel");
+  sel.innerHTML=ITENS.map(i=>`<option value="${i.nome}">${i.emoji} ${i.nome}</option>`).join("");
+  function chips(){
+    $("chips").innerHTML=sugestoes.map(([n,p])=>`<button type="button" class="chip" data-n="${n}" aria-pressed="${n===atual.nome}">${byName(n).emoji} ${n} <span class="pct">${Math.round(p*100)}%</span></button>`).join("");
+    $("chips").querySelectorAll(".chip").forEach(b=>b.onclick=()=>escolher(byName(b.dataset.n)));
+  }
+  function escolher(it){
+    atual=it; sel.value=it.nome; chips();
+    const t=TIPO[it.tipo];
+    $("kind").innerHTML=`<span class="dot" style="background:${t.cor}"></span>${t.label}`;
+    $("itemName").textContent=it.nome.charAt(0).toUpperCase()+it.nome.slice(1);
+    $("itemTags").innerHTML=`<span class="tag">${it.cat}</span><span class="tag price">${FAIXA[it.cat]}</span>`;
+    $("linksTitle").textContent=t.links;
+    $("links").innerHTML=links(it).map(([n,u])=>`<a href="${u}" target="_blank" rel="noopener">${n}<span aria-hidden="true">↗</span></a>`).join("");
+    $("places").innerHTML=LUGARES[it.tipo].map(([n,k])=>`<li><span>${n}</span><span class="km">${k}</span></li>`).join("");
+    if($("vfImg").hidden) $("vfEmoji").textContent=it.emoji;
+  }
+  sel.onchange=()=>escolher(byName(sel.value));
+  $("foto").addEventListener("change",e=>{
+    const f=e.target.files&&e.target.files[0]; if(!f) return;
+    const fr=new FileReader(); fr.onload=()=>{ $("vfImg").src=fr.result; $("vfImg").hidden=false; $("vfEmoji").hidden=true; $("vfTag").textContent="sua foto"; };
+    fr.readAsDataURL(f);
+    // Na prévia não há modelo: sugere 3 itens aleatórios e o usuário confirma.
+    const pool=[...ITENS].sort(()=>Math.random()-.5).slice(0,3), ps=[.58,.23,.09];
+    sugestoes=pool.map((i,k)=>[i.nome,ps[k]]); escolher(pool[0]);
+    toast("Foto carregada. Confirme o que é.");
+  });
+  $("saveBtn").onclick=()=>{
+    DADOS.push({quem:"Você",item:atual.nome,cat:atual.cat,tipo:atual.tipo,quando:new Date()});
+    toast("Salvo em Meus desejos"); renderDesejos(); renderComparar(); limparFeed();
+  };
+  let tt; function toast(m){const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),2200)}
+
+  /* ---------- Meus desejos ---------- */
+  const DIAS=["dom","seg","ter","qua","qui","sex","sáb"], ORDEM=[1,2,3,4,5,6,0];
+  function contar(arr,k){const m={}; arr.forEach(d=>m[d[k]]=(m[d[k]]||0)+1); return m}
+  function renderDesejos(){
+    const meus=de("Você"), porCat=contar(meus,"cat"), porTipo=contar(meus,"tipo");
+    const top=Object.entries(porCat).sort((a,b)=>b[1]-a[1]);
+    $("perfilNome").textContent=nomePerfil(top.map(([c,n])=>[c,n/meus.length]));
+    $("perfilTxt").textContent=`Pelas categorias que dominam seus ${meus.length} desejos. No app, o grupo vem do K-Means comparando ${Object.keys(PESSOAS).length+1} pessoas.`;
+    $("stats").innerHTML=[[meus.length,"desejos salvos"],[top[0][0],"categoria favorita"],[porTipo.comprar||0,"para comprar"],[`${porTipo.receita||0} / ${porTipo.adotar||0}`,"comer / adotar"]]
+      .map(([v,l])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join("");
+    const max=top[0][1];
+    $("bars").innerHTML=top.map(([c,n])=>`<div class="bar"><span>${c}</span><div class="track"><div class="fill" style="width:${n/max*100}%"></div></div><span class="n">${n}</span></div>`).join("");
+    // rosca
+    const tot=meus.length, R=60, C=2*Math.PI*R; let off=0, arcs="";
+    ["comprar","receita","adotar"].forEach(t=>{const v=(porTipo[t]||0)/tot; arcs+=`<circle r="${R}" cx="75" cy="75" fill="none" stroke="${TIPO[t].cor}" stroke-width="22" stroke-dasharray="${v*C} ${C}" stroke-dashoffset="${-off*C}" transform="rotate(-90 75 75)"/>`; off+=v;});
+    $("donut").innerHTML=`<svg class="donut" viewBox="0 0 150 150" role="img" aria-label="Divisão por tipo">${arcs}<text x="75" y="72" text-anchor="middle" font-family="var(--display)" font-weight="800" font-size="26" fill="var(--ink)">${tot}</text><text x="75" y="92" text-anchor="middle" font-size="11" fill="var(--muted)">desejos</text></svg>`+
+      `<div class="legend">${["comprar","receita","adotar"].map(t=>`<span class="kind"><span class="dot" style="background:${TIPO[t].cor}"></span>${TIPO[t].label} · ${Math.round((porTipo[t]||0)/tot*100)}%</span>`).join("")}</div>`;
+    // mapa de calor 8h–23h
+    const grid={}; meus.forEach(d=>{const k=d.quando.getDay()+"-"+d.quando.getHours(); grid[k]=(grid[k]||0)+1});
+    const mx=Math.max(1,...Object.values(grid));
+    let h=`<span></span>`; for(let hr=8;hr<24;hr++) h+=`<span class="h">${hr%2===0?hr:""}</span>`;
+    ORDEM.forEach(di=>{h+=`<span class="lbl">${DIAS[di]}</span>`; for(let hr=8;hr<24;hr++){const v=grid[di+"-"+hr]||0; h+=`<span class="cell" title="${DIAS[di]} ${hr}h: ${v}"><i style="opacity:${v?0.25+0.75*v/mx:0}"></i></span>`}});
+    $("heat").innerHTML=h;
+    $("recent").innerHTML=[...meus].sort((a,b)=>b.quando-a.quando).slice(0,6).map(d=>`<li><span>${byName(d.item).emoji} ${d.item} <span class="muted">· ${d.cat}</span></span><span class="muted" style="font-family:var(--mono);font-size:.8rem">${d.quando.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})} ${String(d.quando.getHours()).padStart(2,"0")}h</span></li>`).join("");
+  }
+
+  /* ---------- Comparar ---------- */
+  const other=$("other");
+  other.innerHTML=Object.keys(PESSOAS).map(n=>`<option>${n}</option>`).join("");
+  function vetor(arr){const m=contar(arr,"cat"), t=arr.length; return CATS.map(c=>(m[c]||0)/t)}
+  function cosseno(a,b){let p=0,na=0,nb=0; a.forEach((x,i)=>{p+=x*b[i]; na+=x*x; nb+=b[i]*b[i]}); return na&&nb?p/Math.sqrt(na*nb):0}
+  function renderComparar(){
+    const ok=$("consent").checked; $("cmpBlocked").hidden=ok; $("cmp").hidden=!ok; if(!ok) return;
+    const nome=other.value, A=de("Você"), B=de(nome), va=vetor(A), vb=vetor(B), s=cosseno(va,vb);
+    $("simPct").textContent=Math.round(s*100)+"%"; $("simBar").style.width=(s*100)+"%";
+    $("simText").textContent=s>=.8?"Almas gêmeas do consumo":s>=.5?"Vocês combinam bastante":s>=.25?"Alguns gostos em comum":"Gostos bem diferentes";
+    $("otherName").textContent=nome;
+    // radar
+    const idx=CATS.map((c,i)=>i).filter(i=>va[i]>0||vb[i]>0), n=idx.length, mx=Math.max(...idx.map(i=>Math.max(va[i],vb[i]))), R=105;
+    const pt=(i,v)=>{const a=-Math.PI/2+2*Math.PI*i/n; return [Math.cos(a)*R*v/mx, Math.sin(a)*R*v/mx]};
+    let svg=""; [.25,.5,.75,1].forEach(f=>{svg+=`<polygon fill="none" stroke="var(--line)" points="${idx.map((_,k)=>pt(k,mx*f).join(",")).join(" ")}"/>`});
+    idx.forEach((ci,k)=>{const [x,y]=pt(k,mx), [lx,ly]=pt(k,mx*1.2); svg+=`<line x1="0" y1="0" x2="${x}" y2="${y}" stroke="var(--line)"/><text x="${lx}" y="${ly}" font-size="11" fill="var(--muted)" text-anchor="${Math.abs(lx)<8?"middle":lx>0?"start":"end"}" dominant-baseline="middle">${CATS[ci]}</text>`});
+    [[vb,"var(--food)"],[va,"var(--accent)"]].forEach(([v,c])=>{svg+=`<polygon points="${idx.map((ci,k)=>pt(k,v[ci]).join(",")).join(" ")}" fill="${c}" fill-opacity=".22" stroke="${c}" stroke-width="2"/>`});
+    $("radar").innerHTML=svg;
+    const itA=new Set(A.map(d=>d.item)), itB=new Set(B.map(d=>d.item));
+    const comuns=[...itA].filter(i=>itB.has(i));
+    $("common").innerHTML=comuns.length?comuns.map(i=>`<span class="tag">${byName(i).emoji} ${i}</span>`).join(""):`<span class="muted">Nenhum item em comum ainda.</span>`;
+    $("sugTitle").textContent=`${nome} deseja, você ainda não`;
+    const cont=contar(B.filter(d=>!itA.has(d.item)),"item");
+    const sug=Object.entries(cont).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    $("sug").innerHTML=sug.length?sug.map(([i,v])=>`<li><span>${byName(i).emoji} ${i}</span><span class="muted">${v}×</span></li>`).join(""):`<li class="muted">Nada novo por aqui.</li>`;
+  }
+  other.onchange=renderComparar; $("consent").onchange=renderComparar;
+
+  /* ---------- Perfil (nome a partir das categorias dominantes, como src/clustering.py) ---------- */
+  const NOMES={"comida":"Gastronômico","bebidas":"Gastronômico","eletrônicos":"Tech & Games","brinquedos e games":"Tech & Games",
+    "vestuário":"Moda & Beleza","calçados":"Moda & Beleza","beleza":"Moda & Beleza","animais":"Pet lover",
+    "esporte e lazer":"Esporte & Aventura","casa e decoração":"Casa & Conforto","livros e papelaria":"Cultura & Estudos"};
+  function nomePerfil(pares){
+    const out=[]; for(const [c,p] of pares){const n=NOMES[c]||c; if(out.includes(n)) continue;
+      if(!out.length||p>=0.6*pares[0][1]) out.push(n); if(out.length===2) break;}
+    return out.join(" + ");
+  }
+
+  /* ---------- Descobrir: feed (mesma lógica de src/feed.py) ---------- */
+  const ocultos=new Set(), mostrados=new Set();
+  function listaFeed(){
+    const meus=de("Você"), ja=new Set(meus.map(d=>d.item)), va=vetor(meus);
+    const viz=Object.keys(PESSOAS).map(n=>[n,cosseno(va,vetor(de(n)))]).filter(v=>v[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const pop={}, quem={};
+    viz.forEach(([n,s])=>{const c=contar(de(n),"item"); for(const [it,k] of Object.entries(c)){pop[it]=(pop[it]||0)+s*k; if(!quem[it]||s>quem[it][1]) quem[it]=[n,s];}});
+    const maior=Math.max(1e-9,...Object.values(pop));
+    const rr=rng(7), pont=[], novos=[];
+    ITENS.filter(i=>!ja.has(i.nome)&&!ocultos.has(i.nome)).forEach(i=>{
+      const pc=va[CATS.indexOf(i.cat)]||0, pv=(pop[i.nome]||0)/maior, nota=.55*pc+.45*pv;
+      if(nota<=0){novos.push(i);return}
+      const motivo=(pv>=pc&&quem[i.nome])?{t:"vizinhos",txt:`${quem[i.nome][0]} tem ${Math.round(quem[i.nome][1]*100)}% de gosto em comum com você e também quer`}
+        :{t:"perfil",txt:`Porque ${Math.round(pc*100)}% dos seus desejos são de ${i.cat}`};
+      pont.push({item:i,nota:nota*(0.85+0.3*rr()),...motivo});
+    });
+    pont.sort((a,b)=>b.nota-a.nota); novos.sort(()=>rr()-.5);
+    const out=[];
+    while(pont.length||novos.length){
+      if((novos.length&&(out.length+1)%6===0)||!pont.length){const i=novos.pop(); out.push({item:i,t:"novo",txt:`Algo diferente: você ainda não deseja nada de ${i.cat}`});}
+      else out.push(pont.shift());
+    }
+    return out;
+  }
+  const ROT={perfil:"🎯 Seu perfil",vizinhos:"👥 Gente parecida",novo:"🧭 Algo novo"};
+  function cartao(c){
+    const it=c.item, [nl,url]=links(it)[0], el=document.createElement("article");
+    el.className="fcard"; el.dataset.item=it.nome;
+    el.innerHTML=`<div class="ftile"><span class="tag">${ROT[c.t]}</span><span aria-hidden="true">${it.emoji}</span></div>
+      <div class="fbody"><h3>${it.nome.charAt(0).toUpperCase()+it.nome.slice(1)}</h3><p>${c.txt}</p>
+      <div class="tags"><span class="tag">${TIPO[it.tipo].label}</span><span class="tag">${it.cat}</span><span class="tag price">${FAIXA[it.cat]}</span></div>
+      <div class="factions"><button type="button" class="love">♥ Quero</button><button type="button" class="nope">Não curti</button><a href="${url}" target="_blank" rel="noopener">${nl} ↗</a></div></div>`;
+    el.querySelector(".love").onclick=()=>{
+      DADOS.push({quem:"Você",item:it.nome,cat:it.cat,tipo:it.tipo,quando:new Date()});
+      el.classList.add("quero"); setTimeout(()=>el.remove(),350);
+      toast(`${it.emoji} ${it.nome} salvo nos seus desejos`); renderDesejos(); renderComparar();
+    };
+    el.querySelector(".nope").onclick=()=>{ocultos.add(it.nome); el.classList.add("sai"); setTimeout(()=>el.remove(),350)};
+    return el;
+  }
+  function maisFeed(n=6){
+    const novos=listaFeed().filter(c=>!mostrados.has(c.item.nome)).slice(0,n);
+    novos.forEach(c=>{mostrados.add(c.item.nome); $("feed").appendChild(cartao(c))});
+    if(!novos.length) $("sentinel").innerHTML="Você viu tudo por enquanto ✨";
+  }
+  function limparFeed(){mostrados.clear(); $("feed").innerHTML=""; $("sentinel").innerHTML='<button class="btn ghost" id="maisBtn" type="button">Ver mais</button>'; $("maisBtn").onclick=()=>maisFeed(); maisFeed();}
+  $("maisBtn").onclick=()=>maisFeed();
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(es=>{if(es[0].isIntersecting&&!$("sentinel").closest("[hidden]")) maisFeed()},{rootMargin:"400px"}).observe($("sentinel"));
+  }
+
+  /* ---------- Navegação por abas ---------- */
+  function show(){
+    const v=(location.hash||"#inicio").slice(1), ok=["inicio","desejos","descobrir","comparar"].includes(v)?v:"inicio";
+    document.querySelectorAll("[data-page]").forEach(s=>s.hidden=s.dataset.page!==ok);
+    document.querySelectorAll("nav a").forEach(a=>{if(a.dataset.view===ok)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  }
+  window.addEventListener("hashchange",show);
+  escolher(atual); renderDesejos(); renderComparar(); maisFeed(); show();
+})();
+</script>
+</body>
+</html>
