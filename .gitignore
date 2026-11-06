@@ -11,3 +11,4 @@ data/raw/
 *.jpeg
 *.png
 *.heic
+.pytest_cache/

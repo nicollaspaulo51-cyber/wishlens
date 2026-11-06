@@ -37,9 +37,9 @@ with aba_upload:
 arquivo = foto_camera or foto_upload
 if not arquivo:
     c1, c2, c3 = st.columns(3)
-    c1.markdown('<div class="wl-card">🛍️ <b>Comprar</b><br><small>lojas perto de você e online</small></div>', unsafe_allow_html=True)
-    c2.markdown('<div class="wl-card">🍲 <b>Comer</b><br><small>receitas, restaurantes e delivery</small></div>', unsafe_allow_html=True)
-    c3.markdown('<div class="wl-card">🐶 <b>Adotar</b><br><small>abrigos e ONGs próximos</small></div>', unsafe_allow_html=True)
+    c1.markdown('<div class="wl-card">🛍️ <b>Comprar</b><br><small>lojas perto e online</small></div>', unsafe_allow_html=True)
+    c2.markdown('<div class="wl-card">🍲 <b>Comer</b><br><small>receitas e restaurantes</small></div>', unsafe_allow_html=True)
+    c3.markdown('<div class="wl-card">🐶 <b>Adotar</b><br><small>abrigos e ONGs</small></div>', unsafe_allow_html=True)
     st.stop()
 
 imagem = Image.open(arquivo)
