@@ -56,7 +56,8 @@ Notebooks de análise ◄── CSV anonimizado (data/processed/)
 
 | Parte | Situação |
 |---|---|
-| Interface (Home, Meus Desejos, Comparar) com tema claro/escuro | ✅ funcionando |
+| Interface (Home, Meus Desejos, Descobrir, Comparar) com tema claro/escuro | ✅ funcionando |
+| Feed "Descobrir" (recomendações por perfil + pessoas parecidas) | ✅ funcionando |
 | Gráficos dos desejos, perfil por K-Means, comparação por cosseno | ✅ funcionando |
 | Notebooks 01–04 do CRISP-DM | ✅ executados, **com dados fictícios** |
 | CSV anonimizado (download no app) | ✅ funcionando |
@@ -86,9 +87,9 @@ Testes (sem internet): `python -m pytest tests/`
 
 ## Estrutura
 ```
-app/            site Streamlit (Home + páginas Meus Desejos e Comparar)
+app/            site Streamlit (Home + páginas Meus Desejos, Descobrir e Comparar)
 src/            reconhecimento, fotos, lugares, links, catálogo, armazenamento/banco,
-                perfil (cosseno), clustering (K-Means), exportação anonimizada, interface
+                perfil (cosseno), clustering (K-Means), feed de recomendações, exportação, interface
 notebooks/      análise CRISP-DM (01 → 04)
 data/processed/ dados de demonstração (fictícios) e, depois, os anonimizados reais
 supabase/       estrutura do banco (schema.sql)

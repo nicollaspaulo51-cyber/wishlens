@@ -100,3 +100,22 @@ ITENS: list[Item] = [
 ]
 
 CATEGORIAS = sorted({i.categoria for i in ITENS})
+
+# Emoji de cada item, usado nos cartões do feed "Descobrir"
+EMOJI = {
+    "camiseta": "👕", "jaqueta": "🧥", "vestido": "👗", "calça jeans": "👖", "boné/chapéu": "🧢",
+    "mochila": "🎒", "relógio": "⌚", "óculos de sol": "🕶️", "tênis": "👟", "sandália/chinelo": "🩴",
+    "celular": "📱", "notebook": "💻", "fone de ouvido": "🎧", "televisão": "📺", "câmera fotográfica": "📷",
+    "smartwatch": "⌚", "teclado": "⌨️", "videogame": "🎮", "brinquedo": "🧸", "sofá": "🛋️",
+    "cadeira": "🪑", "luminária": "💡", "planta": "🪴", "caneca": "☕", "eletrodoméstico": "🍳",
+    "bicicleta": "🚲", "bola de futebol": "⚽", "violão/guitarra": "🎸", "prancha de surfe": "🏄",
+    "perfume": "🧴", "maquiagem": "💄", "livro": "📚", "carro": "🚗", "moto": "🏍️",
+    "pizza": "🍕", "hambúrguer": "🍔", "sushi": "🍣", "arroz e feijão": "🍛", "macarrão": "🍝",
+    "salada": "🥗", "bolo": "🍰", "sorvete": "🍨", "açaí": "🫐", "churrasco": "🥩",
+    "cachorro-quente": "🌭", "pastel": "🥟", "café": "☕", "suco": "🧃",
+    "cachorro": "🐶", "gato": "🐱", "coelho": "🐰", "pássaro": "🐦",
+}
+
+
+def emoji(item: Item) -> str:
+    return EMOJI.get(item.nome, {"comprar": "🛍️", "receita": "🍲", "adotar": "🐾"}[item.tipo])
