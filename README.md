@@ -4,6 +4,11 @@
 
 Projeto final da disciplina **Ciência de Dados I (Turma 12)**, desenvolvido com a metodologia **CRISP-DM**.
 
+![testes](https://github.com/nicollaspaulo51-cyber/wishlens/actions/workflows/testes.yml/badge.svg)
+
+🖥️ **Prévia da interface** (com tema claro ☀️ / escuro 🌙): https://claude.ai/artifact/4sZtfAn7K85Kc6bASY7sjJ
+*(link privado: precisa ser compartilhado pelo dono para outras pessoas abrirem)*
+
 ## O que é
 Um site em que a pessoa **tira uma foto ou aponta a câmera** para qualquer coisa:
 
@@ -47,27 +52,58 @@ Notebooks de análise ◄── CSV anonimizado (data/processed/)
 - O CSV versionado no GitHub é **anonimizado**; fotos brutas nunca entram no repositório (`.gitignore`).
 - A comparação entre duas pessoas exige **aceite das duas**.
 
+## Status
+
+| Parte | Situação |
+|---|---|
+| Interface (Home, Meus Desejos, Comparar) com tema claro/escuro | ✅ funcionando |
+| Gráficos dos desejos, perfil por K-Means, comparação por cosseno | ✅ funcionando |
+| Notebooks 01–04 do CRISP-DM | ✅ executados, **com dados fictícios** |
+| CSV anonimizado (download no app) | ✅ funcionando |
+| Reconhecimento automático (CLIP) | ⏳ código pronto; precisa instalar `torch` + `transformers`. Sem eles, o item é escolhido numa lista |
+| Banco e login (Supabase) | ⏳ código e SQL prontos, **não testados** com um projeto real: ver [docs/SUPABASE.md](docs/SUPABASE.md) |
+| Lugares próximos (OpenStreetMap) | ⏳ código pronto; não foi possível testar a conexão a partir do ambiente de desenvolvimento |
+| Coleta de dados reais com a turma | ⏳ a fazer |
+| Publicação no Streamlit Cloud | ⏳ a fazer (precisa de conta) |
+
+## Documentação
+- [Plano do projeto](docs/PLANO.md)
+- [Dicionário de dados](docs/DICIONARIO_DE_DADOS.md)
+- [Roteiro do vídeo](docs/ROTEIRO_VIDEO.md)
+- [Configurar o Supabase](docs/SUPABASE.md)
+
 ## Como rodar
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 streamlit run app/Home.py
 ```
+Sem o reconhecimento automático (instalação bem mais leve, sem `torch`):
+```bash
+pip install -r requirements-dev.txt
+```
 Testes (sem internet): `python -m pytest tests/`
 
 ## Estrutura
 ```
-app/            site Streamlit (Home + páginas)
-src/            reconhecimento, fotos, lugares, links, catálogo de categorias
+app/            site Streamlit (Home + páginas Meus Desejos e Comparar)
+src/            reconhecimento, fotos, lugares, links, catálogo, armazenamento/banco,
+                perfil (cosseno), clustering (K-Means), exportação anonimizada, interface
 notebooks/      análise CRISP-DM (01 → 04)
-data/processed/ dados anonimizados para a análise
-tests/          testes automáticos
+data/processed/ dados de demonstração (fictícios) e, depois, os anonimizados reais
+supabase/       estrutura do banco (schema.sql)
+docs/           plano, dicionário de dados, roteiro do vídeo, guia do Supabase
+tests/          testes automáticos (rodam no GitHub Actions a cada push)
 ```
 
 ## Roadmap
-- [x] Estrutura, catálogo de itens, reconhecimento (CLIP), fotos sem GPS, lugares (OSM), links
-- [ ] Login + salvar desejos no Supabase
-- [x] Interface: Home, Meus Desejos (gráficos) e Comparar (similaridade do cosseno), com dados de exemplo
-- [ ] Coleta com colegas + EDA (Olist + dados do app)
-- [ ] Clustering de perfis
-- [ ] Avaliação e vídeo final
+- [x] Estrutura, catálogo de itens, fotos sem GPS, links, código do reconhecimento (CLIP) e dos lugares (OSM)
+- [x] Interface: Home, Meus Desejos (gráficos) e Comparar (similaridade do cosseno), tema claro/escuro
+- [x] Clustering de perfis (K-Means) + cartão "Seu perfil"
+- [x] Notebooks 01–04 do CRISP-DM (com dados fictícios)
+- [x] Código do login + banco (Supabase) e exportação anonimizada
+- [ ] Criar o projeto Supabase e testar o login
+- [ ] Instalar o CLIP e medir a acurácia do reconhecimento
+- [ ] Coleta com colegas → refazer os notebooks com `desejos.csv`
+- [ ] Publicar no Streamlit Cloud
+- [ ] Gravar o vídeo ([roteiro](docs/ROTEIRO_VIDEO.md))

@@ -1,0 +1,9 @@
+# Dependências leves (sem o reconhecimento automático/torch): rodar o app em modo protótipo e os testes
+streamlit>=1.40
+pandas>=2.2
+seaborn>=0.13
+scikit-learn>=1.5
+plotly>=5.24
+pillow>=10.4
+requests>=2.32
+pytest>=8
