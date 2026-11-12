@@ -18,7 +18,7 @@ from streamlit_folium import st_folium
 from streamlit_js_eval import get_geolocation
 
 from src import armazenamento, localizacao, ui
-from src.categorias import CATEGORIAS, FAIXA_PRECO, Item, nome_valido, tipo_da_categoria
+from src.categorias import CATEGORIAS, Item, faixa_preco, nome_valido, tipo_da_categoria
 from src.fotos import ler_metadados, preparar_para_salvar
 from src.links import links_para
 from src.lugares import buscar_proximos
@@ -32,6 +32,15 @@ bairro_de = st.cache_data(ttl=86400, show_spinner=False)(localizacao.bairro_de)
 
 MODELO_DISPONIVEL = all(importlib.util.find_spec(m) for m in ("torch", "transformers"))
 ICONE = {"comprar": "🛍️", "receita": "🍲", "adotar": "🐶"}
+# Para que serve cada local no mapa: rótulo, ícone (Font Awesome 6, já carregado pelo folium) e cor
+FINALIDADE = {
+    "comprar": ("Comprar", "cart-shopping", "blue"),
+    "jogar": ("Jogar", "gamepad", "orange"),
+    "consertar": ("Consertar", "screwdriver-wrench", "gray"),
+    "adotar": ("Adotar", "paw", "green"),
+    "cuidar": ("Veterinário", "stethoscope", "darkgreen"),
+    "comer": ("Comer", "utensils", "red"),
+}
 TITULO_LINKS = {"comprar": "Lojas online", "receita": "Receitas e delivery", "adotar": "Adoção"}
 
 st.title("🔍 WishLens")
@@ -86,7 +95,7 @@ if item is None:  # texto livre: qualquer coisa, desde que a pessoa diga a categ
 st.markdown(
     f'<div class="wl-card"><h3 style="margin:0">{ICONE[item.tipo]} {item.nome.capitalize()}</h3>'
     f'{ui.badge(item.categoria)}{ui.badge(item.tipo)}'
-    f'{ui.badge("💰 " + FAIXA_PRECO[item.categoria])}'
+    f'{ui.badge("💰 " + faixa_preco(item))}'
     f'</div>', unsafe_allow_html=True)
 
 if st.button("⭐ Salvar nos meus desejos", type="primary", use_container_width=True):
@@ -148,14 +157,20 @@ if st.session_state.get("busca") == (item, lat, lon, raio):  # mantém o mapa ap
         mapa = folium.Map(location=[lat, lon], zoom_start=14, tiles="OpenStreetMap")
         folium.Marker([lat, lon], tooltip="Você", icon=folium.Icon(color="purple", icon="user")).add_to(mapa)
         for l in lugares:
-            # folium.Icon (mesmo do marcador "Você"): o ícone padrão do Leaflet é uma imagem que não carrega no st_folium
+            rotulo, icone, cor = FINALIDADE[l.get("finalidade", "comprar")]
             nome = html.escape(l["nome"])  # nome vem do OSM (editável por qualquer um): nunca HTML cru
-            folium.Marker([l["lat"], l["lon"]], tooltip=f'{nome} · {l["distancia_km"]} km',
-                          popup=f'<a href="{html.escape(l["mapa"])}" target="_blank">{nome}</a>',
-                          icon=folium.Icon(color="red", icon="shopping-cart")).add_to(mapa)
+            # folium.Icon: o ícone padrão do Leaflet é uma imagem que não carrega no st_folium
+            folium.Marker([l["lat"], l["lon"]], tooltip=f'{nome} · {rotulo} · {l["distancia_km"]} km',
+                          popup=folium.Popup(f'<b>{nome}</b><br>Para: {rotulo}<br>{l["distancia_km"]} km<br>'
+                                             f'<a href="{html.escape(l["mapa"])}" target="_blank">ver no mapa</a>',
+                                             max_width=220),
+                          icon=folium.Icon(color=cor, icon=icone, prefix="fa")).add_to(mapa)
+        presentes = dict.fromkeys(l.get("finalidade", "comprar") for l in lugares)
+        st.caption("  ·  ".join(f"{FINALIDADE[f][0]}" for f in presentes) + "  — toque no marcador para ver")
         st_folium(mapa, height=380, use_container_width=True, returned_objects=[])
         df = pd.DataFrame(lugares)
-        st.dataframe(df[["nome", "tipo", "distancia_km", "mapa"]], hide_index=True,
+        df["para"] = [FINALIDADE[l.get("finalidade", "comprar")][0] for l in lugares]
+        st.dataframe(df[["nome", "para", "distancia_km", "mapa"]], hide_index=True,
                      use_container_width=True,
                      column_config={"mapa": st.column_config.LinkColumn("mapa", display_text="abrir")})
     elif lugares == []:

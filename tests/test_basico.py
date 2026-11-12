@@ -77,3 +77,14 @@ def test_nome_digitado():
     assert nome_valido("garrafa térmica") and nome_valido("fone JBL (azul)")
     assert not nome_valido("<img src=x>") and not nome_valido('a"b') and not nome_valido("")
     assert not nome_valido("x" * 61)
+
+
+def test_preco_por_item():
+    from src.categorias import PRECO_ITEM, Item, faixa_preco
+    nomes = {i.nome for i in ITENS}
+    assert set(PRECO_ITEM) <= nomes  # nenhum preço de item que não existe
+    notebook = next(i for i in ITENS if i.nome == "notebook")
+    mouse = next(i for i in ITENS if i.nome == "mouse")
+    assert faixa_preco(notebook) != faixa_preco(mouse)
+    assert faixa_preco(Item("kettle", "chaleira", "casa e decoração", "comprar")).endswith("(estimativa da categoria)")
+    assert faixa_preco(next(i for i in ITENS if i.tipo == "adotar")) == "adoção gratuita"

@@ -54,6 +54,43 @@ FAIXA_PRECO = {
     "animais": "adoção gratuita",
 }
 
+# Faixa estimada por item (R$, novo, Brasil, 2026). Estimativa escrita à mão: o preço real está nos links.
+PRECO_ITEM = {
+    # vestuário / calçados
+    "camiseta": "R$ 30–150", "jaqueta": "R$ 120–600", "vestido": "R$ 80–400", "calça jeans": "R$ 80–350",
+    "boné/chapéu": "R$ 30–200", "mochila": "R$ 80–500", "relógio": "R$ 100–2.000", "óculos de sol": "R$ 50–800",
+    "tênis": "R$ 150–1.200", "sandália/chinelo": "R$ 30–250",
+    # eletrônicos
+    "celular": "R$ 800–8.000", "notebook": "R$ 2.500–8.000", "fone de ouvido": "R$ 50–2.000",
+    "televisão": "R$ 1.200–6.000", "câmera fotográfica": "R$ 1.500–10.000", "smartwatch": "R$ 200–3.000",
+    "teclado": "R$ 50–800", "mouse": "R$ 30–300", "tablet": "R$ 700–6.000", "monitor": "R$ 600–3.000",
+    "caixa de som": "R$ 100–1.500", "carregador": "R$ 30–200", "impressora": "R$ 500–2.000",
+    # brinquedos e games
+    "videogame": "R$ 2.500–5.000", "brinquedo": "R$ 30–300", "controle de videogame": "R$ 200–600",
+    # casa
+    "sofá": "R$ 1.200–5.000", "cadeira": "R$ 100–1.500", "luminária": "R$ 50–400", "garrafa": "R$ 20–200",
+    "travesseiro/almofada": "R$ 30–200", "mesa": "R$ 300–3.000", "planta": "R$ 20–200", "caneca": "R$ 15–80",
+    "eletrodoméstico": "R$ 150–3.000",
+    # esporte / beleza / papelaria / veículos
+    "bicicleta": "R$ 700–5.000", "bola de futebol": "R$ 50–400", "violão/guitarra": "R$ 300–3.000",
+    "prancha de surfe": "R$ 800–3.500", "perfume": "R$ 80–900", "maquiagem": "R$ 20–300",
+    "livro": "R$ 30–120", "caneta/lápis": "R$ 2–50", "caderno": "R$ 15–80",
+    "carro": "R$ 50.000–200.000", "moto": "R$ 12.000–60.000",
+    # comida e bebida (prato em restaurante/delivery)
+    "pizza": "R$ 40–120", "hambúrguer": "R$ 25–70", "sushi": "R$ 50–150", "arroz e feijão": "R$ 20–45",
+    "macarrão": "R$ 30–80", "salada": "R$ 20–50", "bolo": "R$ 30–120", "sorvete": "R$ 10–40",
+    "açaí": "R$ 15–40", "churrasco": "R$ 50–150", "cachorro-quente": "R$ 10–30", "pastel": "R$ 8–25",
+    "café": "R$ 5–20", "suco": "R$ 8–20",
+}
+
+
+def faixa_preco(item: Item) -> str:
+    """Faixa do item; sem ela (vocabulário grande, texto livre), a da categoria marcada como estimativa."""
+    if item.nome in PRECO_ITEM:
+        return PRECO_ITEM[item.nome]
+    faixa = FAIXA_PRECO.get(item.categoria, "—")
+    return faixa if item.categoria == "animais" else f"{faixa} (estimativa da categoria)"
+
 ITENS: list[Item] = [
     # vestuário / calçados
     Item("a t-shirt", "camiseta", "vestuário", "comprar"),

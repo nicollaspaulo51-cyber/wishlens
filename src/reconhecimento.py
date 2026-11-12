@@ -17,7 +17,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from src.categorias import FAIXA_PRECO, ITENS, Item
+from src.categorias import ITENS, Item, faixa_preco
 
 MODELO = "openai/clip-vit-base-patch32"  # pesos abertos (licença MIT)
 DADOS = Path(__file__).resolve().parents[1] / "data"
@@ -54,7 +54,7 @@ class Resultado:
 
     @property
     def faixa_preco(self) -> str:
-        return FAIXA_PRECO.get(self.item.categoria, "—")
+        return faixa_preco(self.item)
 
 
 @lru_cache(maxsize=1)

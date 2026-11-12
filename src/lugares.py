@@ -44,8 +44,38 @@ def distancia_km(lat1, lon1, lat2, lon2) -> float:
     return 2 * r * math.asin(math.sqrt(a))
 
 
+def _ancorado(filtro: str) -> str:
+    """shop~"car|motorcycle" casaria carpet e car_repair: o valor tem de ser exatamente um da lista."""
+    chave, sep, valores = re.split(r"([~=])", filtro, maxsplit=1)
+    return f'{chave}~"^({valores.strip(chr(34))})$"' if sep == "~" else filtro
+
+
+# Para que serve o local (ícone e texto no mapa). A 1ª regra que bater vence.
+_NOME_JOGAR = re.compile(r"lan ?house|cyber ?caf", re.I)
+_NOME_CONSERTAR = re.compile(r"assist[eê]ncia|conserto|manuten[cç][aã]o", re.I)
+
+
+def finalidade(tags: dict, nome: str = "") -> str:
+    """comprar, jogar, consertar, adotar, cuidar (veterinário) ou comer, pelas tags do OSM e pelo nome.
+
+    O nome conta porque lan houses e assistências costumam estar marcadas no OSM como shop=computer.
+    """
+    amenity, shop = tags.get("amenity", ""), tags.get("shop", "")
+    if amenity == "internet_cafe" or tags.get("leisure") == "amusement_arcade" or _NOME_JOGAR.search(nome):
+        return "jogar"
+    if amenity in {"restaurant", "fast_food", "food_court", "cafe", "bar", "ice_cream"}:
+        return "comer"  # antes de "consertar": pontos mistos ("Subway;Praia Tech") são achados buscando comida
+    if "repair" in tags.get("craft", "") or "repair" in shop or _NOME_CONSERTAR.search(nome):
+        return "consertar"
+    if amenity == "animal_shelter":
+        return "adotar"
+    if amenity == "veterinary":
+        return "cuidar"
+    return "comprar"
+
+
 def montar_consulta(item: Item, lat: float, lon: float, raio_m: int) -> str:
-    filtros = TAGS_POR_CATEGORIA.get(item.categoria, [])
+    filtros = [_ancorado(f) for f in TAGS_POR_CATEGORIA.get(item.categoria, [])]
     partes = "".join(f"nwr[{f}](around:{raio_m},{lat},{lon});" for f in filtros)
     return f"[out:json][timeout:25];({partes});out center 50;"
 
@@ -81,9 +111,11 @@ def _buscar_nominatim(item: Item, lat: float, lon: float, raio_m: int) -> list[d
             if chave in vistos or dist * 1000 > raio_m:
                 continue
             vistos.add(chave)
+            nome = a.get("name") or "(sem nome no mapa)"
             lugares.append({
-                "nome": a.get("name") or "(sem nome no mapa)",
+                "nome": nome,
                 "tipo": a.get("type"),
+                "finalidade": finalidade({a.get("category", ""): a.get("type", "")}, nome),
                 "lat": la,
                 "lon": lo,
                 "distancia_km": round(dist, 2),
@@ -127,6 +159,7 @@ def buscar_proximos(item: Item, lat: float, lon: float, raio_m: int = 3000, limi
         lugares.append({
             "nome": tags.get("name", "(sem nome no mapa)"),
             "tipo": tags.get("shop") or tags.get("amenity"),
+            "finalidade": finalidade(tags, tags.get("name", "")),
             "lat": la,
             "lon": lo,
             "distancia_km": round(distancia_km(lat, lon, la, lo), 2),

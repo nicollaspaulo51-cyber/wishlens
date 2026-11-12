@@ -98,3 +98,29 @@ def test_overpass_remark_de_erro_tenta_o_proximo():
     with patch("src.lugares.requests.post", side_effect=lambda url, **kw: next(respostas)):
         achados = lugares.buscar_proximos(ANIMAIS, -20.30, -40.30)
     assert [l["nome"] for l in achados] == ["Perto", "Longe"]
+
+
+def test_finalidade_do_local():
+    f = lugares.finalidade
+    assert f({"shop": "computer"}, "Lan House do Zé") == "jogar"       # marcada como loja, mas é lan house
+    assert f({"amenity": "internet_cafe"}, "X") == "jogar"
+    assert f({"shop": "electronics"}, "Assistência Técnica X") == "consertar"
+    assert f({"craft": "electronics_repair"}, "Y") == "consertar"
+    assert f({"amenity": "animal_shelter"}, "Abrigo") == "adotar"
+    assert f({"amenity": "veterinary"}, "Clínica") == "cuidar"
+    assert f({"amenity": "restaurant"}, "Cantina") == "comer"
+    assert f({"shop": "computer"}, "Cyber Informática") == "comprar"   # "cyber" sozinho não é lan house
+
+
+def test_lugares_trazem_finalidade():
+    with patch("src.lugares.requests.post", return_value=_resposta(ELEMENTOS)):
+        achados = lugares.buscar_proximos(ANIMAIS, -20.30, -40.30)
+    assert {l["nome"]: l["finalidade"] for l in achados} == {"Perto": "adotar", "Longe": "comprar"}
+
+
+def test_filtro_ancorado():
+    from src.categorias import ITENS
+    carro = next(i for i in ITENS if i.categoria == "veículos")
+    q = lugares.montar_consulta(carro, 0, 0, 100)
+    assert 'shop~"^(car|motorcycle)$"' in q  # não casa carpet nem car_repair
+    assert lugares.tags_simples(carro) == ["[shop=car]", "[shop=motorcycle]"]
