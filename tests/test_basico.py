@@ -53,3 +53,38 @@ def test_similaridade_cosseno():
     c = vetor_perfil(pd.DataFrame({"categoria": ["eletrônicos"]}))
     assert abs(similaridade_cosseno(a, b) - 1) < 1e-9   # mesmo perfil -> 100%
     assert similaridade_cosseno(a, c) == 0               # nada em comum -> 0%
+
+
+def test_vocabulario_grande_consistente():
+    import csv
+
+    import numpy as np
+
+    from src.categorias import nome_valido, tipo_da_categoria
+    raiz = Path(__file__).resolve().parents[1] / "data"
+    with open(raiz / "vocabulario.csv", encoding="utf-8") as f:
+        linhas = list(csv.DictReader(f))
+    assert len(linhas) > 1000
+    assert np.load(raiz / "vocabulario_clip.npy").shape == (len(linhas), 512)  # vetores em sincronia
+    for l in linhas:
+        assert l["categoria"] in FAIXA_PRECO and l["categoria"] in TAGS_POR_CATEGORIA
+        assert l["tipo"] == tipo_da_categoria(l["categoria"])
+        assert nome_valido(l["nome"]), l["nome"]  # nomes também vão para HTML
+
+
+def test_nome_digitado():
+    from src.categorias import nome_valido
+    assert nome_valido("garrafa térmica") and nome_valido("fone JBL (azul)")
+    assert not nome_valido("<img src=x>") and not nome_valido('a"b') and not nome_valido("")
+    assert not nome_valido("x" * 61)
+
+
+def test_preco_por_item():
+    from src.categorias import PRECO_ITEM, Item, faixa_preco
+    nomes = {i.nome for i in ITENS}
+    assert set(PRECO_ITEM) <= nomes  # nenhum preço de item que não existe
+    notebook = next(i for i in ITENS if i.nome == "notebook")
+    mouse = next(i for i in ITENS if i.nome == "mouse")
+    assert faixa_preco(notebook) != faixa_preco(mouse)
+    assert faixa_preco(Item("kettle", "chaleira", "casa e decoração", "comprar")).endswith("(estimativa da categoria)")
+    assert faixa_preco(next(i for i in ITENS if i.tipo == "adotar")) == "adoção gratuita"

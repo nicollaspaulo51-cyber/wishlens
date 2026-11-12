@@ -45,6 +45,8 @@ Notebooks de análise ◄── CSV anonimizado (data/processed/)
 | [Olist – Brazilian E-Commerce](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) | base complementar de consumo | CC BY-NC-SA 4.0 |
 | [OpenStreetMap](https://www.openstreetmap.org/copyright) | lugares próximos | ODbL |
 | [CLIP ViT-B/32](https://huggingface.co/openai/clip-vit-base-patch32) | reconhecimento de imagens | MIT |
+| [LVIS v1](https://www.lvisdataset.org/) (lista de ~1.200 objetos) | vocabulário do reconhecimento (`data/vocabulario.csv`) | CC BY 4.0 |
+| [Open Multilingual Wordnet](https://omwn.org/) / OpenWN-PT | nomes em português do vocabulário | CC BY-SA |
 
 ## Privacidade
 - A foto salva é reduzida e **não carrega EXIF/GPS** (`src/fotos.py`).
@@ -61,9 +63,10 @@ Notebooks de análise ◄── CSV anonimizado (data/processed/)
 | Gráficos dos desejos, perfil por K-Means, comparação por cosseno | ✅ funcionando |
 | Notebooks 01–04 do CRISP-DM | ✅ executados, **com dados fictícios** |
 | CSV anonimizado (download no app) | ✅ funcionando |
-| Reconhecimento automático (CLIP) | ⏳ código pronto; precisa instalar `torch` + `transformers`. Sem eles, o item é escolhido numa lista |
+| Reconhecimento automático (CLIP) | ✅ ~1.170 objetos: catálogo curado + 1.107 do LVIS (`data/vocabulario.csv`); "Outra coisa…" aceita texto livre. Acurácia em fotos reais ainda não medida |
 | Banco e login (Supabase) | ⏳ código e SQL prontos, **não testados** com um projeto real: ver [docs/SUPABASE.md](docs/SUPABASE.md) |
-| Lugares próximos (OpenStreetMap) | ⏳ código pronto; não foi possível testar a conexão a partir do ambiente de desenvolvimento |
+| Localização (GPS da foto → GPS do navegador → endereço via Nominatim) | ✅ funcionando |
+| Lugares próximos (OpenStreetMap / Overpass, mapa com tiles OSM) | ✅ funcionando (servidor `overpass.openstreetmap.fr` primeiro; reserva: outros Overpass e Nominatim) |
 | Coleta de dados reais com a turma | ⏳ a fazer |
 | Publicação no Streamlit Cloud | ⏳ a fazer (precisa de conta) |
 
@@ -84,12 +87,26 @@ Sem o reconhecimento automático (instalação bem mais leve, sem `torch`):
 ```bash
 pip install -r requirements-dev.txt
 ```
-Testes (sem internet): `python -m pytest tests/`
+Testes (sem internet): `python -m pytest tests/` (o teste do CLIP é pulado se `torch` não estiver instalado)
+
+## Vocabulário do reconhecimento
+`data/vocabulario.csv` e `data/vocabulario_clip.npy` são gerados por `scripts/gerar_vocabulario.py`
+(LVIS + nomes em português do Open Multilingual Wordnet; categoria pela hierarquia do WordNet).
+Só é preciso rodar de novo se mudar o modelo ou as regras: `pip install nltk && python scripts/gerar_vocabulario.py`.
+A categoria de cada objeto é aproximada; quando estiver errada, use "Outra coisa…".
+
+## Publicar no Streamlit Community Cloud
+1. Entre em https://share.streamlit.io com a conta do GitHub e clique em **Create app**.
+2. Repositório `nicollaspaulo51-cyber/wishlens`, branch `main`, arquivo principal `app/Home.py`.
+3. Em **Advanced settings**, escolha Python 3.12. O `requirements.txt` já instala o torch só-CPU.
+4. (Opcional) Cole as chaves do Supabase em **Secrets** no formato de `.streamlit/secrets.toml.example`.
+
+A câmera e o GPS do navegador só funcionam em HTTPS (o Streamlit Cloud já usa) ou em `localhost`.
 
 ## Estrutura
 ```
 app/            site Streamlit (Home + páginas Meus Desejos, Descobrir e Comparar)
-src/            reconhecimento, fotos, lugares, links, catálogo, armazenamento/banco,
+src/            reconhecimento, fotos, localizacao, lugares, links, catálogo, armazenamento/banco,
                 perfil (cosseno), clustering (K-Means), feed de recomendações, exportação, interface
 notebooks/      análise CRISP-DM (01 → 04)
 data/processed/ dados de demonstração (fictícios) e, depois, os anonimizados reais
@@ -105,7 +122,8 @@ tests/          testes automáticos (rodam no GitHub Actions a cada push)
 - [x] Notebooks 01–04 do CRISP-DM (com dados fictícios)
 - [x] Código do login + banco (Supabase) e exportação anonimizada
 - [ ] Criar o projeto Supabase e testar o login
-- [ ] Instalar o CLIP e medir a acurácia do reconhecimento
+- [x] Instalar o CLIP (torch só-CPU) e localização por GPS do navegador / endereço
+- [ ] Medir a acurácia do reconhecimento em fotos reais
 - [ ] Coleta com colegas → refazer os notebooks com `desejos.csv`
 - [ ] Publicar no Streamlit Cloud
 - [ ] Gravar o vídeo ([roteiro](docs/ROTEIRO_VIDEO.md))

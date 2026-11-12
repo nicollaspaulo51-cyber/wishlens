@@ -10,7 +10,7 @@ import random
 import uuid
 from datetime import datetime, timedelta
 
-from src.categorias import FAIXA_PRECO, ITENS
+from src.categorias import ITENS, faixa_preco
 
 # Quatro estilos de desejo (peso de cada categoria). Cada pessoa fictícia parte de um estilo
 # e ganha variações próprias, para existirem grupos de verdade para o clustering encontrar.
@@ -50,7 +50,7 @@ def _gerar(usuario: str, pesos: dict[str, int], n: int, rng: random.Random,
         registros.append({
             "id": str(uuid.uuid4()), "usuario": usuario, "criado_em": quando,
             "item": item.nome, "categoria": item.categoria, "tipo": item.tipo,
-            "faixa_preco": FAIXA_PRECO[item.categoria],
+            "faixa_preco": faixa_preco(item),
             "confianca": round(rng.uniform(0.4, 0.95), 2), "cidade": cidade,
             "acao": rng.choice(["ver_loja_online", "ver_mapa", "ver_receita", "salvou"]),
         })

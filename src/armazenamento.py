@@ -16,7 +16,7 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
-from src.categorias import FAIXA_PRECO, Item
+from src.categorias import Item, faixa_preco
 
 COLUNAS = ["id", "usuario", "criado_em", "item", "categoria", "tipo",
            "faixa_preco", "confianca", "cidade", "acao"]
@@ -64,7 +64,7 @@ def salvar_desejo(item: Item, confianca: float | None, criado_em: datetime | Non
         "item": item.nome,
         "categoria": item.categoria,
         "tipo": item.tipo,
-        "faixa_preco": FAIXA_PRECO.get(item.categoria, "—"),
+        "faixa_preco": faixa_preco(item),
         "confianca": confianca,
         "cidade": cidade,
         "acao": acao,

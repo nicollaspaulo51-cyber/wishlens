@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from src.categorias import FAIXA_PRECO, ITENS, Item
+from src.categorias import ITENS, Item, faixa_preco
 from src.perfil import similaridade_cosseno, vetor_perfil
 
 PESO_CONTEUDO = 0.55
@@ -36,7 +36,7 @@ class Cartao:
 
     @property
     def faixa_preco(self) -> str:
-        return FAIXA_PRECO.get(self.item.categoria, "—")
+        return faixa_preco(self.item)
 
 
 def _nome(usuario: str) -> str:

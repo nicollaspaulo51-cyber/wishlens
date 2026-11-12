@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import streamlit as st
 
 from src import armazenamento, ui
-from src.categorias import FAIXA_PRECO, emoji
+from src.categorias import emoji, faixa_preco
 from src.feed import gerar_feed
 from src.links import links_para
 
@@ -43,7 +43,7 @@ def querer(item, motivo_tipo):
     if quem.startswith("exemplo:"):  # dados de exemplo ficam só na memória
         armazenamento.adicionar_varios([{
             "id": str(uuid.uuid4()), "usuario": quem, "criado_em": datetime.now(), "item": item.nome,
-            "categoria": item.categoria, "tipo": item.tipo, "faixa_preco": FAIXA_PRECO.get(item.categoria, "—"),
+            "categoria": item.categoria, "tipo": item.tipo, "faixa_preco": faixa_preco(item),
             "confianca": None, "cidade": None, "acao": acao}])
     else:
         armazenamento.salvar_desejo(item, None, None, None, acao=acao)
