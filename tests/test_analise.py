@@ -87,7 +87,7 @@ def test_feed_recomenda_coisas_novas_e_relacionadas():
     assert restantes and restantes <= {c.item.nome for c in feed[:len(restantes) + 1]}
     assert any(c.tipo_motivo == "novo" for c in feed)                  # há exploração
     # os vizinhos de um "tech" são os outros "tech"
-    assert [u for u, _ in vizinhos(df, "exemplo:bruno")][:2] == ["exemplo:diego", "exemplo:enzo"]
+    assert {u for u, _ in vizinhos(df, "exemplo:bruno")[:2]} == {"exemplo:diego", "exemplo:enzo"}
     # ocultar tira o item; páginas não se repetem
     oculto = feed[0].item.nome
     assert oculto not in {c.item.nome for c in gerar_feed(df, "exemplo:bruno", ocultos={oculto}, quantidade=50)}

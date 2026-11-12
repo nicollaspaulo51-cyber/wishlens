@@ -138,8 +138,10 @@ if st.session_state.get("busca") == (item, lat, lon, raio):  # mantém o mapa ap
         mapa = folium.Map(location=[lat, lon], zoom_start=14, tiles="OpenStreetMap")
         folium.Marker([lat, lon], tooltip="Você", icon=folium.Icon(color="purple", icon="user")).add_to(mapa)
         for l in lugares:
+            # folium.Icon (mesmo do marcador "Você"): o ícone padrão do Leaflet é uma imagem que não carrega no st_folium
             folium.Marker([l["lat"], l["lon"]], tooltip=f'{l["nome"]} · {l["distancia_km"]} km',
-                          popup=f'<a href="{l["mapa"]}" target="_blank">{l["nome"]}</a>').add_to(mapa)
+                          popup=f'<a href="{l["mapa"]}" target="_blank">{l["nome"]}</a>',
+                          icon=folium.Icon(color="red", icon="shopping-cart")).add_to(mapa)
         st_folium(mapa, height=380, use_container_width=True, returned_objects=[])
         df = pd.DataFrame(lugares)
         st.dataframe(df[["nome", "tipo", "distancia_km", "mapa"]], hide_index=True,
