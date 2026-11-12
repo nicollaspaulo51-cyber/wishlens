@@ -71,7 +71,9 @@ Notebooks de análise ◄── CSV anonimizado (data/processed/)
 - Com o Gemma ligado, a foto vai para a API do Google **já sem EXIF/GPS** e reduzida (a mesma de `preparar_para_salvar`).
 - No jogo, cada captura guarda o bairro e um **quadrado de ~500 m** (`celula`) para o mapa da turma, nunca a coordenada exata.
   A foto em si não é guardada, só um hash de 16 caracteres para detectar foto repetida. Os dois saem do CSV anonimizado.
-- O pódio mostra só o apelido. Todos os jogadores logados veem as capturas dos outros (é o que permite o pódio e a raridade).
+- O pódio mostra só o apelido. Os jogadores logados veem tema, achado e hora das capturas dos outros (é o que permite
+  o pódio e a raridade), mas **não** o bairro nem a célula: o mapa da turma vem de uma função do banco que só devolve
+  totais por quadrado de ~500 m, sem dizer quem nem quando, e só onde houve pelo menos 2 capturas.
 
 ## Status
 

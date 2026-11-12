@@ -76,7 +76,7 @@ def test_tema_do_dia_dobra():
 def test_recusas_com_motivo():
     r = pts(cap("ana", "Fiat Mobi", real=False), cap("ana", "geladeira", tema="nenhum"),
             cap("ana", "", hora=12), cap("ana", "Gol", h="ffff0000ffff0000", hora=13),
-            cap("bia", "Uno", h="ffff0000ffff0001", hora=14))
+            cap("bia", "gol", h="ffff0000ffff0001", hora=14))
     assert list(r["aceita"]) == [False, False, False, True, False]
     assert "foto real" in r.loc[0, "motivo"] and "nenhum tema" in r.loc[1, "motivo"]
     assert r.loc[4, "motivo"] == "foto repetida"  # mesma foto enviada por outra pessoa
@@ -125,3 +125,42 @@ def test_estilo_de_jogador_e_exportacao():
     saida = anonimizar(df)
     assert "foto_hash" not in saida and "celula" not in saida
     assert saida["usuario"].str.match(r"^u\d+$").all()
+
+
+def test_mesma_foto_so_e_repetida_para_o_mesmo_achado():
+    """Dois pássaros contra o céu podem ter hash parecido: achados diferentes não são "repetida"."""
+    h = "ffff0000ffff0000"
+    r = pts(cap("ana", "bem-te-vi", h=h, hora=8), cap("bia", "sabiá", h=h, hora=9),
+            cap("caio", "Bem-te-vi", h=h, hora=10))
+    assert list(r["aceita"]) == [True, True, False] and r.loc[2, "motivo"] == "foto repetida"
+
+
+def test_capturas_misturando_memoria_e_supabase(monkeypatch):
+    """Exemplos em memória (sem fuso) + linhas do Supabase (ISO com fuso) não podem quebrar a página."""
+    import streamlit as st
+    from src import armazenamento
+    from src.banco import para_brasilia
+
+    class BancoFalso:
+        def capturas_todas(self):
+            return [{"id": "1", "usuario": "bia", "criado_em": para_brasilia("2026-11-12T13:00:00+00:00"),
+                     "tema": "carros", "achado": "Gol", "confianca": 0.9, "foto_real": True, "foto_hash": None}]
+
+    class Sessao(dict):
+        __getattr__ = dict.__getitem__
+        __setattr__ = dict.__setitem__
+
+    monkeypatch.setattr(st, "session_state", Sessao({"capturas": [
+        {"id": "2", "usuario": "exemplo:ana", "criado_em": datetime(2026, 11, 12, 9, 30), "tema": "pets",
+         "achado": "gato", "confianca": None, "foto_real": True, "foto_hash": None, "cidade": None, "celula": None}]}))
+    monkeypatch.setattr(armazenamento, "_banco", lambda: BancoFalso())
+    df = armazenamento.capturas()
+    assert df["criado_em"].dt.tz is None
+    assert sorted(df["criado_em"].dt.hour) == [9, 10]  # 13h UTC = 10h em Brasília
+    assert len(jogo.podio(jogo.calcular_pontos(df), "geral")) == 2
+
+
+def test_para_brasilia():
+    from src.banco import para_brasilia
+    assert para_brasilia("2026-11-13T02:30:00Z") == datetime(2026, 11, 12, 23, 30)
+    assert para_brasilia(datetime(2026, 1, 1, 8)) == datetime(2026, 1, 1, 8)

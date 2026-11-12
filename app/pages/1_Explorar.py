@@ -86,18 +86,14 @@ except Exception as erro:
     st.error(f"Não foi possível consultar o OpenStreetMap agora ({erro}). Tente de novo em instantes.")
     pontos = []
 
-# ---------- Descobertas da turma (por quadrado de ~500 m) ----------
-pontuadas = jogo.calcular_pontos(armazenamento.capturas())
+# ---------- Descobertas da turma (por quadrado de ~500 m, sem dizer quem) ----------
 manchas = []
-if not pontuadas.empty:
-    ok = pontuadas[pontuadas["aceita"] & pontuadas["celula"].notna() & pontuadas["tema"].isin(escolhidos)]
-    for celula, grupo in ok.groupby("celula"):
-        la, lo = jogo.centro_celula(celula)
-        if distancia_km(lat, lon, la, lo) > raio + 0.5:
-            continue
-        principal = grupo["tema"].mode()[0]
-        raros = grupo.sort_values("raridade", ascending=False)["achado"].drop_duplicates().head(3)
-        manchas.append({"lat": la, "lon": lo, "tema": principal, "n": len(grupo), "raros": list(raros)})
+for r in armazenamento.manchas().itertuples():
+    if r.tema not in escolhidos:
+        continue
+    la, lo = jogo.centro_celula(r.celula)
+    if distancia_km(lat, lon, la, lo) <= raio + 0.5:
+        manchas.append({"lat": la, "lon": lo, "tema": r.tema, "n": int(r.n), "raros": list(r.achados or [])})
 
 # ---------- Mapa ----------
 mapa = folium.Map(location=[lat, lon], zoom_start=15 if raio <= 2 else 14, tiles="OpenStreetMap")

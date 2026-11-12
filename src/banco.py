@@ -12,10 +12,21 @@ from __future__ import annotations
 
 import importlib.util
 from dataclasses import dataclass
+from datetime import datetime
 
 import streamlit as st
 
 _CHAVE_SESSAO = "_wl_supabase"
+
+
+def para_brasilia(valor) -> datetime:
+    """Texto ISO do banco (com fuso) -> datetime no horário de Brasília, sem fuso."""
+    from src.temas import FUSO
+
+    momento = valor if isinstance(valor, datetime) else datetime.fromisoformat(str(valor).replace("Z", "+00:00"))
+    if momento.tzinfo is not None:
+        momento = momento.astimezone(FUSO).replace(tzinfo=None)
+    return momento
 
 
 def _segredos() -> tuple[str, str] | None:
@@ -72,19 +83,33 @@ class Sessao:
     def salvar_captura(self, registro: dict) -> None:
         from src.temas import FUSO
         criado = registro["criado_em"].replace(tzinfo=FUSO)  # horário de Brasília -> com fuso
+        # returning="minimal": a API não pode devolver a linha, porque bairro e célula não são legíveis
         self.cliente.table("capturas").insert(
-            {**registro, "usuario_id": self.usuario_id, "criado_em": criado.isoformat()}).execute()
+            {**registro, "usuario_id": self.usuario_id, "criado_em": criado.isoformat()},
+            returning="minimal").execute()
 
     def capturas_todas(self) -> list[dict]:
-        """Capturas de todos os jogadores (pódio e raridade). Só o apelido sai do perfil."""
-        resp = (self.cliente.table("capturas")
-                .select("id, criado_em, tema, achado, confianca, foto_real, foto_hash, cidade, celula, perfis(apelido)")
-                .order("criado_em").limit(20000).execute())
-        linhas = []
-        for r in resp.data or []:
-            apelido = (r.pop("perfis", None) or {}).get("apelido", "?")
-            linhas.append({**r, "usuario": apelido})
-        return linhas
+        """Capturas de todos os jogadores (pódio e raridade), sem bairro nem célula (privacidade).
+
+        O Supabase devolve no máximo 1.000 linhas por pedido: busca em páginas até acabar.
+        criado_em sai no horário de Brasília sem fuso, igual às capturas em memória.
+        """
+        linhas, inicio, pagina = [], 0, 1000
+        while True:
+            resp = (self.cliente.table("capturas")
+                    .select("id, criado_em, tema, achado, confianca, foto_real, foto_hash, perfis(apelido)")
+                    .order("criado_em").range(inicio, inicio + pagina - 1).execute())
+            dados = resp.data or []
+            for r in dados:
+                apelido = (r.pop("perfis", None) or {}).get("apelido", "?")
+                linhas.append({**r, "usuario": apelido, "criado_em": para_brasilia(r["criado_em"])})
+            if len(dados) < pagina:
+                return linhas
+            inicio += pagina
+
+    def manchas(self) -> list[dict]:
+        """Onde a turma achou coisas: por quadrado de ~500 m e tema, sem dizer quem (função no banco)."""
+        return self.cliente.rpc("manchas_capturas", {}).execute().data or []
 
     # ------------------------------------------------ conexões (comparar)
     def pedir_conexao(self, apelido: str) -> None:

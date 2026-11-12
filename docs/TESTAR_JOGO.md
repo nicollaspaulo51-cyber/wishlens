@@ -16,7 +16,11 @@ SUPABASE_KEY = "sua-anon-key"
 ```
 Dá para testar em etapas: primeiro sem nada, depois só com o Gemma, depois com o Supabase.
 
-## 3. Teste rápido, sem chave nenhuma
+## 3. Antes de tudo: a câmera do celular
+No celular, abra o app e confira se a câmera do `Jogar` deixa usar a **câmera traseira** (ícone de trocar câmera)
+e se a foto sai nítida o bastante para ler o modelo de um carro. O jogo depende disso e não dá para testar daqui.
+
+## 4. Teste rápido, sem chave nenhuma
 | Faça | Deve acontecer |
 |---|---|
 | Abra o app | Faixa roxa com o **tema do dia** e os outros 4 temas embaixo |
@@ -26,7 +30,7 @@ Dá para testar em etapas: primeiro sem nada, depois só com o Gemma, depois com
 | **Pódio** | 3 degraus, abas Hoje/Semana/Geral, filtro por tema, "achados mais raros" |
 | **Minha Coleção** | Estilo de jogador, álbum por tema, gráficos |
 
-## 4. Com o Gemma (juiz com IA)
+## 5. Com o Gemma (juiz com IA)
 | Faça | Deve acontecer |
 |---|---|
 | Foto de um carro na rua | "Volkswagen Gol", "Fiat Mobi"… e pontos com novidade e raridade |
@@ -39,8 +43,10 @@ Dá para testar em etapas: primeiro sem nada, depois só com o Gemma, depois com
 
 Erro 404 no Gemma? Acrescente `GEMMA_MODELO = "gemma-3-12b-it"` nos Secrets.
 
-## 5. Supabase (pódio entre pessoas)
+## 6. Supabase (pódio entre pessoas)
 Siga o [docs/SUPABASE.md](SUPABASE.md): criar o projeto gratuito, rodar o `supabase/schema.sql` e colar as chaves.
+Para conferir a privacidade: no Supabase, **SQL Editor** → `select cidade from capturas` funciona (você é admin),
+mas o app nunca recebe bairro/célula dos outros; o mapa mostra só manchas com 2+ capturas.
 Depois:
 1. Crie duas contas (celular e computador, ou uma janela anônima).
 2. Tire uma foto com cada uma.
@@ -48,7 +54,7 @@ Depois:
 
 Sem o Supabase, cada pessoa só vê ela mesma (e os exemplos) no pódio.
 
-## 6. Explorar (mapa que pisca)
+## 7. Explorar (mapa que pisca)
 | Faça | Deve acontecer |
 |---|---|
 | Abra **Explorar** e permita o GPS (ou digite o bairro) | Mapa com pontos coloridos **pulsando** por tema |
@@ -58,8 +64,12 @@ Sem o Supabase, cada pessoa só vê ela mesma (e os exemplos) no pódio.
 | Desmarque temas no filtro | Os pontos daquele tema somem |
 
 ## Já verificado aqui
-- `pytest`: 63 testes passando (rede e IA simuladas): pontos, raridade, ×2, recusas, hash de foto repetida,
-  pódio, tema do dia virando à meia-noite de Brasília, juiz do Gemma, busca de pontos por tema, exportação sem hash e célula.
+- `pytest`: 66 testes passando (rede e IA simuladas): pontos, raridade, ×2, recusas, hash de foto repetida,
+  pódio, tema do dia virando à meia-noite de Brasília, juiz do Gemma, busca de pontos por tema, exportação sem hash e célula,
+  capturas do Supabase (datas com fuso) misturadas com as da memória.
+- Busca no Supabase em páginas de 1.000 (o limite da API), para o pódio não perder as capturas mais novas.
+- Foto repetida só conta para o mesmo achado: dois pássaros diferentes contra o céu não são barrados.
+- O reconhecimento de reserva (CLIP) rodou de ponta a ponta com pesos aleatórios, sem erro.
 - App rodando com a IA e o OpenStreetMap simulados, câmera falsa do Chromium:
   foto → +27 pontos; foto de tela → recusada; Pódio, Coleção e "Onde encontrar" navegando pelo menu.
 - Pulso do mapa: conferido renderizando o mapa com o Leaflet local (aqui o CDN do Leaflet é bloqueado).

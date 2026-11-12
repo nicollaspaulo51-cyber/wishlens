@@ -122,6 +122,7 @@ def salvar_captura(tema: str | None, achado: str, confianca: float | None, foto_
     b = _banco()
     if b:
         b.salvar_captura(registro)
+        st.session_state.pop("_cache_capturas", None)
     else:
         _capturas_memoria().append({"id": str(uuid.uuid4()), "usuario": usuario_atual(), **registro})
 
@@ -131,22 +132,51 @@ def adicionar_capturas(registros: list[dict]) -> None:
     _capturas_memoria().extend(registros)
 
 
+CACHE_SEGUNDOS = 30
+
+
+def _capturas_banco(b) -> list[dict]:
+    """Capturas do Supabase, guardadas por 30 s na sessão (cada clique no Streamlit roda a página de novo)."""
+    import time
+
+    guardado = st.session_state.get("_cache_capturas")
+    if guardado and time.monotonic() - guardado[0] < CACHE_SEGUNDOS:
+        return guardado[1]
+    linhas = b.capturas_todas()
+    st.session_state["_cache_capturas"] = (time.monotonic(), linhas)
+    return linhas
+
+
 def capturas() -> pd.DataFrame:
     """Todas as capturas (memória + Supabase). criado_em fica no horário de Brasília, sem fuso."""
-    from src.temas import FUSO
+    from src.banco import para_brasilia
 
     linhas = list(_capturas_memoria())
     b = _banco()
     if b:
-        linhas += b.capturas_todas()
+        linhas += _capturas_banco(b)
     df = pd.DataFrame(linhas, columns=COLUNAS_CAPTURA)
     if not df.empty:
-        datas = pd.to_datetime(df["criado_em"], format="mixed")
-        if datas.dt.tz is None:  # memória: já está em Brasília
-            df["criado_em"] = datas
-        else:
-            df["criado_em"] = datas.dt.tz_convert(FUSO).dt.tz_localize(None)
+        df["criado_em"] = pd.to_datetime([para_brasilia(x) for x in df["criado_em"]])
     return df
+
+
+def manchas() -> pd.DataFrame:
+    """Onde a turma achou coisas, por quadrado de ~500 m e tema, sem dizer quem: celula, tema, n, achados."""
+    colunas = ["celula", "tema", "n", "achados"]
+    linhas = []
+    mem = pd.DataFrame(_capturas_memoria(), columns=COLUNAS_CAPTURA)
+    mem = mem[mem["celula"].notna() & mem["foto_real"].astype(bool) & (mem["tema"] != "nenhum")]
+    for (celula, tema), g in mem.groupby(["celula", "tema"]):
+        linhas.append({"celula": celula, "tema": tema, "n": len(g),
+                       "achados": list(g["achado"].value_counts(ascending=True).index[:3])})
+    b = _banco()
+    if b:
+        try:
+            linhas += b.manchas()
+        except Exception:  # banco criado antes da função manchas_capturas: o mapa fica sem as manchas
+            pass
+    return pd.DataFrame(linhas, columns=colunas)
 
 
 def remover_capturas_exemplo() -> None:

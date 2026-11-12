@@ -6,7 +6,7 @@ Pontos de cada captura (recalculados sempre a partir das capturas, em ordem de d
 - raridade: +20 / (1 + vezes que alguém já achou isso antes): o 1º ganha 20, o 2º 10, o 3º 7...;
 - tema do dia: tudo vezes 2;
 - achado genérico (ex.: só "carro", quando a IA não disse o modelo): só a base.
-Vale 0, com o motivo, se não for foto real, se for foto repetida, se não for de nenhum tema
+Vale 0, com o motivo, se não for foto real, se for foto repetida (do mesmo achado), se não for de nenhum tema
 ou se a pessoa já achou a mesma coisa no mesmo dia.
 
 Como os pontos saem das capturas, um número falso gravado no banco não vale nada, e a
@@ -74,7 +74,9 @@ def calcular_pontos(capturas: pd.DataFrame) -> pd.DataFrame:
     vistos_usuario: set[tuple[str, str, str]] = set()
     vistos_no_dia: set[tuple[str, str, str, date]] = set()
     contagem: dict[tuple[str, str], int] = {}
-    hashes: list[str] = []
+    # Foto repetida: compara só com fotos do mesmo achado (rápido e não pega fotos parecidas de
+    # coisas diferentes, como dois pássaros contra o céu); foto reaproveitada recebe o mesmo achado do juiz.
+    hashes: dict[tuple[str, str], list[str]] = {}
     linhas = []
     for c in df.itertuples(index=False):
         tema = POR_ID.get(getattr(c, "tema", None) or "")
@@ -92,7 +94,7 @@ def calcular_pontos(capturas: pd.DataFrame) -> pd.DataFrame:
             motivo = "não é de nenhum tema do jogo"
         elif not chave:
             motivo = "não deu para saber o que é"
-        elif repetida(h, hashes):
+        elif repetida(h, hashes.get((tema.id, chave), [])):
             motivo = "foto repetida"
         elif (c.usuario, tema.id, chave, dia) in vistos_no_dia:
             motivo = "você já achou isso hoje"
@@ -113,7 +115,7 @@ def calcular_pontos(capturas: pd.DataFrame) -> pd.DataFrame:
         vistos_no_dia.add((c.usuario, tema.id, chave, dia))
         contagem[(tema.id, chave)] = anteriores + 1
         if h:
-            hashes.append(h)
+            hashes.setdefault((tema.id, chave), []).append(h)
     pontos = pd.DataFrame(linhas, columns=COLUNAS_PONTOS)
     return pd.concat([df.drop(columns=[c for c in COLUNAS_PONTOS if c in df.columns]), pontos], axis=1)
 

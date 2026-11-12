@@ -92,6 +92,26 @@ drop policy if exists capturas_criar on public.capturas;
 create policy capturas_criar on public.capturas for insert to authenticated
   with check (usuario_id = auth.uid() and criado_em between now() - interval '5 minutes' and now() + interval '1 minute');
 
+-- Privacidade: bairro e célula (~500 m) de cada captura NÃO são legíveis pela API, nem para outros jogadores.
+-- Sem isso, apelido + hora + lugar formariam um rastro de onde cada pessoa esteve.
+revoke select on public.capturas from anon, authenticated;
+grant select (id, usuario_id, criado_em, tema, achado, confianca, foto_real, foto_hash)
+  on public.capturas to authenticated;
+
+-- O mapa da turma usa só este resumo: por quadrado de ~500 m e tema, sem quem nem quando,
+-- e só onde houve pelo menos 2 capturas.
+create or replace function public.manchas_capturas()
+returns table (celula text, tema text, n bigint, achados text[])
+language sql stable security definer set search_path = public as $$
+  select c.celula, c.tema, count(*) as n, (array_agg(distinct c.achado))[1:3] as achados
+  from public.capturas c
+  where c.celula is not null and c.foto_real and c.tema <> 'nenhum'
+  group by c.celula, c.tema
+  having count(*) >= 2;
+$$;
+revoke execute on function public.manchas_capturas() from public, anon;
+grant execute on function public.manchas_capturas() to authenticated;
+
 -- perfis: qualquer pessoa logada vê apelidos (para pedir conexão); cada um edita o seu.
 drop policy if exists perfis_ler on public.perfis;
 create policy perfis_ler on public.perfis for select to authenticated using (true);

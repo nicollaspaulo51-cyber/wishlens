@@ -52,6 +52,8 @@ Já tinha rodado o `schema.sql` antes? Rode de novo: ele usa `if not exists` e s
 | Fotos ficam numa pasta com o id da pessoa, em bucket privado | política `fotos_proprias` |
 | A localização guardada é só a cidade (nunca coordenadas) | coluna `cidade` + `src/fotos.py` |
 | Capturas: todos os logados leem (pódio), cada um só cria as suas, com a hora de agora; ninguém altera | políticas `capturas_ler` e `capturas_criar` |
+| Bairro e célula das capturas não são legíveis pela API (nem pelos outros jogadores) | `grant select (...)` só nas outras colunas |
+| O mapa da turma só recebe totais por quadrado e tema, sem quem/quando, com 2+ capturas | função `manchas_capturas()` |
 | No jogo, a posição fica num quadrado de ~500 m, nunca exata | coluna `celula` |
 | A chave usada pelo app é a pública (`anon`); a RLS é quem protege | `.streamlit/secrets.toml` |
 
