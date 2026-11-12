@@ -11,7 +11,7 @@ Se você já criou o app de teste desta branch, ele atualiza sozinho: abra e, se
 ## 2. Secrets (⋮ → Settings → Secrets)
 ```toml
 GEMINI_API_KEY = "sua-chave"                     # juiz com IA (https://aistudio.google.com/apikey)
-SUPABASE_URL = "https://SEU-PROJETO.supabase.co" # pódio compartilhado (passo 5)
+SUPABASE_URL = "https://SEU-PROJETO.supabase.co" # pódio compartilhado (passo 6)
 SUPABASE_KEY = "sua-anon-key"
 ```
 Dá para testar em etapas: primeiro sem nada, depois só com o Gemma, depois com o Supabase.
