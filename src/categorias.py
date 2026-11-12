@@ -31,6 +31,11 @@ def rotulo_exibicao(item: Item) -> str:
     return f"{nome} · {detalhe}" if detalhe else nome
 
 
+def termo_de_busca(item: Item) -> str:
+    """"Nike Air Max tênis": marca e modelo primeiro (usado nos links das lojas e na busca de preço)."""
+    return " ".join(x for x in (item.marca, item.modelo, item.nome.split("/")[0]) if x)
+
+
 def reais(valor: float) -> str:
     """1234.5 -> "R$ 1.235" (sem centavos acima de R$ 100)."""
     if valor >= 100:

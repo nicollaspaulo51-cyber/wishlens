@@ -165,25 +165,30 @@ def agrupar(rotulos: list[tuple[Item, str, tuple[str, str]]], probs: list[float]
     - os n_curados primeiros rótulos (catálogo) pesam PESO_CATALOGO vezes mais; depois renormaliza;
     - vários rótulos do mesmo item somam (ex.: fone e estojo de fone); a chave inclui a categoria,
       porque "taco" (comida) e "taco" (sinuca) são coisas diferentes; o item do catálogo vem primeiro e fica;
-    - se as frases de uma marca somam ao menos MARCA_MINIMA da chance do item, ele sai com a marca.
+    - das frases de marca, só a marca mais forte entra na soma do item;
+    - se essa marca tem ao menos MARCA_MINIMA da chance do item, ele sai com a marca.
     """
     pesos = [p * (PESO_CATALOGO if k < n_curados else 1.0) for k, p in enumerate(probs)]
-    total = sum(pesos) or 1.0
     por_item: dict[tuple[str, str], Resultado] = {}
     por_marca: dict[tuple[str, str], dict[tuple[str, str], float]] = {}
     for (item, _, marca), p in zip(rotulos, pesos):
-        p /= total
         chave = (item.nome, item.categoria)
-        if chave in por_item:
-            por_item[chave].confianca += p
-        else:
-            por_item[chave] = Resultado(item, p)
-        if marca[0]:
+        if chave not in por_item:
+            por_item[chave] = Resultado(item, 0.0)
+        if marca[0]:  # frases de marca: guardadas à parte (ver abaixo)
             m = por_marca.setdefault(chave, {})
             m[marca] = m.get(marca, 0.0) + p
+        else:
+            por_item[chave].confianca += p
+    # Do item, só conta a marca mais forte: somar todas daria vantagem a quem tem mais marcas na lista
+    # (refrigerante com 5 latas de marca ganharia de energético com 2 só por ter mais frases).
     for chave, marcas in por_marca.items():
         (marca, modelo), p = max(marcas.items(), key=lambda kv: kv[1])
         r = por_item[chave]
+        r.confianca += p
         if p >= MARCA_MINIMA * r.confianca:
             r.item = replace(r.item, marca=marca, modelo=modelo)
+    total = sum(r.confianca for r in por_item.values()) or 1.0
+    for r in por_item.values():
+        r.confianca /= total
     return sorted(por_item.values(), key=lambda r: r.confianca, reverse=True)[:top_k]

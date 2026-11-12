@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import requests
 
 from src import precos
-from src.categorias import ITENS, Item, faixa_reais, reais
+from src.categorias import ITENS, Item, faixa_reais, reais, termo_de_busca
 
 TENIS = Item("sneakers", "tênis", "calçados", "comprar", marca="Nike", modelo="Air Max")
 PIZZA = next(i for i in ITENS if i.nome == "pizza")
@@ -28,8 +28,8 @@ def test_formato_em_reais():
 
 
 def test_termo_de_busca_usa_marca_e_modelo():
-    assert precos.termo_de_busca(TENIS) == "Nike Air Max tênis"
-    assert precos.termo_de_busca(Item("x", "boné/chapéu", "vestuário", "comprar")) == "boné"
+    assert termo_de_busca(TENIS) == "Nike Air Max tênis"
+    assert termo_de_busca(Item("x", "boné/chapéu", "vestuário", "comprar")) == "boné"
 
 
 def test_quartis_cortam_acessorios_e_kits():

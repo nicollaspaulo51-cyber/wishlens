@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 import requests
 
-from src.categorias import Item, faixa_preco, faixa_reais
+from src.categorias import Item, faixa_preco, faixa_reais, termo_de_busca
 from src.lugares import USER_AGENT
 
 ML_URL = "https://api.mercadolibre.com/sites/MLB/search"
@@ -25,11 +25,6 @@ MIN_ANUNCIOS = 5
 class Preco:
     texto: str   # ex.: "R$ 280–R$ 450"
     fonte: str   # ex.: "Mercado Livre, 18 anúncios"
-
-
-def termo_de_busca(item: Item) -> str:
-    """"Nike Air Max tênis": marca e modelo primeiro, que é o que mais muda o preço."""
-    return " ".join(x for x in (item.marca, item.modelo, item.nome.split("/")[0]) if x)
 
 
 def faixa_dos_anuncios(precos: list[float]) -> tuple[float, float] | None:

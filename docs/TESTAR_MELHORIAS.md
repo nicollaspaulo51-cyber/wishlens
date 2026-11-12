@@ -16,6 +16,7 @@ Branch: `claude/vibrant-feynman-4fhs11` (feita a partir de `feat/fluxo-completo`
 | Faça | Deve acontecer |
 |---|---|
 | Foto de um tênis Nike com o logo aparecendo | Top-3 com "Tênis" (às vezes já "Tênis · Nike") |
+| Toque em "Amazon" ou "Mercado Livre" com um item com marca | A busca já vem com a marca (ex.: "Nike Air Max tênis") |
 | Foto de uma lata de Monster ou Coca-Cola | "Energético · Monster" / "Refrigerante · Coca-Cola" |
 | Foto de um carro | "Carro" na frente de "camião", "aeronaves" etc. |
 | Foto de uma cenoura | Aparece como comida (antes ia para "brinquedos") |
@@ -60,8 +61,10 @@ Peça o pull request de `claude/vibrant-feynman-4fhs11` → `feat/fluxo-completo
 recebe as mudanças. Copie também a `GEMINI_API_KEY` para os Secrets do app atual.
 
 ## Já verificado aqui
-- `python -m pytest -q tests/`: 44 passando (rede simulada: Gemma, Mercado Livre, Overpass e Nominatim).
+- `python -m pytest -q tests/`: 46 passando (rede simulada: Gemma, Mercado Livre, Overpass e Nominatim).
 - App rodando com a rede simulada: opção ✨ com marca, preço com fonte e cartão aberto pela tabela.
   O mapa não carregou aqui porque o Leaflet vem de um CDN bloqueado no sandbox; o clique no marcador
   usa o mesmo cartão, mas só dá para confirmar no app publicado.
-- **Não** testado aqui: o CLIP de verdade (o Hugging Face está bloqueado), o Gemma real (falta a chave) e o Mercado Livre.
+- O código do CLIP rodou de ponta a ponta com um modelo de pesos aleatórios (1.087 rótulos, sem erro de formato),
+  mas a **qualidade** com os pesos reais não pôde ser medida (o Hugging Face está bloqueado aqui).
+- **Não** testado aqui: o Gemma real (falta a chave), o Mercado Livre e o clique no marcador do mapa.
