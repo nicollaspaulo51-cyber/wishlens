@@ -27,7 +27,7 @@ def _get(caminho: str, params: dict):
             time.sleep(espera)
         _ultima_chamada = time.monotonic()
     resp = requests.get(NOMINATIM_URL + caminho, params={"format": "jsonv2", **params},
-                        headers={"User-Agent": USER_AGENT}, timeout=15)
+                        headers={"User-Agent": USER_AGENT}, timeout=25)
     resp.raise_for_status()
     return resp.json()
 

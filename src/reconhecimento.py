@@ -17,6 +17,15 @@ from src.categorias import FAIXA_PRECO, ITENS, Item
 MODELO = "openai/clip-vit-base-patch32"  # pesos abertos (licença MIT)
 
 
+# Frases extras para itens que o CLIP confunde (o catálogo tem um rótulo por item)
+ROTULOS_EXTRAS = {
+    "fone de ouvido": ["wireless earbuds", "a white wireless earbuds charging case"],
+}
+_ROTULOS = [(i, i.rotulo_en) for i in ITENS] + [
+    (i, r) for i in ITENS for r in ROTULOS_EXTRAS.get(i.nome, [])
+]
+
+
 def _vetor(saida):
     # transformers 5 devolve um objeto com o vetor projetado em .pooler_output; o 4.x devolve o tensor
     return getattr(saida, "pooler_output", saida)
@@ -42,7 +51,7 @@ def _carregar():
     modelo.eval()
 
     # Os textos são sempre os mesmos: calcula os vetores deles uma única vez.
-    textos = [f"a photo of {i.rotulo_en}" for i in ITENS]
+    textos = [f"a photo of {r}" for _, r in _ROTULOS]
     with torch.no_grad():
         entrada = processador(text=textos, return_tensors="pt", padding=True)
         vet_texto = _vetor(modelo.get_text_features(**entrada))
@@ -63,5 +72,11 @@ def reconhecer(imagem: Image.Image, top_k: int = 3) -> list[Resultado]:
         logits = modelo.logit_scale.exp() * vet_img @ vet_texto.T
         probs = logits.softmax(dim=-1)[0]
 
-    valores, indices = probs.topk(top_k)
-    return [Resultado(ITENS[i], float(v)) for v, i in zip(valores, indices)]
+    # Vários rótulos podem levar ao mesmo item (ex.: fone e estojo de fone): soma as chances
+    por_nome: dict[str, Resultado] = {}
+    for (item, _), p in zip(_ROTULOS, probs.tolist()):
+        if item.nome in por_nome:
+            por_nome[item.nome].confianca += p
+        else:
+            por_nome[item.nome] = Resultado(item, p)
+    return sorted(por_nome.values(), key=lambda r: r.confianca, reverse=True)[:top_k]

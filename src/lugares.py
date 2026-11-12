@@ -65,9 +65,15 @@ def _buscar_nominatim(item: Item, lat: float, lon: float, raio_m: int) -> list[d
     dlat = raio_m / 111_000
     dlon = dlat / max(math.cos(math.radians(lat)), 0.01)
     caixa = f"{lon - dlon},{lat + dlat},{lon + dlon},{lat - dlat}"
-    vistos, lugares = set(), []
+    vistos, lugares, erro = set(), [], None
     for tag in tags_simples(item):
-        for a in _get("/search", {"q": tag, "viewbox": caixa, "bounded": 1, "limit": 20}):
+        try:
+            achados = _get("/search", {"q": tag, "viewbox": caixa, "bounded": 1, "limit": 20})
+        except requests.RequestException as e:  # uma tag falhou: segue com as outras
+            erro = e
+            continue
+        erro = None if lugares or achados else erro
+        for a in achados:
             chave = (a["osm_type"], a["osm_id"])
             la, lo = float(a["lat"]), float(a["lon"])
             dist = distancia_km(lat, lon, la, lo)
@@ -82,6 +88,8 @@ def _buscar_nominatim(item: Item, lat: float, lon: float, raio_m: int) -> list[d
                 "distancia_km": round(dist, 2),
                 "mapa": f"https://www.openstreetmap.org/{a['osm_type']}/{a['osm_id']}",
             })
+    if erro and not lugares:
+        raise erro
     return lugares
 
 
