@@ -63,10 +63,10 @@ Notebooks de análise ◄── CSV anonimizado (data/processed/)
 | Gráficos dos desejos, perfil por K-Means, comparação por cosseno | ✅ funcionando |
 | Notebooks 01–04 do CRISP-DM | ✅ executados, **com dados fictícios** |
 | CSV anonimizado (download no app) | ✅ funcionando |
-| Reconhecimento automático (CLIP) | ✅ funcionando com `requirements.txt` (torch só-CPU); acurácia em fotos reais ainda não medida |
+| Reconhecimento automático (CLIP) | ✅ ~1.170 objetos: catálogo curado + 1.107 do LVIS (`data/vocabulario.csv`); "Outra coisa…" aceita texto livre. Acurácia em fotos reais ainda não medida |
 | Banco e login (Supabase) | ⏳ código e SQL prontos, **não testados** com um projeto real: ver [docs/SUPABASE.md](docs/SUPABASE.md) |
 | Localização (GPS da foto → GPS do navegador → endereço via Nominatim) | ✅ funcionando |
-| Lugares próximos (OpenStreetMap / Overpass, mapa com tiles OSM) | ⏳ código pronto, com 3 servidores de reserva; os servidores públicos estavam fora do ar no teste de 12/11/2026 |
+| Lugares próximos (OpenStreetMap / Overpass, mapa com tiles OSM) | ✅ funcionando (servidor `overpass.openstreetmap.fr` primeiro; reserva: outros Overpass e Nominatim) |
 | Coleta de dados reais com a turma | ⏳ a fazer |
 | Publicação no Streamlit Cloud | ⏳ a fazer (precisa de conta) |
 
@@ -88,6 +88,12 @@ Sem o reconhecimento automático (instalação bem mais leve, sem `torch`):
 pip install -r requirements-dev.txt
 ```
 Testes (sem internet): `python -m pytest tests/` (o teste do CLIP é pulado se `torch` não estiver instalado)
+
+## Vocabulário do reconhecimento
+`data/vocabulario.csv` e `data/vocabulario_clip.npy` são gerados por `scripts/gerar_vocabulario.py`
+(LVIS + nomes em português do Open Multilingual Wordnet; categoria pela hierarquia do WordNet).
+Só é preciso rodar de novo se mudar o modelo ou as regras: `pip install nltk && python scripts/gerar_vocabulario.py`.
+A categoria de cada objeto é aproximada; quando estiver errada, use "Outra coisa…".
 
 ## Publicar no Streamlit Community Cloud
 1. Entre em https://share.streamlit.io com a conta do GitHub e clique em **Create app**.

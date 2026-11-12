@@ -21,6 +21,12 @@ Fora de escopo nesta etapa: Supabase real, coleta de dados com a turma, notebook
 
 Ordem: reconhecimento, localizacao, busca-online → lugares-proximos → fluxo-app → publicação.
 
+## Vocabulário (atualizado em 12/11/2026)
+- Reconhecimento sobre ~1.170 rótulos: catálogo curado (`src/categorias.py`, prioridade) + 1.107 objetos do LVIS (CC BY 4.0) com nomes em português do Open Multilingual Wordnet (CC BY-SA).
+- Categoria: hierarquia do WordNet (comida, bebida, animal doméstico, roupa, calçado, móvel, veículo...); o que sobrar vai para a categoria de produto do item curado mais parecido no CLIP. Animais selvagens ficam fora (nada para adotar).
+- Vetores de texto pré-calculados em `data/vocabulario_clip.npy`; `nltk` só é usado pelo script gerador, não pelo app.
+- "Outra coisa…": nome digitado (validado: letras, números e pontuação simples, até 60) + categoria obrigatória.
+
 ## Critérios de aceite
 1. Com `torch` + `transformers` instalados, fotos de cachorro, pizza e tênis retornam o item certo no top‑3.
 2. O app pede a localização do navegador; aceitando, usa as coordenadas sem digitação.
