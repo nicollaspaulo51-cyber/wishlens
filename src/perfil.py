@@ -8,9 +8,12 @@ import pandas as pd
 from src.categorias import CATEGORIAS
 
 
-def vetor_perfil(df: pd.DataFrame) -> pd.Series:
-    """Proporção de desejos em cada categoria (soma 1). Mesma ordem para todos."""
-    contagem = df["categoria"].value_counts().reindex(CATEGORIAS, fill_value=0)
+def vetor_perfil(df: pd.DataFrame, coluna: str = "categoria", valores: list[str] | None = None) -> pd.Series:
+    """Proporção em cada valor de `coluna` (soma 1). Mesma ordem para todos.
+
+    Desejos: coluna "categoria". Jogo: coluna "tema" com os ids dos temas.
+    """
+    contagem = df[coluna].value_counts().reindex(valores or CATEGORIAS, fill_value=0)
     total = contagem.sum()
     return contagem / total if total else contagem.astype(float)
 

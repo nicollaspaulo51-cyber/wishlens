@@ -20,6 +20,8 @@ from src.categorias import Item, faixa_preco
 
 COLUNAS = ["id", "usuario", "criado_em", "item", "categoria", "tipo",
            "faixa_preco", "confianca", "cidade", "acao", "marca"]
+COLUNAS_CAPTURA = ["id", "usuario", "criado_em", "tema", "achado", "confianca", "foto_real",
+                   "foto_hash", "cidade", "celula"]
 
 
 # ---------------------------------------------------------------- backend
@@ -100,3 +102,52 @@ def do_usuario(usuario: str) -> pd.DataFrame:
 
 def remover_exemplos() -> None:
     st.session_state.desejos = [d for d in _memoria() if not str(d["usuario"]).startswith("exemplo:")]
+
+
+# ---------------------------------------------------------------- capturas do jogo
+def _capturas_memoria() -> list[dict]:
+    if "capturas" not in st.session_state:
+        st.session_state.capturas = []
+    return st.session_state.capturas
+
+
+def salvar_captura(tema: str | None, achado: str, confianca: float | None, foto_real: bool,
+                   foto_hash: str | None, cidade: str | None, celula: str | None) -> None:
+    """Guarda a captura crua; os pontos são sempre recalculados a partir delas (src/jogo.py)."""
+    from src.jogo import agora_naive
+
+    registro = {"criado_em": agora_naive(), "tema": tema or "nenhum", "achado": achado or "",
+                "confianca": confianca, "foto_real": bool(foto_real), "foto_hash": foto_hash,
+                "cidade": cidade, "celula": celula}
+    b = _banco()
+    if b:
+        b.salvar_captura(registro)
+    else:
+        _capturas_memoria().append({"id": str(uuid.uuid4()), "usuario": usuario_atual(), **registro})
+
+
+def adicionar_capturas(registros: list[dict]) -> None:
+    """Só para dados de exemplo: ficam sempre na memória."""
+    _capturas_memoria().extend(registros)
+
+
+def capturas() -> pd.DataFrame:
+    """Todas as capturas (memória + Supabase). criado_em fica no horário de Brasília, sem fuso."""
+    from src.temas import FUSO
+
+    linhas = list(_capturas_memoria())
+    b = _banco()
+    if b:
+        linhas += b.capturas_todas()
+    df = pd.DataFrame(linhas, columns=COLUNAS_CAPTURA)
+    if not df.empty:
+        datas = pd.to_datetime(df["criado_em"], format="mixed")
+        if datas.dt.tz is None:  # memória: já está em Brasília
+            df["criado_em"] = datas
+        else:
+            df["criado_em"] = datas.dt.tz_convert(FUSO).dt.tz_localize(None)
+    return df
+
+
+def remover_capturas_exemplo() -> None:
+    st.session_state.capturas = [c for c in _capturas_memoria() if not str(c["usuario"]).startswith("exemplo:")]

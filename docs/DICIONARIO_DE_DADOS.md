@@ -1,5 +1,28 @@
 # Dicionário de dados
 
+## `capturas`: uma linha por foto do jogo
+
+| Coluna | Tipo | Origem | Exemplo | No CSV anonimizado |
+|---|---|---|---|---|
+| `id` | uuid | banco | `3f2a…` | removida |
+| `usuario` | texto | apelido de quem fotografou | `ana` | vira `u01`, `u02`… |
+| `criado_em` | data e hora | hora da captura (Brasília) | `2026-11-12 15:40` | arredondada para a hora |
+| `tema` | texto | juiz (Gemma ou CLIP): `carros`, `plantas`, `passaros`, `pets`, `pecas` ou `nenhum` | `carros` | mantida |
+| `achado` | texto | juiz | `Volkswagen Fusca` | mantida |
+| `confianca` | 0–1 | certeza do juiz | `0.9` | mantida |
+| `foto_real` | sim/não | juiz: falso se for tela, impressão, desenho ou brinquedo | `true` | mantida |
+| `foto_hash` | 16 hex | dHash da foto (detecta repetida) | `a1b2…` | removida |
+| `cidade` | texto | bairro, cidade (GPS do navegador) | `Jardim da Penha, Vitória - ES` | só a cidade |
+| `celula` | texto | quadrado de ~500 m | `-20.290,-40.295` | removida |
+
+### Colunas calculadas (`src/jogo.calcular_pontos`)
+| Coluna | Como |
+|---|---|
+| `aceita` / `motivo` | recusa se não é foto real, fora dos temas, sem achado, foto repetida ou mesma coisa no mesmo dia |
+| `base`, `novidade`, `raridade` | 10; +10 se novo para a pessoa; 20/(1+n anteriores da turma) |
+| `do_dia` | o tema era o tema do dia na data da captura |
+| `pontos` | (base + novidade + raridade) × 2 se `do_dia` |
+
 ## `desejos`: um registro por foto (tabela do app / CSV de análise)
 
 | Coluna | Tipo | Origem | Exemplo | No CSV anonimizado |

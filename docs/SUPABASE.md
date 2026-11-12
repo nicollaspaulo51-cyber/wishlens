@@ -1,6 +1,7 @@
 # Configurar o Supabase (banco de dados + login)
 
-Sem o Supabase, o WishLens funciona em **modo protótipo**: os desejos ficam só na sessão do navegador.
+Sem o Supabase, o WishLens funciona em **modo protótipo**: desejos e capturas do jogo ficam só na sessão do navegador,
+então **o pódio mostra só você** (e os dados de exemplo). Para a turma jogar junto, o Supabase é obrigatório.
 Com ele, cada pessoa tem uma conta, os desejos ficam salvos na nuvem e a comparação passa a exigir
 um pedido de conexão aceito, registrado no banco.
 
@@ -17,6 +18,7 @@ um pedido de conexão aceito, registrado no banco.
    - `perfis`: apelido de cada pessoa (criado automaticamente no cadastro);
    - `desejos`: um registro por foto/desejo;
    - `conexoes`: pedidos de conexão entre duas pessoas (com aceite);
+   - `capturas`: uma linha por foto do jogo (pódio, coleção e mapa);
    - o bucket privado `fotos`;
    - as regras de segurança (RLS): cada pessoa só vê os próprios desejos e os de conexões aceitas.
 3. **(Opcional, para testes)** Em **Authentication → Sign In / Providers → Email**, desligue
@@ -34,6 +36,13 @@ um pedido de conexão aceito, registrado no banco.
 
 Pronto: ao abrir o app, a barra lateral mostra **Entrar / Criar conta** em vez do campo de nome.
 
+### Testar o pódio compartilhado
+1. Crie duas contas (ex.: no celular e no computador, ou numa janela anônima).
+2. Tire uma foto com cada uma em **Jogar**.
+3. Abra **Pódio**: as duas contas devem aparecer.
+
+Já tinha rodado o `schema.sql` antes? Rode de novo: ele usa `if not exists` e só acrescenta o que falta (tabela `capturas`, coluna `marca`).
+
 ## Como os dados ficam protegidos
 
 | Regra | Onde |
@@ -42,6 +51,8 @@ Pronto: ao abrir o app, a barra lateral mostra **Entrar / Criar conta** em vez d
 | Só quem recebeu o pedido pode aceitar a conexão | política `conexoes_aceitar` |
 | Fotos ficam numa pasta com o id da pessoa, em bucket privado | política `fotos_proprias` |
 | A localização guardada é só a cidade (nunca coordenadas) | coluna `cidade` + `src/fotos.py` |
+| Capturas: todos os logados leem (pódio), cada um só cria as suas, com a hora de agora; ninguém altera | políticas `capturas_ler` e `capturas_criar` |
+| No jogo, a posição fica num quadrado de ~500 m, nunca exata | coluna `celula` |
 | A chave usada pelo app é a pública (`anon`); a RLS é quem protege | `.streamlit/secrets.toml` |
 
 ## Exportar para a análise

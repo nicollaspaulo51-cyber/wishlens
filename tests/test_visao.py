@@ -74,3 +74,17 @@ def test_erros_viram_errovisao():
     with patch("src.visao.requests.post", return_value=vazio):
         with pytest.raises(visao.ErroVisao, match="vazia"):
             visao.identificar(b"x", "k")
+
+
+def test_captura_do_jogo():
+    r = visao.interpretar_captura({"tema": "carros", "achado": "Volkswagen Gol", "foto_real": True, "certeza": 0.8})
+    assert (r.tema, r.achado, r.foto_real, r.confianca) == ("carros", "Volkswagen Gol", True, 0.8)
+    r = visao.interpretar_captura({"tema": "nenhum", "achado": "geladeira", "foto_real": True})
+    assert r.tema is None and r.achado == ""
+    r = visao.interpretar_captura({"tema": "pets", "achado": "gato <b>", "foto_real": "false"})
+    assert r.foto_real is False and r.achado == ""  # texto perigoso descartado
+    texto = '{"tema": "passaros", "achado": "bem-te-vi", "foto_real": false, "certeza": 0.9}'
+    with patch("src.visao.requests.post", return_value=_api(texto)) as post:
+        r = visao.identificar_captura(b"jpeg", "k")
+    assert r.tema == "passaros" and r.foto_real is False
+    assert "TELA" in post.call_args.kwargs["json"]["contents"][0]["parts"][0]["text"]

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-REMOVER = ["id", "foto_url", "foto_path", "lat", "lon", "bairro", "usuario_id"]
+REMOVER = ["id", "foto_url", "foto_path", "lat", "lon", "bairro", "usuario_id", "foto_hash", "celula"]
 
 
 def anonimizar(df: pd.DataFrame) -> pd.DataFrame:

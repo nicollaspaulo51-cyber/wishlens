@@ -29,15 +29,17 @@ NOMES = {
 }
 
 
-def matriz_perfis(df: pd.DataFrame, minimo: int = 1) -> pd.DataFrame:
+def matriz_perfis(df: pd.DataFrame, minimo: int = 1, coluna: str = "categoria",
+                  valores: list[str] | None = None) -> pd.DataFrame:
     """Linhas = usuários, colunas = categorias, valores = proporção de desejos (cada linha soma 1).
 
     Usuários com menos de `minimo` desejos ficam de fora (perfil pouco confiável).
     """
+    valores = valores or CATEGORIAS
     grupos = {u: g for u, g in df.groupby("usuario") if len(g) >= minimo}
     if not grupos:
-        return pd.DataFrame(columns=CATEGORIAS, dtype=float)
-    return pd.DataFrame({u: vetor_perfil(g) for u, g in grupos.items()}).T[CATEGORIAS]
+        return pd.DataFrame(columns=valores, dtype=float)
+    return pd.DataFrame({u: vetor_perfil(g, coluna, valores) for u, g in grupos.items()}).T[valores]
 
 
 def escolher_k(X: pd.DataFrame, ks=range(2, 7)) -> pd.DataFrame:
@@ -56,12 +58,13 @@ def melhor_k(X: pd.DataFrame, ks=range(2, 7)) -> int:
     return int(tabela.loc[tabela["silhueta"].idxmax(), "k"]) if not tabela.empty else 1
 
 
-def nomear_cluster(centro: pd.Series) -> str:
+def nomear_cluster(centro: pd.Series, nomes: dict[str, str] | None = None) -> str:
     """Ex.: 'Gastronômico' ou 'Tech & Games + Pet lover' quando duas categorias pesam parecido."""
+    dicionario = nomes or NOMES
     ordem = centro.sort_values(ascending=False)
     nomes = []
     for cat, peso in ordem.items():
-        nome = NOMES.get(cat, cat.capitalize())
+        nome = dicionario.get(cat, cat.capitalize())
         if nome in nomes:
             continue
         if not nomes or peso >= 0.6 * ordem.iloc[0]:
@@ -71,31 +74,33 @@ def nomear_cluster(centro: pd.Series) -> str:
     return " + ".join(nomes)
 
 
-def agrupar(X: pd.DataFrame, k: int | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+def agrupar(X: pd.DataFrame, k: int | None = None,
+            nomes: dict[str, str] | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Retorna (rótulos por usuário, centros nomeados).
 
     rotulos: colunas usuario, cluster, perfil
     centros: uma linha por cluster, colunas = categorias + perfil
     """
     if len(X) < 2:
-        perfil = nomear_cluster(X.iloc[0]) if len(X) else ""
+        perfil = nomear_cluster(X.iloc[0], nomes) if len(X) else ""
         rot = pd.DataFrame({"usuario": X.index, "cluster": 0, "perfil": perfil})
         return rot, X.assign(perfil=perfil).reset_index(drop=True)
     k = k or melhor_k(X)
     km = KMeans(n_clusters=k, n_init=10, random_state=SEMENTE).fit(X)
     centros = pd.DataFrame(km.cluster_centers_, columns=X.columns)
-    centros["perfil"] = [nomear_cluster(c) for _, c in centros[X.columns].iterrows()]
+    centros["perfil"] = [nomear_cluster(c, nomes) for _, c in centros[X.columns].iterrows()]
     rot = pd.DataFrame({"usuario": X.index, "cluster": km.labels_})
     rot["perfil"] = rot["cluster"].map(centros["perfil"])
     return rot.reset_index(drop=True), centros
 
 
-def perfil_do_usuario(df: pd.DataFrame, usuario: str) -> str | None:
+def perfil_do_usuario(df: pd.DataFrame, usuario: str, coluna: str = "categoria",
+                      valores: list[str] | None = None, nomes: dict[str, str] | None = None) -> str | None:
     """Nome do perfil (cluster) de um usuário, considerando todos os usuários disponíveis."""
-    X = matriz_perfis(df)
+    X = matriz_perfis(df, coluna=coluna, valores=valores)
     if usuario not in X.index:
         return None
     if len(X) < 3:  # poucas pessoas: usa só o próprio perfil
-        return nomear_cluster(X.loc[usuario])
-    rot, _ = agrupar(X)
+        return nomear_cluster(X.loc[usuario], nomes)
+    rot, _ = agrupar(X, nomes=nomes)
     return rot.set_index("usuario").loc[usuario, "perfil"]

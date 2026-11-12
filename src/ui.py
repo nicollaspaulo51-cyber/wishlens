@@ -90,6 +90,21 @@ hr {{ border-color: var(--wl-line) !important; }}
 .wl-place h3 {{ margin:0 0 .2rem 0; }}
 .wl-place a {{ color: var(--wl-accent); }}
 .wl-place .wl-list li span:first-child {{ white-space:nowrap; }}
+.wl-hero {{ padding:1rem 1.2rem; border-radius:18px; margin-bottom:.8rem; color:var(--wl-accent-ink);
+           background: linear-gradient(135deg, var(--wl-accent), color-mix(in srgb, var(--wl-accent) 55%, #ff7a59)); }}
+.wl-hero .wl-k {{ font-size:.75rem; letter-spacing:.08em; text-transform:uppercase; opacity:.85; }}
+.wl-hero .wl-t {{ font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:800; font-size:1.6rem; line-height:1.15; }}
+.wl-hero small {{ opacity:.9; }}
+.wl-pontos {{ font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:800; font-size:2.4rem; color:var(--wl-accent); line-height:1; }}
+.wl-podio {{ display:flex; align-items:flex-end; justify-content:center; gap:.5rem; margin:.5rem 0 1rem; }}
+.wl-degrau {{ flex:1; max-width:9rem; text-align:center; }}
+.wl-degrau .wl-bloco {{ border-radius:12px 12px 0 0; background:var(--wl-soft); border:1px solid var(--wl-line);
+                        font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:800; font-size:1.5rem;
+                        display:flex; align-items:flex-start; justify-content:center; padding-top:.4rem; }}
+.wl-degrau.p1 .wl-bloco {{ height:6.5rem; background:var(--wl-accent); color:var(--wl-accent-ink); }}
+.wl-degrau.p2 .wl-bloco {{ height:4.8rem; }}
+.wl-degrau.p3 .wl-bloco {{ height:3.6rem; }}
+.wl-degrau .wl-nome {{ font-weight:600; font-size:.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
 .wl-brand {{ font-family:"Bricolage Grotesque", system-ui, sans-serif; font-weight:800; font-size:1.4rem; line-height:1.1; }}
 @media (prefers-reduced-motion: reduce) {{ [data-testid="stApp"] {{ transition:none; }} }}
 </style>
@@ -107,7 +122,7 @@ def barra_lateral() -> None:
     with st.sidebar:
         c1, c2 = st.columns([3, 1], vertical_alignment="center")
         c1.markdown('<div class="wl-brand">🔍 WishLens</div><div class="wl-muted" style="font-size:.8rem">'
-                    'Point. Snap. Want.</div>', unsafe_allow_html=True)
+                    'Point. Snap. Discover.</div>', unsafe_allow_html=True)
         escuro = tema() == "escuro"
         c2.button("🌙" if escuro else "☀️", key="botao_tema", on_click=_alternar_tema,
                   help="Tema escuro: clique para clarear" if escuro else "Tema claro: clique para escurecer")
@@ -124,11 +139,15 @@ def barra_lateral() -> None:
         st.markdown("**Demonstração**")
         st.caption("Dados fictícios para ver os gráficos funcionando. Não são dados reais.")
         if st.button("Carregar dados de exemplo", use_container_width=True):
+            from src.exemplo import gerar_capturas
             armazenamento.remover_exemplos()
             armazenamento.adicionar_varios(gerar_exemplos())
+            armazenamento.remover_capturas_exemplo()
+            armazenamento.adicionar_capturas(gerar_capturas())
             st.toast("Dados de exemplo carregados")
         if st.button("Remover dados de exemplo", use_container_width=True):
             armazenamento.remover_exemplos()
+            armazenamento.remover_capturas_exemplo()
             st.toast("Dados de exemplo removidos")
         st.divider()
         st.caption(f"Armazenamento: {armazenamento.descricao_backend()}")
@@ -230,3 +249,67 @@ def cartao_lugar(lugar: dict, finalidade: tuple, horario: str | None, preco, nom
     botoes["🗺️ No OSM"] = lugar["mapa"]
     for col, (texto, url) in zip(st.columns(len(botoes)), botoes.items()):
         col.link_button(texto, url, use_container_width=True)
+
+
+def faixa_tema_do_dia(tema, outros) -> None:
+    """Destaque do tema do dia (vale o dobro) e os outros temas, que valem sempre."""
+    chips = "".join(badge(f"{t.emoji} {t.nome}") for t in outros if t.id != tema.id)
+    st.markdown(
+        f'<div class="wl-hero"><div class="wl-k">Tema do dia · pontos em dobro</div>'
+        f'<div class="wl-t">{tema.emoji} {html.escape(tema.nome)}</div>'
+        f'<small>Procure em {html.escape(tema.onde)}.</small></div>'
+        f'<div style="margin:-.3rem 0 .6rem"><span class="wl-muted" style="font-size:.8rem">Também valem: </span>{chips}</div>',
+        unsafe_allow_html=True)
+
+
+def cartao_pontos(resultado: dict, tema, achado: str, vezes_antes: int) -> None:
+    """Resultado de uma captura: pontos e parcelas, ou o motivo da recusa."""
+    e = html.escape
+    if not resultado.get("aceita"):
+        st.markdown(
+            f'<div class="wl-card"><div class="wl-pontos" style="color:var(--wl-muted)">0 pontos</div>'
+            f'<div style="margin-top:.4rem">❌ {e(str(resultado.get("motivo") or "não valeu"))}</div>'
+            f'<div class="wl-muted" style="font-size:.85rem;margin-top:.3rem">Vale só foto tirada agora, '
+            f'de algo real na sua frente, de um dos temas.</div></div>', unsafe_allow_html=True)
+        return
+    partes = [f"base +{resultado['base']}"]
+    if resultado["novidade"]:
+        partes.append(f"novo pra você +{resultado['novidade']}")
+    if resultado["raridade"]:
+        partes.append(f"raridade +{resultado['raridade']}")
+    if resultado["do_dia"]:
+        partes.append("tema do dia ×2")
+    if vezes_antes == 0 and resultado["raridade"]:
+        destaque = "🥇 Primeira pessoa a achar isso!"
+    elif vezes_antes:
+        destaque = f"Já foi achado {vezes_antes}× pela turma."
+    else:
+        destaque = "Diga o modelo, a espécie ou a raça para ganhar mais pontos."
+    st.markdown(
+        f'<div class="wl-card"><div class="wl-muted" style="font-size:.8rem">{tema.emoji} {e(tema.nome)}</div>'
+        f'<h3 style="margin:.1rem 0 .4rem">{e(achado[:1].upper() + achado[1:])}</h3>'
+        f'<div class="wl-pontos">+{int(resultado["pontos"])} pontos</div>'
+        f'<div style="margin:.5rem 0 .2rem">{"".join(badge(p) for p in partes)}</div>'
+        f'<div class="wl-muted" style="font-size:.85rem">{destaque}</div></div>', unsafe_allow_html=True)
+
+
+def nome_publico(usuario: str) -> str:
+    return usuario.removeprefix("exemplo:")
+
+
+def podio_html(ranking, eu: str | None = None) -> str:
+    """Pódio de 3 degraus (2º, 1º, 3º) com nome e pontos."""
+    ordem = [(2, "p2"), (1, "p1"), (3, "p3")]
+    degraus = []
+    for pos, classe in ordem:
+        linha = ranking[ranking["posicao"] == pos]
+        if linha.empty:
+            degraus.append(f'<div class="wl-degrau {classe}"></div>')
+            continue
+        r = linha.iloc[0]
+        nome = html.escape(nome_publico(str(r["usuario"]))) + (" (você)" if r["usuario"] == eu else "")
+        medalha = {1: "🥇", 2: "🥈", 3: "🥉"}[pos]
+        degraus.append(f'<div class="wl-degrau {classe}"><div style="font-size:1.6rem">{medalha}</div>'
+                       f'<div class="wl-nome">{nome}</div><div class="wl-muted" style="font-size:.8rem">'
+                       f'{int(r["pontos"])} pts</div><div class="wl-bloco">{pos}</div></div>')
+    return f'<div class="wl-podio">{"".join(degraus)}</div>'

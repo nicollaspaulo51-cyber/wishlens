@@ -68,6 +68,24 @@ class Sessao:
             linhas.append({**r, "usuario": apelido})
         return linhas
 
+    # ------------------------------------------------ capturas do jogo
+    def salvar_captura(self, registro: dict) -> None:
+        from src.temas import FUSO
+        criado = registro["criado_em"].replace(tzinfo=FUSO)  # horário de Brasília -> com fuso
+        self.cliente.table("capturas").insert(
+            {**registro, "usuario_id": self.usuario_id, "criado_em": criado.isoformat()}).execute()
+
+    def capturas_todas(self) -> list[dict]:
+        """Capturas de todos os jogadores (pódio e raridade). Só o apelido sai do perfil."""
+        resp = (self.cliente.table("capturas")
+                .select("id, criado_em, tema, achado, confianca, foto_real, foto_hash, cidade, celula, perfis(apelido)")
+                .order("criado_em").limit(20000).execute())
+        linhas = []
+        for r in resp.data or []:
+            apelido = (r.pop("perfis", None) or {}).get("apelido", "?")
+            linhas.append({**r, "usuario": apelido})
+        return linhas
+
     # ------------------------------------------------ conexões (comparar)
     def pedir_conexao(self, apelido: str) -> None:
         alvo = self.cliente.table("perfis").select("id").eq("apelido", apelido).single().execute()

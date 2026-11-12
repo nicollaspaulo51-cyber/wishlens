@@ -1,33 +1,44 @@
 # 🔍 WishLens
 
-> **Point. Snap. Want.**: aponte a câmera para qualquer coisa e descubra onde conseguir, o que você deseja e com quem você combina.
+> **Point. Snap. Discover.**: um jogo de fotos do mundo real. Fotografe carros, plantas, pássaros, cachorros e gatos ou peças de computador, ganhe pontos e suba no pódio.
 
 Projeto final da disciplina **Ciência de Dados I (Turma 12)**, desenvolvido com a metodologia **CRISP-DM**.
 
 ![testes](https://github.com/nicollaspaulo51-cyber/wishlens/actions/workflows/testes.yml/badge.svg)
 
-🖥️ **Prévia da interface** (com tema claro ☀️ / escuro 🌙): https://claude.ai/artifact/4sZtfAn7K85Kc6bASY7sjJ
-*(link privado: precisa ser compartilhado pelo dono para outras pessoas abrirem)*
-
 ## O que é
-Um site em que a pessoa **tira uma foto ou aponta a câmera** para qualquer coisa:
-
-| Reconheceu… | O WishLens mostra |
+| Página | O que faz |
 |---|---|
-| 🛍️ algo comprável (roupa, objeto, eletrônico) | lojas físicas próximas + lojas online |
-| 🍲 comida | receitas, restaurantes próximos e delivery |
-| 🐶 animal | abrigos, pet shops e veterinários próximos (adoção) |
+| 🎯 **Jogar** (início) | Tema do dia em destaque. A pessoa tira uma foto **com a câmera do app**; a IA diz o tema e o achado (ex.: "Volkswagen Fusca", "bem-te-vi") e se é foto real. Mostra os pontos na hora. |
+| 🗺️ **Explorar** | Mapa com pontos **piscando** onde procurar cada tema (parques, estacionamentos, pet shops… do OpenStreetMap) e onde a turma já achou coisas. O tema do dia pisca mais forte. |
+| 🏆 **Pódio** | Ranking de hoje, da semana e geral, por tema, e os achados mais raros da semana. |
+| 📚 **Minha Coleção** | Álbum por tema, raridade de cada achado, estilo de jogador (K-Means) e gráficos. |
+| 🔎 **Onde encontrar** | Depois de uma captura: preço, lojas online e lugares próximos (a parte de compras do WishLens original). |
+| ⭐ Meus Desejos · ✨ Descobrir · 👥 Comparar | Páginas da versão anterior (desejos de consumo), mantidas. |
 
-Cada busca vira um **registro de desejo**. Com eles, o app gera **gráficos dos seus desejos de consumo** e permite **comparar seu perfil com o de outra pessoa** (com aceite das duas).
+### Temas e pontos
+Temas (todos valem sempre): 🚗 carros · 🌿 plantas e flores · 🐦 pássaros · 🐶 cachorros e gatos · 🖥️ peças de computador.
+O **tema do dia** muda à meia-noite (rodízio pela data) e vale **o dobro**.
+
+| Parcela | Pontos |
+|---|---|
+| Base | 10 |
+| Novo pra você | +10 |
+| Raridade | +20 ÷ (1 + vezes que a turma já achou): o 1º a achar ganha +20, o 2º +10, o 3º +7… |
+| Tema do dia | tudo ×2 |
+| Achado genérico (só "carro", sem o modelo) | só a base |
+| Foto de tela/impressão, repetida (hash da imagem), fora dos temas ou mesma coisa no mesmo dia | 0, com o motivo |
+
+Os pontos são **recalculados a partir das capturas** (`src/jogo.py`): gravar um número falso no banco não vale nada.
 
 ## CRISP-DM
 | Fase | Pergunta | Onde está |
 |---|---|---|
-| 1. Negócio | As pessoas não têm um lugar único para descobrir onde conseguir o que desejam, nem para entender os próprios padrões de desejo. Quais perfis de desejo existem? O quanto duas pessoas se parecem? | este README + `notebooks/01_entendimento.ipynb` |
+| 1. Negócio | Como um jogo de fotos do mundo real faz as pessoas descobrirem coisas novas na cidade? Quais estilos de jogador existem? O que é raro e onde? | este README + `notebooks/01_entendimento.ipynb` |
 | 2. Dados | Quais dados temos, de onde vêm, quais limitações? (`describe()`, distribuições, nulos) | `notebooks/01_entendimento.ipynb` |
 | 3. Preparação | Limpeza, categorias unificadas, vetor de perfil por usuário | `notebooks/02_preparacao.ipynb` |
-| 4. Modelagem | K-Means (perfis de desejo) + similaridade do cosseno (comparar pessoas) | `notebooks/03_modelagem.ipynb` |
-| 5. Avaliação | Os perfis fazem sentido? Acurácia do reconhecimento? Privacidade (LGPD)? | `notebooks/04_avaliacao.ipynb` |
+| 4. Modelagem | K-Means (perfis de desejo e estilos de jogador por tema) + similaridade do cosseno + raridade pela frequência dos achados | `notebooks/03_modelagem.ipynb`, `src/jogo.py` |
+| 5. Avaliação | Os perfis fazem sentido? Acurácia da IA nos achados? Taxa de fotos recusadas? Privacidade (LGPD)? | `notebooks/04_avaliacao.ipynb` |
 | 6. Produto | Site publicado | `app/` |
 
 ## Arquitetura
@@ -58,6 +69,9 @@ Notebooks de análise ◄── CSV anonimizado (data/processed/)
 - O CSV versionado no GitHub é **anonimizado**; fotos brutas nunca entram no repositório (`.gitignore`).
 - A comparação entre duas pessoas exige **aceite das duas**.
 - Com o Gemma ligado, a foto vai para a API do Google **já sem EXIF/GPS** e reduzida (a mesma de `preparar_para_salvar`).
+- No jogo, cada captura guarda o bairro e um **quadrado de ~500 m** (`celula`) para o mapa da turma, nunca a coordenada exata.
+  A foto em si não é guardada, só um hash de 16 caracteres para detectar foto repetida. Os dois saem do CSV anonimizado.
+- O pódio mostra só o apelido. Todos os jogadores logados veem as capturas dos outros (é o que permite o pódio e a raridade).
 
 ## Status
 
@@ -103,6 +117,10 @@ Testes (sem internet): `python -m pytest tests/` (o teste do CLIP é pulado se `
 Só é preciso rodar de novo se mudar o modelo ou as regras: `pip install nltk && python scripts/gerar_vocabulario.py`.
 A categoria automática erra (cenoura caía em "brinquedos", gaiola em "veículos"); as correções manuais ficam em
 `scripts/correcoes_vocabulario.py` e valem sem recalcular o CLIP: `python scripts/correcoes_vocabulario.py`.
+
+## Juiz com IA: Gemma (recomendado para o jogo)
+Sem a chave, o jogo usa o CLIP só para dizer o **tema** e se a foto é de tela; o achado fica genérico ("carro") e vale só a base.
+Com a `GEMINI_API_KEY`, o Gemma diz o modelo do carro, a espécie da planta ou do pássaro, a raça e a peça.
 
 ## Marca, modelo e preço com o Gemma (opcional)
 1. Crie uma chave gratuita em https://aistudio.google.com/apikey.

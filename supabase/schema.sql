@@ -42,6 +42,24 @@ create table if not exists public.desejos (
 alter table public.desejos add column if not exists marca text;
 create index if not exists desejos_usuario_idx on public.desejos (usuario_id, criado_em desc);
 
+-- ---------------------------------------------------------------- capturas do jogo
+-- Cada foto do jogo. Os PONTOS não ficam aqui: o app recalcula a partir das capturas (src/jogo.py),
+-- então gravar um número falso não adianta.
+create table if not exists public.capturas (
+  id           uuid primary key default gen_random_uuid(),
+  usuario_id   uuid not null default auth.uid() references public.perfis (id) on delete cascade,
+  criado_em    timestamptz not null default now(),
+  tema         text not null check (char_length(tema) <= 20),
+  achado       text not null default '' check (char_length(achado) <= 60),
+  confianca    real check (confianca is null or confianca between 0 and 1),
+  foto_real    boolean not null default true,
+  foto_hash    text check (foto_hash is null or foto_hash ~ '^[0-9a-f]{16}$'),
+  cidade       text,              -- só bairro/cidade
+  celula       text,              -- quadrado de ~500 m (ex.: "-20.290,-40.295"), nunca a coordenada exata
+  foto_path    text
+);
+create index if not exists capturas_data_idx on public.capturas (criado_em);
+
 -- ---------------------------------------------------------------- conexões (comparar desejos)
 create table if not exists public.conexoes (
   solicitante   uuid not null references public.perfis (id) on delete cascade,
@@ -65,6 +83,14 @@ $$;
 alter table public.perfis   enable row level security;
 alter table public.desejos  enable row level security;
 alter table public.conexoes enable row level security;
+alter table public.capturas enable row level security;
+
+-- capturas: todo jogador logado vê todas (pódio e raridade); cada um só cria as suas; ninguém altera.
+drop policy if exists capturas_ler on public.capturas;
+create policy capturas_ler on public.capturas for select to authenticated using (true);
+drop policy if exists capturas_criar on public.capturas;
+create policy capturas_criar on public.capturas for insert to authenticated
+  with check (usuario_id = auth.uid() and criado_em between now() - interval '5 minutes' and now() + interval '1 minute');
 
 -- perfis: qualquer pessoa logada vê apelidos (para pedir conexão); cada um edita o seu.
 drop policy if exists perfis_ler on public.perfis;

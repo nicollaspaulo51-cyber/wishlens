@@ -205,10 +205,8 @@ def _buscar_nominatim(item: Item, lat: float, lon: float, raio_m: int) -> list[d
     return lugares
 
 
-def buscar_proximos(item: Item, lat: float, lon: float, raio_m: int = 3000, limite: int = 10) -> list[dict]:
-    """Retorna até `limite` lugares do OSM ordenados pela distância (Overpass; reserva: Nominatim)."""
-    consulta = montar_consulta(item, lat, lon, raio_m)
-    dados = None
+def _overpass(consulta: str) -> dict | None:
+    """Tenta os servidores do Overpass em ordem; None se todos falharem."""
     for url in OVERPASS_URLS:
         try:
             resp = requests.post(url, data={"data": consulta},
@@ -219,9 +217,14 @@ def buscar_proximos(item: Item, lat: float, lon: float, raio_m: int = 3000, limi
             continue
         # Servidor lotado às vezes responde 200 com "remark" de erro e lista vazia: não é "nada por perto"
         if "remark" in dados and not dados.get("elements"):
-            dados = None
             continue
-        break
+        return dados
+    return None
+
+
+def buscar_proximos(item: Item, lat: float, lon: float, raio_m: int = 3000, limite: int = 10) -> list[dict]:
+    """Retorna até `limite` lugares do OSM ordenados pela distância (Overpass; reserva: Nominatim)."""
+    dados = _overpass(montar_consulta(item, lat, lon, raio_m))
 
     if dados is None:
         lugares = _buscar_nominatim(item, lat, lon, raio_m)
@@ -248,3 +251,43 @@ def buscar_proximos(item: Item, lat: float, lon: float, raio_m: int = 3000, limi
         })
     lugares.sort(key=lambda x: x["distancia_km"])
     return lugares[:limite]
+
+
+# ---------------------------------------------------------------- jogo: onde procurar cada tema
+def _casa(filtro: str, tags: dict) -> bool:
+    """O elemento do OSM bate com o filtro do Overpass (ex.: 'leisure~"park|garden"')?"""
+    chave, sep, valores = re.split(r"([~=])", filtro, maxsplit=1)
+    valor = tags.get(chave)
+    if valor is None:
+        return False
+    opcoes = valores.strip('"').split("|")
+    return valor in opcoes
+
+
+def buscar_pontos_temas(temas, lat: float, lon: float, raio_m: int = 2000, por_tema: int = 15) -> list[dict]:
+    """Onde procurar cada tema (uma consulta só no Overpass). Lança RuntimeError se o Overpass estiver fora."""
+    filtros = sorted({f for t in temas for f in t.tags_osm})
+    partes = "".join(f"nwr[{_ancorado(f)}](around:{raio_m},{lat},{lon});" for f in filtros)
+    dados = _overpass(f"[out:json][timeout:25];({partes});out center 300;")
+    if dados is None:
+        raise RuntimeError("OpenStreetMap (Overpass) fora do ar")
+    pontos: dict[str, list[dict]] = {t.id: [] for t in temas}
+    for el in dados.get("elements", []):
+        tags = el.get("tags", {})
+        centro = el.get("center", {})
+        la = el["lat"] if "lat" in el else centro.get("lat")
+        lo = el["lon"] if "lon" in el else centro.get("lon")
+        if la is None or lo is None:
+            continue
+        for t in temas:
+            if any(_casa(f, tags) for f in t.tags_osm):
+                pontos[t.id].append({
+                    "tema": t.id, "nome": tags.get("name") or t.onde.split(",")[0].capitalize(),
+                    "tipo": next((tags[k] for k in ("leisure", "shop", "amenity", "natural", "landuse") if k in tags), None),
+                    "lat": la, "lon": lo, "distancia_km": round(distancia_km(lat, lon, la, lo), 2),
+                    "mapa": f"https://www.openstreetmap.org/{el['type']}/{el['id']}", **detalhes_osm(tags),
+                })
+    saida = []
+    for lista in pontos.values():
+        saida += sorted(lista, key=lambda p: p["distancia_km"])[:por_tema]
+    return saida

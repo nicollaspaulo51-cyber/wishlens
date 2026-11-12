@@ -54,3 +54,11 @@ def test_links_das_lojas_usam_a_marca():
     links = links_para(Item("sneakers", "tênis", "calçados", "comprar", "Nike", "Air Max"))
     assert links["Amazon"].endswith("k=Nike+Air+Max+t%C3%AAnis")
     assert "Nike-Air-Max" in links["Mercado Livre"]
+
+
+def test_decidir_captura_sem_gemma():
+    from src.reconhecimento import decidir_captura
+    g = ["carros", "carros", "plantas", "tela", "nenhum"]
+    assert decidir_captura(g, [0.4, 0.3, 0.1, 0.1, 0.1]) == ("carros", True, 0.7)
+    assert decidir_captura(g, [0.2, 0.1, 0.0, 0.6, 0.1])[:2] == ("carros", False)  # carro na tela
+    assert decidir_captura(g, [0.1, 0.1, 0.1, 0.1, 0.6])[:2] == (None, True)

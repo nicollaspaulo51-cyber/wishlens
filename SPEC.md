@@ -1,4 +1,14 @@
-# Spec: WishLens — fluxo "aponte → reconheça → onde conseguir"
+# Spec: WishLens
+
+## Jogo (atualizado em 12/11/2026)
+- **Temas** (`src/temas.py`): carros, plantas e flores, pássaros, cachorros e gatos, peças de computador. Todos valem sempre; o tema do dia (rodízio por `date.toordinal() % 5`, horário de Brasília) vale ×2.
+- **Captura** (`app/Home.py`): só `st.camera_input`. Juiz: Gemma (`visao.identificar_captura`: tema, achado, foto_real, certeza); reserva: CLIP (`reconhecimento.capturar`: tema e foto de tela, achado genérico); sem nenhum modelo: a pessoa escolhe o tema e digita.
+- **Pontos** (`src/jogo.py`): base 10, novidade +10, raridade 20/(1+n anteriores), ×2 no tema do dia; 0 com motivo para foto de tela, repetida (dHash, até 6 bits), fora dos temas, sem achado ou mesma coisa no mesmo dia. Recalculados a partir das capturas, em ordem de data.
+- **Pódio**: hoje, semana (segunda até hoje) e geral; filtro por tema; empate para quem chegou antes.
+- **Explorar**: Overpass com as tags de cada tema numa consulta (`lugares.buscar_pontos_temas`) + manchas da turma por célula de ~500 m. Marcadores `folium.DivIcon` com animação CSS.
+- **Banco**: tabela `capturas` (RLS: todos os logados leem, cada um insere as suas com `criado_em` de agora, ninguém altera).
+
+# Fluxo de compras: "aponte → reconheça → onde conseguir" (página Onde encontrar)
 
 ## Objetivo
 A pessoa abre o site no celular, aponta a câmera para um **produto, comida ou animal**, e o WishLens:

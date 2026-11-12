@@ -192,3 +192,55 @@ def agrupar(rotulos: list[tuple[Item, str, tuple[str, str]]], probs: list[float]
     for r in por_item.values():
         r.confianca /= total
     return sorted(por_item.values(), key=lambda r: r.confianca, reverse=True)[:top_k]
+
+
+# ---------------------------------------------------------------- jogo: reserva sem a chave do Gemma
+def _frases_captura() -> list[tuple[str, str]]:
+    """(grupo, frase): grupo = id do tema, "tela" (não vale) ou "nenhum"."""
+    from src.temas import FRASES_NENHUM, FRASES_TELA, TEMAS
+    return ([(t.id, f) for t in TEMAS for f in t.frases_clip]
+            + [("tela", f) for f in FRASES_TELA] + [("nenhum", f) for f in FRASES_NENHUM])
+
+
+@lru_cache(maxsize=1)
+def _vetores_captura():
+    import torch
+
+    modelo, processador, _, _ = _carregar()
+    frases = _frases_captura()
+    with torch.no_grad():
+        entrada = processador(text=[f for _, f in frases], return_tensors="pt", padding=True)
+        vet = _vetor(modelo.get_text_features(**entrada))
+    return vet / vet.norm(dim=-1, keepdim=True), [g for g, _ in frases]
+
+
+def decidir_captura(grupos: list[str], probs: list[float]) -> tuple[str | None, bool, float]:
+    """Soma a chance por grupo -> (tema ou None, foto_real, confiança do tema). Sem torch, para testar."""
+    soma: dict[str, float] = {}
+    for g, p in zip(grupos, probs):
+        soma[g] = soma.get(g, 0.0) + p
+    temas = {g: p for g, p in soma.items() if g not in ("tela", "nenhum")}
+    melhor = max(temas, key=temas.get)
+    if soma.get("tela", 0) >= max(temas[melhor], soma.get("nenhum", 0)):
+        return melhor, False, temas[melhor]
+    if soma.get("nenhum", 0) > temas[melhor]:
+        return None, True, soma["nenhum"]
+    return melhor, True, temas[melhor]
+
+
+def capturar(imagem: Image.Image):
+    """Reserva do jogo sem Gemma: só o tema e se é foto de tela; o achado fica genérico ("carro")."""
+    import torch
+
+    from src.temas import POR_ID
+    from src.visao import Captura
+
+    modelo, processador, _, _ = _carregar()
+    vet_texto, grupos = _vetores_captura()
+    with torch.no_grad():
+        entrada = processador(images=imagem.convert("RGB"), return_tensors="pt")
+        vet_img = _vetor(modelo.get_image_features(**entrada))
+        vet_img = vet_img / vet_img.norm(dim=-1, keepdim=True)
+        probs = (modelo.logit_scale.exp() * vet_img @ vet_texto.T).softmax(dim=-1)[0].tolist()
+    tema, real, conf = decidir_captura(grupos, probs)
+    return Captura(tema, POR_ID[tema].generico if tema else "", real, conf)
