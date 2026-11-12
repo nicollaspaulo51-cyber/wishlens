@@ -20,3 +20,9 @@ def test_reconhecer_top3():
     assert len(resultados) == 3
     confs = [r.confianca for r in resultados]
     assert confs == sorted(confs, reverse=True) and 0 < sum(confs) <= 1.0001
+
+
+def test_vocabulario_grande_carregado():
+    from src.reconhecimento import _carregar
+    _, _, vet_texto, rotulos = _carregar()
+    assert len(rotulos) == len(vet_texto) > 1000

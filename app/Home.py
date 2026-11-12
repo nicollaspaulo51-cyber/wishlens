@@ -3,6 +3,7 @@
 Rodar localmente:  streamlit run app/Home.py
 """
 
+import html
 import importlib.util
 import sys
 from pathlib import Path
@@ -17,7 +18,7 @@ from streamlit_folium import st_folium
 from streamlit_js_eval import get_geolocation
 
 from src import armazenamento, localizacao, ui
-from src.categorias import FAIXA_PRECO, ITENS
+from src.categorias import CATEGORIAS, FAIXA_PRECO, Item, nome_valido, tipo_da_categoria
 from src.fotos import ler_metadados, preparar_para_salvar
 from src.links import links_para
 from src.lugares import buscar_proximos
@@ -65,13 +66,22 @@ if MODELO_DISPONIVEL:
     opcoes["Outra coisa…"] = None
     escolha = st.radio("O que é isso?", list(opcoes), horizontal=True,
                        help="Confirme a opção certa: isso melhora a qualidade dos dados.")
-    if opcoes[escolha]:
-        item, confianca = opcoes[escolha].item, opcoes[escolha].confianca
-    else:
-        item = st.selectbox("Escolha o item", ITENS, format_func=lambda i: f"{ICONE[i.tipo]} {i.nome}")
+    item = opcoes[escolha].item if opcoes[escolha] else None
+    confianca = opcoes[escolha].confianca if opcoes[escolha] else None
 else:
-    st.info("Reconhecimento automático ainda não instalado: escolha o item manualmente.")
-    item = st.selectbox("O que é isso?", ITENS, format_func=lambda i: f"{ICONE[i.tipo]} {i.nome}")
+    st.info("Reconhecimento automático ainda não instalado: diga o que é.")
+    item = None
+
+if item is None:  # texto livre: qualquer coisa, desde que a pessoa diga a categoria
+    c1, c2 = st.columns([2, 1])
+    nome = c1.text_input("O que é?", max_chars=60, placeholder="Ex.: garrafa térmica").strip()
+    categoria = c2.selectbox("Categoria", CATEGORIAS, index=None, placeholder="Escolha...")
+    if not nome or not categoria:
+        st.stop()
+    if not nome_valido(nome):
+        st.warning("Use só letras, números e pontuação simples (sem < > & \" ;).")
+        st.stop()
+    item = Item(nome, nome.lower(), categoria, tipo_da_categoria(categoria))
 
 st.markdown(
     f'<div class="wl-card"><h3 style="margin:0">{ICONE[item.tipo]} {item.nome.capitalize()}</h3>'
@@ -139,8 +149,9 @@ if st.session_state.get("busca") == (item, lat, lon, raio):  # mantém o mapa ap
         folium.Marker([lat, lon], tooltip="Você", icon=folium.Icon(color="purple", icon="user")).add_to(mapa)
         for l in lugares:
             # folium.Icon (mesmo do marcador "Você"): o ícone padrão do Leaflet é uma imagem que não carrega no st_folium
-            folium.Marker([l["lat"], l["lon"]], tooltip=f'{l["nome"]} · {l["distancia_km"]} km',
-                          popup=f'<a href="{l["mapa"]}" target="_blank">{l["nome"]}</a>',
+            nome = html.escape(l["nome"])  # nome vem do OSM (editável por qualquer um): nunca HTML cru
+            folium.Marker([l["lat"], l["lon"]], tooltip=f'{nome} · {l["distancia_km"]} km',
+                          popup=f'<a href="{html.escape(l["mapa"])}" target="_blank">{nome}</a>',
                           icon=folium.Icon(color="red", icon="shopping-cart")).add_to(mapa)
         st_folium(mapa, height=380, use_container_width=True, returned_objects=[])
         df = pd.DataFrame(lugares)

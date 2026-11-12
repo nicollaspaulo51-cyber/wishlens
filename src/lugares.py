@@ -97,23 +97,28 @@ def _buscar_nominatim(item: Item, lat: float, lon: float, raio_m: int) -> list[d
 def buscar_proximos(item: Item, lat: float, lon: float, raio_m: int = 3000, limite: int = 10) -> list[dict]:
     """Retorna até `limite` lugares do OSM ordenados pela distância (Overpass; reserva: Nominatim)."""
     consulta = montar_consulta(item, lat, lon, raio_m)
-    resp = None
+    dados = None
     for url in OVERPASS_URLS:
         try:
             resp = requests.post(url, data={"data": consulta},
                                  headers={"User-Agent": USER_AGENT}, timeout=8)
             resp.raise_for_status()
-            break
-        except requests.RequestException:
-            resp = None
+            dados = resp.json()
+        except requests.RequestException:  # inclui JSON inválido (página de erro com status 200)
+            continue
+        # Servidor lotado às vezes responde 200 com "remark" de erro e lista vazia: não é "nada por perto"
+        if "remark" in dados and not dados.get("elements"):
+            dados = None
+            continue
+        break
 
-    if resp is None:
+    if dados is None:
         lugares = _buscar_nominatim(item, lat, lon, raio_m)
         lugares.sort(key=lambda x: x["distancia_km"])
         return lugares[:limite]
 
     lugares = []
-    for el in resp.json().get("elements", []):
+    for el in dados.get("elements", []):
         tags = el.get("tags", {})
         la = el.get("lat") or el.get("center", {}).get("lat")
         lo = el.get("lon") or el.get("center", {}).get("lon")

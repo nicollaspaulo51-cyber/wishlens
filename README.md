@@ -45,6 +45,8 @@ Notebooks de análise ◄── CSV anonimizado (data/processed/)
 | [Olist – Brazilian E-Commerce](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) | base complementar de consumo | CC BY-NC-SA 4.0 |
 | [OpenStreetMap](https://www.openstreetmap.org/copyright) | lugares próximos | ODbL |
 | [CLIP ViT-B/32](https://huggingface.co/openai/clip-vit-base-patch32) | reconhecimento de imagens | MIT |
+| [LVIS v1](https://www.lvisdataset.org/) (lista de ~1.200 objetos) | vocabulário do reconhecimento (`data/vocabulario.csv`) | CC BY 4.0 |
+| [Open Multilingual Wordnet](https://omwn.org/) / OpenWN-PT | nomes em português do vocabulário | CC BY-SA |
 
 ## Privacidade
 - A foto salva é reduzida e **não carrega EXIF/GPS** (`src/fotos.py`).

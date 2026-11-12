@@ -9,6 +9,7 @@ Cada item tem:
 Para reconhecer coisas novas, basta adicionar linhas em ITENS.
 """
 
+import re
 from dataclasses import dataclass
 
 
@@ -18,6 +19,23 @@ class Item:
     nome: str
     categoria: str
     tipo: str
+
+
+_NOME_OK = re.compile(r"[\w .,'()/+-]{1,60}")
+
+
+def nome_valido(nome: str) -> bool:
+    """Nome digitado pela pessoa: só letras (com acento), números e pontuação simples.
+
+    Os nomes aparecem em HTML em várias páginas (inclusive para outra pessoa, em Comparar),
+    então nada de < > & " ; ou quebra de linha.
+    """
+    return bool(_NOME_OK.fullmatch(nome))
+
+
+def tipo_da_categoria(categoria: str) -> str:
+    """O que o app mostra para a categoria: receita/restaurante, adoção ou lojas."""
+    return {"comida": "receita", "bebidas": "receita", "animais": "adotar"}.get(categoria, "comprar")
 
 
 # Faixa de preço de referência por categoria (estimativa simples, em R$)

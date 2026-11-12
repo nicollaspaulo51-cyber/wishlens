@@ -90,3 +90,11 @@ def test_tudo_fora_do_ar():
          patch("src.localizacao.requests.get", side_effect=requests.ConnectionError("fora")):
         with pytest.raises(requests.ConnectionError):
             lugares.buscar_proximos(ANIMAIS, -20.30, -40.30)
+
+
+def test_overpass_remark_de_erro_tenta_o_proximo():
+    lotado = {"elements": [], "remark": "runtime error: Query timed out"}
+    respostas = iter([_resposta(lotado), _resposta(ELEMENTOS)])
+    with patch("src.lugares.requests.post", side_effect=lambda url, **kw: next(respostas)):
+        achados = lugares.buscar_proximos(ANIMAIS, -20.30, -40.30)
+    assert [l["nome"] for l in achados] == ["Perto", "Longe"]
