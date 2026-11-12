@@ -71,7 +71,9 @@ if MODELO_DISPONIVEL:
 
     with st.spinner("Reconhecendo..."):
         resultados = reconhecer(imagem, top_k=3)
-    opcoes = {f"{r.item.nome} ({r.confianca:.0%})": r for r in resultados}
+    repetidos = {r.item.nome for r in resultados if [x.item.nome for x in resultados].count(r.item.nome) > 1}
+    opcoes = {(f"{r.item.nome} · {r.item.categoria}" if r.item.nome in repetidos else r.item.nome)
+              + f" ({r.confianca:.0%})": r for r in resultados}
     opcoes["Outra coisa…"] = None
     escolha = st.radio("O que é isso?", list(opcoes), horizontal=True,
                        help="Confirme a opção certa: isso melhora a qualidade dos dados.")

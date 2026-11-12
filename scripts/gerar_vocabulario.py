@@ -97,7 +97,9 @@ if __name__ == "__main__":
         except nltk.corpus.reader.wordnet.WordNetError:  # poucos synsets do LVIS não existem no WordNet 3.0
             s = None
         rotulo = re.sub(r"\s+", " ", c["synonyms"][0].replace("_", " ")).strip()
-        if s is None:
+        if re.search(r"\b(beer|wine|soda|juice)\b", rotulo):  # garrafa/lata de bebida: o WordNet chama de recipiente
+            categoria = "bebidas"
+        elif s is None:
             categoria = None
         elif descende(s, "animal.n.01"):
             if not descende(s, "domestic_animal.n.01"):
@@ -124,7 +126,8 @@ if __name__ == "__main__":
     vizinho = so_produtos.argmax(dim=1).tolist()
     fundidos = 0
     for l, k, s, j in zip(linhas, vizinho, sim_cur.tolist(), idx_cur.tolist()):
-        if s >= SIMILAR_AO_CURADO:  # mesmo objeto do catálogo curado: herda nome e categoria
+        if s >= SIMILAR_AO_CURADO and l["categoria"] in (None, ITENS[j].categoria):
+            # mesmo objeto do catálogo curado: herda nome e categoria (nunca contra o que o WordNet disse)
             l["nome"], l["categoria"] = ITENS[j].nome, ITENS[j].categoria
             fundidos += 1
         elif l["categoria"] is None:

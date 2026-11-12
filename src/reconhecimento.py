@@ -26,6 +26,13 @@ DADOS = Path(__file__).resolve().parents[1] / "data"
 # Frases extras para itens que o CLIP confunde (o catálogo tem um rótulo por item)
 ROTULOS_EXTRAS = {
     "fone de ouvido": ["wireless earbuds", "a white wireless earbuds charging case"],
+    # latas e garrafas: sem isso, toda bebida em lata vira "suco"
+    "energético": ["a Monster energy drink can", "a Red Bull energy drink can", "a tall black energy drink can"],
+    "refrigerante": ["a Coca-Cola can", "a plastic bottle of soda", "a Guarana Antarctica soda can"],
+    "cerveja": ["a bottle of beer", "a glass of beer"],
+    "vinho": ["a glass of red wine"],
+    "gato": ["a kitten"],
+    "cachorro": ["a puppy"],
 }
 _ROTULOS = [(i, i.rotulo_en) for i in ITENS] + [
     (i, r) for i in ITENS for r in ROTULOS_EXTRAS.get(i.nome, [])
@@ -101,10 +108,12 @@ def reconhecer(imagem: Image.Image, top_k: int = 3) -> list[Resultado]:
 
     # Vários rótulos podem levar ao mesmo item (ex.: fone e estojo de fone): soma as chances.
     # O catálogo curado vem primeiro, então o item dele é o que fica.
-    por_nome: dict[str, Resultado] = {}
+    # A chave inclui a categoria: "taco" (comida) e "taco" (sinuca) são coisas diferentes.
+    por_item: dict[tuple[str, str], Resultado] = {}
     for (item, _), p in zip(rotulos, probs.tolist()):
-        if item.nome in por_nome:
-            por_nome[item.nome].confianca += p
+        chave = (item.nome, item.categoria)
+        if chave in por_item:
+            por_item[chave].confianca += p
         else:
-            por_nome[item.nome] = Resultado(item, p)
-    return sorted(por_nome.values(), key=lambda r: r.confianca, reverse=True)[:top_k]
+            por_item[chave] = Resultado(item, p)
+    return sorted(por_item.values(), key=lambda r: r.confianca, reverse=True)[:top_k]

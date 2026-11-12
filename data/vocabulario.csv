@@ -30,7 +30,7 @@ awning,toldo,veículos,comprar,awning.n.01
 ax,machado,brinquedos e games,comprar,ax.n.01
 baby buggy,carrinho de bebê,veículos,comprar,baby_buggy.n.01
 basketball backboard,tabela,brinquedos e games,comprar,backboard.n.01
-backpack,mochila,vestuário,comprar,backpack.n.01
+backpack,alforje,casa e decoração,comprar,backpack.n.01
 handbag,bolsa,vestuário,comprar,bag.n.04
 suitcase,mala,casa e decoração,comprar,bag.n.06
 bagel,bagel,comida,receita,bagel.n.01
@@ -76,8 +76,8 @@ bedpan,bedpan,casa e decoração,comprar,bedpan.n.01
 bedspread,cobertor,casa e decoração,comprar,bedspread.n.01
 beef (food),bife,comida,receita,beef.n.02
 beeper,pager,eletrônicos,comprar,beeper.n.01
-beer bottle,beer bottle,casa e decoração,comprar,beer_bottle.n.01
-beer can,beer can,casa e decoração,comprar,beer_can.n.01
+beer bottle,beer bottle,bebidas,receita,beer_bottle.n.01
+beer can,cerveja,bebidas,receita,beer_can.n.01
 bell,sino,calçados,comprar,bell.n.01
 bell pepper,bell pepper,comida,receita,bell_pepper.n.02
 belt,cinto,vestuário,comprar,belt.n.02
@@ -86,7 +86,7 @@ bench,banco,casa e decoração,comprar,bench.n.01
 beret,barrete,vestuário,comprar,beret.n.01
 bib,babador,livros e papelaria,comprar,bib.n.02
 Bible,livro,livros e papelaria,comprar,bible.n.01
-bicycle,bicicleta,esporte e lazer,comprar,bicycle.n.01
+bicycle,bici,veículos,comprar,bicycle.n.01
 visor,visor,vestuário,comprar,bill.n.09
 billboard,outdoor,livros e papelaria,comprar,billboard.n.01
 binder,binder,livros e papelaria,comprar,binder.n.03
@@ -232,7 +232,7 @@ chime,chime,esporte e lazer,comprar,chime.n.01
 chinaware,chinaware,casa e decoração,comprar,chinaware.n.01
 crisp (potato chip),crisp (potato chip),comida,receita,chip.n.04
 poker chip,ficha,brinquedos e games,comprar,chip.n.06
-chocolate bar,chocolate bar,comida,receita,chocolate_bar.n.01
+chocolate bar,chocolate,comida,receita,chocolate_bar.n.01
 chocolate cake,chocolate cake,comida,receita,chocolate_cake.n.01
 chocolate milk,leite achocolatado,bebidas,receita,chocolate_milk.n.01
 chocolate mousse,chocolate mousse,comida,receita,chocolate_mousse.n.01
@@ -829,7 +829,7 @@ salmon (food),salmão,comida,receita,salmon.n.03
 salsa,salsa,comida,receita,salsa.n.01
 saltshaker,saleiro,casa e decoração,comprar,saltshaker.n.01
 sandal (type of shoe),alpercata,calçados,comprar,sandal.n.01
-sandwich,sandes,comida,receita,sandwich.n.01
+sandwich,sanduíche,comida,receita,sandwich.n.01
 satchel,carteira,casa e decoração,comprar,satchel.n.01
 saucepan,caçarola,casa e decoração,comprar,saucepan.n.01
 saucer,pires,casa e decoração,comprar,saucer.n.02
@@ -892,7 +892,7 @@ snowboard,Snow board,esporte e lazer,comprar,snowboard.n.01
 snowman,boneco de neve,brinquedos e games,comprar,snowman.n.01
 snowmobile,Moto de neve,veículos,comprar,snowmobile.n.01
 soap,sabão,brinquedos e games,comprar,soap.n.01
-soccer ball,bola de futebol,esporte e lazer,comprar,soccer_ball.n.01
+soccer ball,bola de futebol,brinquedos e games,comprar,soccer_ball.n.01
 sock,meia,calçados,comprar,sock.n.01
 sofa,sofá,casa e decoração,comprar,sofa.n.01
 softball,softball,brinquedos e games,comprar,softball.n.01
@@ -1092,8 +1092,8 @@ windmill,moinho de vento,eletrônicos,comprar,windmill.n.01
 window box (for plants),window box (for plants),casa e decoração,comprar,window_box.n.01
 windshield wiper,Limpador de para-brisas,veículos,comprar,windshield_wiper.n.01
 windsock,biruta,brinquedos e games,comprar,windsock.n.01
-wine bottle,wine bottle,casa e decoração,comprar,wine_bottle.n.01
-wine bucket,wine bucket,casa e decoração,comprar,wine_bucket.n.01
+wine bottle,vinho,bebidas,receita,wine_bottle.n.01
+wine bucket,wine bucket,bebidas,receita,wine_bucket.n.01
 wineglass,wineglass,casa e decoração,comprar,wineglass.n.01
 blinder (for horses),blinder (for horses),livros e papelaria,comprar,winker.n.02
 wok,wok,casa e decoração,comprar,wok.n.01

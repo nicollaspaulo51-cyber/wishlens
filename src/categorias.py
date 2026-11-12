@@ -81,6 +81,11 @@ PRECO_ITEM = {
     "macarrão": "R$ 30–80", "salada": "R$ 20–50", "bolo": "R$ 30–120", "sorvete": "R$ 10–40",
     "açaí": "R$ 15–40", "churrasco": "R$ 50–150", "cachorro-quente": "R$ 10–30", "pastel": "R$ 8–25",
     "café": "R$ 5–20", "suco": "R$ 8–20",
+    "batata frita": "R$ 15–40", "sanduíche": "R$ 15–45", "pão de queijo": "R$ 5–20", "coxinha": "R$ 6–15",
+    "tapioca": "R$ 10–30", "feijoada": "R$ 35–90", "frango frito": "R$ 25–70", "chocolate": "R$ 5–30",
+    "biscoito": "R$ 3–15", "salgadinho": "R$ 5–15", "pipoca": "R$ 5–25", "brigadeiro": "R$ 3–10 (unidade)",
+    "energético": "R$ 8–15", "refrigerante": "R$ 4–12", "cerveja": "R$ 4–15", "água mineral": "R$ 2–6",
+    "vinho": "R$ 40–200", "chá": "R$ 5–15", "leite": "R$ 5–8", "drink": "R$ 20–50",
 }
 
 
@@ -157,13 +162,37 @@ ITENS: list[Item] = [
     Item("barbecue meat", "churrasco", "comida", "receita"),
     Item("a hot dog", "cachorro-quente", "comida", "receita"),
     Item("fried pastry (pastel)", "pastel", "comida", "receita"),
+    Item("french fries", "batata frita", "comida", "receita"),
+    Item("a sandwich", "sanduíche", "comida", "receita"),
+    Item("pao de queijo, small round Brazilian cheese bread balls", "pão de queijo", "comida", "receita"),
+    Item("coxinha, a teardrop-shaped Brazilian fried chicken croquette", "coxinha", "comida", "receita"),
+    Item("tapioca crepe", "tapioca", "comida", "receita"),
+    Item("feijoada, Brazilian black bean stew", "feijoada", "comida", "receita"),
+    Item("fried chicken", "frango frito", "comida", "receita"),
+    Item("a chocolate bar", "chocolate", "comida", "receita"),
+    Item("cookies or biscuits", "biscoito", "comida", "receita"),
+    Item("a bag of potato chips", "salgadinho", "comida", "receita"),
+    Item("popcorn", "pipoca", "comida", "receita"),
+    Item("brigadeiro, Brazilian chocolate truffles", "brigadeiro", "comida", "receita"),
     Item("a cup of coffee", "café", "bebidas", "receita"),
     Item("a glass of juice", "suco", "bebidas", "receita"),
+    Item("a can of energy drink", "energético", "bebidas", "receita"),
+    Item("a can of soda", "refrigerante", "bebidas", "receita"),
+    Item("a can of beer", "cerveja", "bebidas", "receita"),
+    Item("a plastic bottle of mineral water", "água mineral", "bebidas", "receita"),
+    Item("a bottle of wine", "vinho", "bebidas", "receita"),
+    Item("a cup of tea", "chá", "bebidas", "receita"),
+    Item("a glass of milk", "leite", "bebidas", "receita"),
+    Item("a cocktail drink", "drink", "bebidas", "receita"),
     # animais (adoção)
     Item("a dog", "cachorro", "animais", "adotar"),
     Item("a cat", "gato", "animais", "adotar"),
     Item("a rabbit", "coelho", "animais", "adotar"),
     Item("a bird", "pássaro", "animais", "adotar"),
+    Item("a hamster", "hamster", "animais", "adotar"),
+    Item("a guinea pig", "porquinho-da-índia", "animais", "adotar"),
+    Item("a pet fish in an aquarium", "peixe de aquário", "animais", "adotar"),
+    Item("a turtle", "tartaruga", "animais", "adotar"),
 ]
 
 CATEGORIAS = sorted({i.categoria for i in ITENS})
@@ -182,7 +211,12 @@ EMOJI = {
     "pizza": "🍕", "hambúrguer": "🍔", "sushi": "🍣", "arroz e feijão": "🍛", "macarrão": "🍝",
     "salada": "🥗", "bolo": "🍰", "sorvete": "🍨", "açaí": "🫐", "churrasco": "🥩",
     "cachorro-quente": "🌭", "pastel": "🥟", "café": "☕", "suco": "🧃",
+    "batata frita": "🍟", "sanduíche": "🥪", "pão de queijo": "🧀", "coxinha": "🍗", "tapioca": "🫓",
+    "feijoada": "🍲", "frango frito": "🍗", "chocolate": "🍫", "biscoito": "🍪", "salgadinho": "🥔",
+    "pipoca": "🍿", "brigadeiro": "🍫", "energético": "⚡", "refrigerante": "🥤", "cerveja": "🍺",
+    "água mineral": "💧", "vinho": "🍷", "chá": "🍵", "leite": "🥛", "drink": "🍹",
     "cachorro": "🐶", "gato": "🐱", "coelho": "🐰", "pássaro": "🐦",
+    "hamster": "🐹", "porquinho-da-índia": "🐹", "peixe de aquário": "🐟", "tartaruga": "🐢",
 }
 
 
