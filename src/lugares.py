@@ -8,7 +8,12 @@ import requests
 
 from src.categorias import Item
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+# Servidores públicos do Overpass, tentados em ordem (o primeiro às vezes fica sobrecarregado)
+OVERPASS_URLS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+]
 USER_AGENT = "WishLens/0.1 (projeto academico de Ciencia de Dados)"
 
 # Quais tags do OSM procurar para cada categoria
@@ -46,9 +51,15 @@ def montar_consulta(item: Item, lat: float, lon: float, raio_m: int) -> str:
 def buscar_proximos(item: Item, lat: float, lon: float, raio_m: int = 3000, limite: int = 10) -> list[dict]:
     """Retorna até `limite` lugares do OSM ordenados pela distância."""
     consulta = montar_consulta(item, lat, lon, raio_m)
-    resp = requests.post(OVERPASS_URL, data={"data": consulta},
-                         headers={"User-Agent": USER_AGENT}, timeout=30)
-    resp.raise_for_status()
+    for i, url in enumerate(OVERPASS_URLS):
+        try:
+            resp = requests.post(url, data={"data": consulta},
+                                 headers={"User-Agent": USER_AGENT}, timeout=20)
+            resp.raise_for_status()
+            break
+        except requests.RequestException:
+            if i == len(OVERPASS_URLS) - 1:
+                raise
 
     lugares = []
     for el in resp.json().get("elements", []):

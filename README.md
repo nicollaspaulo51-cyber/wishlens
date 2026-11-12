@@ -61,9 +61,10 @@ Notebooks de análise ◄── CSV anonimizado (data/processed/)
 | Gráficos dos desejos, perfil por K-Means, comparação por cosseno | ✅ funcionando |
 | Notebooks 01–04 do CRISP-DM | ✅ executados, **com dados fictícios** |
 | CSV anonimizado (download no app) | ✅ funcionando |
-| Reconhecimento automático (CLIP) | ⏳ código pronto; precisa instalar `torch` + `transformers`. Sem eles, o item é escolhido numa lista |
+| Reconhecimento automático (CLIP) | ✅ funcionando com `requirements.txt` (torch só-CPU); acurácia em fotos reais ainda não medida |
 | Banco e login (Supabase) | ⏳ código e SQL prontos, **não testados** com um projeto real: ver [docs/SUPABASE.md](docs/SUPABASE.md) |
-| Lugares próximos (OpenStreetMap) | ⏳ código pronto; não foi possível testar a conexão a partir do ambiente de desenvolvimento |
+| Localização (GPS da foto → GPS do navegador → endereço via Nominatim) | ✅ funcionando |
+| Lugares próximos (OpenStreetMap / Overpass, mapa com tiles OSM) | ⏳ código pronto, com 3 servidores de reserva; os servidores públicos estavam fora do ar no teste de 12/11/2026 |
 | Coleta de dados reais com a turma | ⏳ a fazer |
 | Publicação no Streamlit Cloud | ⏳ a fazer (precisa de conta) |
 
@@ -84,12 +85,20 @@ Sem o reconhecimento automático (instalação bem mais leve, sem `torch`):
 ```bash
 pip install -r requirements-dev.txt
 ```
-Testes (sem internet): `python -m pytest tests/`
+Testes (sem internet): `python -m pytest tests/` (o teste do CLIP é pulado se `torch` não estiver instalado)
+
+## Publicar no Streamlit Community Cloud
+1. Entre em https://share.streamlit.io com a conta do GitHub e clique em **Create app**.
+2. Repositório `nicollaspaulo51-cyber/wishlens`, branch `main`, arquivo principal `app/Home.py`.
+3. Em **Advanced settings**, escolha Python 3.12. O `requirements.txt` já instala o torch só-CPU.
+4. (Opcional) Cole as chaves do Supabase em **Secrets** no formato de `.streamlit/secrets.toml.example`.
+
+A câmera e o GPS do navegador só funcionam em HTTPS (o Streamlit Cloud já usa) ou em `localhost`.
 
 ## Estrutura
 ```
 app/            site Streamlit (Home + páginas Meus Desejos, Descobrir e Comparar)
-src/            reconhecimento, fotos, lugares, links, catálogo, armazenamento/banco,
+src/            reconhecimento, fotos, localizacao, lugares, links, catálogo, armazenamento/banco,
                 perfil (cosseno), clustering (K-Means), feed de recomendações, exportação, interface
 notebooks/      análise CRISP-DM (01 → 04)
 data/processed/ dados de demonstração (fictícios) e, depois, os anonimizados reais
@@ -105,7 +114,8 @@ tests/          testes automáticos (rodam no GitHub Actions a cada push)
 - [x] Notebooks 01–04 do CRISP-DM (com dados fictícios)
 - [x] Código do login + banco (Supabase) e exportação anonimizada
 - [ ] Criar o projeto Supabase e testar o login
-- [ ] Instalar o CLIP e medir a acurácia do reconhecimento
+- [x] Instalar o CLIP (torch só-CPU) e localização por GPS do navegador / endereço
+- [ ] Medir a acurácia do reconhecimento em fotos reais
 - [ ] Coleta com colegas → refazer os notebooks com `desejos.csv`
 - [ ] Publicar no Streamlit Cloud
 - [ ] Gravar o vídeo ([roteiro](docs/ROTEIRO_VIDEO.md))

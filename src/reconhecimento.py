@@ -17,6 +17,11 @@ from src.categorias import FAIXA_PRECO, ITENS, Item
 MODELO = "openai/clip-vit-base-patch32"  # pesos abertos (licença MIT)
 
 
+def _vetor(saida):
+    # transformers 5 devolve um objeto com o vetor projetado em .pooler_output; o 4.x devolve o tensor
+    return getattr(saida, "pooler_output", saida)
+
+
 @dataclass
 class Resultado:
     item: Item
@@ -40,7 +45,7 @@ def _carregar():
     textos = [f"a photo of {i.rotulo_en}" for i in ITENS]
     with torch.no_grad():
         entrada = processador(text=textos, return_tensors="pt", padding=True)
-        vet_texto = modelo.get_text_features(**entrada)
+        vet_texto = _vetor(modelo.get_text_features(**entrada))
         vet_texto = vet_texto / vet_texto.norm(dim=-1, keepdim=True)
     return modelo, processador, vet_texto
 
@@ -52,7 +57,7 @@ def reconhecer(imagem: Image.Image, top_k: int = 3) -> list[Resultado]:
     modelo, processador, vet_texto = _carregar()
     with torch.no_grad():
         entrada = processador(images=imagem.convert("RGB"), return_tensors="pt")
-        vet_img = modelo.get_image_features(**entrada)
+        vet_img = _vetor(modelo.get_image_features(**entrada))
         vet_img = vet_img / vet_img.norm(dim=-1, keepdim=True)
         # Similaridade do cosseno entre a imagem e cada texto -> probabilidades
         logits = modelo.logit_scale.exp() * vet_img @ vet_texto.T

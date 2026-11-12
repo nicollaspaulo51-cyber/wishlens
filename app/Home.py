@@ -9,17 +9,25 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import folium
 import pandas as pd
 import streamlit as st
 from PIL import Image
+from streamlit_folium import st_folium
+from streamlit_js_eval import get_geolocation
 
-from src import armazenamento, ui
+from src import armazenamento, localizacao, ui
 from src.categorias import FAIXA_PRECO, ITENS
 from src.fotos import ler_metadados, preparar_para_salvar
 from src.links import links_para
 from src.lugares import buscar_proximos
 
 ui.configurar("Início")
+
+# Cache no app (os módulos de src/ não dependem do Streamlit); poupa os servidores públicos do OSM
+lugares_proximos = st.cache_data(ttl=3600, show_spinner=False)(buscar_proximos)
+geocodificar = st.cache_data(ttl=86400, show_spinner=False)(localizacao.geocodificar)
+bairro_de = st.cache_data(ttl=86400, show_spinner=False)(localizacao.bairro_de)
 
 MODELO_DISPONIVEL = all(importlib.util.find_spec(m) for m in ("torch", "transformers"))
 ICONE = {"comprar": "🛍️", "receita": "🍲", "adotar": "🐶"}
@@ -72,7 +80,13 @@ st.markdown(
     f'</div>', unsafe_allow_html=True)
 
 if st.button("⭐ Salvar nos meus desejos", type="primary", use_container_width=True):
-    armazenamento.salvar_desejo(item, confianca, meta["data_hora"], cidade=None)
+    cidade = None
+    if pos := st.session_state.get("posicao"):
+        try:
+            cidade = bairro_de(*pos)  # só bairro/cidade; a coordenada exata não é guardada
+        except Exception:
+            pass
+    armazenamento.salvar_desejo(item, confianca, meta["data_hora"], cidade=cidade)
     st.success("Salvo! Veja em **Meus Desejos**.")
 
 # ---------- Onde conseguir ----------
@@ -82,24 +96,52 @@ for col, (nome, url) in zip(st.columns(len(links)), links.items()):
     col.link_button(nome, url, use_container_width=True)
 
 st.markdown("#### 📍 Perto de você")
-lat, lon = meta["lat"], meta["lon"]
+# Ordem: GPS da foto → GPS do navegador (com permissão) → endereço digitado
+lat, lon, origem = meta["lat"], meta["lon"], "GPS da foto"
 if lat is None:
-    st.caption("A foto não tem localização. Informe a posição (padrão: centro de Vitória - ES).")
-    c1, c2 = st.columns(2)
-    lat = c1.number_input("Latitude", value=-20.3155, format="%.4f")
-    lon = c2.number_input("Longitude", value=-40.3128, format="%.4f")
+    gps = get_geolocation()  # o navegador pergunta se a pessoa permite; None até responder
+    if gps and "coords" in gps:
+        lat, lon, origem = gps["coords"]["latitude"], gps["coords"]["longitude"], "GPS do aparelho"
+if lat is None:
+    st.caption("Sem GPS (ou permissão negada): digite um endereço, bairro ou cidade.")
+    endereco = st.text_input("Endereço", placeholder="Ex.: Jardim da Penha, Vitória")
+    if endereco:
+        try:
+            achado = geocodificar(endereco)
+        except Exception as erro:
+            achado = None
+            st.error(f"Não foi possível consultar o endereço agora ({type(erro).__name__}).")
+        if achado:
+            lat, lon, origem = achado
+        else:
+            st.warning("Endereço não encontrado no OpenStreetMap. Tente incluir a cidade.")
+
+if lat is None:
+    st.session_state.pop("posicao", None)
+    st.stop()
+st.session_state["posicao"] = (round(lat, 3), round(lon, 3))  # ~100 m: usado só para achar o bairro
+st.caption(f"📍 Usando: {origem}")
 
 raio = st.slider("Raio de busca (km)", 1, 10, 3)
 if st.button("Buscar lugares próximos", use_container_width=True):
+    st.session_state["busca"] = (item, lat, lon, raio)
+
+if st.session_state.get("busca") == (item, lat, lon, raio):  # mantém o mapa após interações
     try:
         with st.spinner("Consultando o OpenStreetMap..."):
-            lugares = buscar_proximos(item, lat, lon, raio_m=raio * 1000)
+            lugares = lugares_proximos(item, lat, lon, raio_m=raio * 1000)
     except Exception as erro:
-        st.error(f"Não foi possível consultar o OpenStreetMap agora ({type(erro).__name__}).")
+        st.error(f"Não foi possível consultar o OpenStreetMap agora ({type(erro).__name__}). "
+                 "Tente de novo em instantes ou use os links online acima.")
         lugares = None
     if lugares:
+        mapa = folium.Map(location=[lat, lon], zoom_start=14, tiles="OpenStreetMap")
+        folium.Marker([lat, lon], tooltip="Você", icon=folium.Icon(color="purple", icon="user")).add_to(mapa)
+        for l in lugares:
+            folium.Marker([l["lat"], l["lon"]], tooltip=f'{l["nome"]} · {l["distancia_km"]} km',
+                          popup=f'<a href="{l["mapa"]}" target="_blank">{l["nome"]}</a>').add_to(mapa)
+        st_folium(mapa, height=380, use_container_width=True, returned_objects=[])
         df = pd.DataFrame(lugares)
-        st.map(df, latitude="lat", longitude="lon")
         st.dataframe(df[["nome", "tipo", "distancia_km", "mapa"]], hide_index=True,
                      use_container_width=True,
                      column_config={"mapa": st.column_config.LinkColumn("mapa", display_text="abrir")})
