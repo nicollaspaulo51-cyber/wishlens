@@ -70,7 +70,23 @@ def test_overpass_usa_espelho_e_ordena():
     assert [l["nome"] for l in achados] == ["Perto", "Longe"]
 
 
-def test_overpass_todos_falham():
-    with patch("src.lugares.requests.post", side_effect=requests.Timeout("lento")):
-        with pytest.raises(requests.Timeout):
+def test_tags_simples():
+    assert lugares.tags_simples(ANIMAIS) == ["[amenity=animal_shelter]", "[shop=pet]", "[amenity=veterinary]"]
+
+
+def test_overpass_fora_usa_nominatim():
+    achado = {"osm_type": "node", "osm_id": 9, "lat": "-20.301", "lon": "-40.30",
+              "name": "Clínica", "type": "veterinary"}
+    longe = {"osm_type": "node", "osm_id": 8, "lat": "-21.0", "lon": "-40.30", "name": "Fora", "type": "pet"}
+    with patch("src.lugares.requests.post", side_effect=requests.Timeout("lento")), \
+         patch("src.localizacao.requests.get", return_value=_resposta([achado, longe])) as get:
+        achados = lugares.buscar_proximos(ANIMAIS, -20.30, -40.30, raio_m=3000)
+    assert [l["nome"] for l in achados] == ["Clínica"]  # repetido entre tags e fora do raio: descartados
+    assert get.call_args.kwargs["params"]["bounded"] == 1
+
+
+def test_tudo_fora_do_ar():
+    with patch("src.lugares.requests.post", side_effect=requests.Timeout("lento")), \
+         patch("src.localizacao.requests.get", side_effect=requests.ConnectionError("fora")):
+        with pytest.raises(requests.ConnectionError):
             lugares.buscar_proximos(ANIMAIS, -20.30, -40.30)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 
 import requests
 
@@ -48,18 +49,59 @@ def montar_consulta(item: Item, lat: float, lon: float, raio_m: int) -> str:
     return f"[out:json][timeout:25];({partes});out center 50;"
 
 
+def tags_simples(item: Item) -> list[str]:
+    """Filtros do Overpass como tags "[chave=valor]" (sintaxe que o Nominatim entende)."""
+    tags = []
+    for f in TAGS_POR_CATEGORIA.get(item.categoria, []):
+        chave, valores = re.split(r"[~=]", f, maxsplit=1)
+        tags += [f"[{chave}={v}]" for v in valores.strip('"').split("|")]
+    return tags
+
+
+def _buscar_nominatim(item: Item, lat: float, lon: float, raio_m: int) -> list[dict]:
+    """Reserva quando o Overpass está fora do ar: uma busca no Nominatim por tag, dentro do raio."""
+    from src.localizacao import _get  # import aqui: localizacao importa USER_AGENT deste módulo
+
+    dlat = raio_m / 111_000
+    dlon = dlat / max(math.cos(math.radians(lat)), 0.01)
+    caixa = f"{lon - dlon},{lat + dlat},{lon + dlon},{lat - dlat}"
+    vistos, lugares = set(), []
+    for tag in tags_simples(item):
+        for a in _get("/search", {"q": tag, "viewbox": caixa, "bounded": 1, "limit": 20}):
+            chave = (a["osm_type"], a["osm_id"])
+            la, lo = float(a["lat"]), float(a["lon"])
+            dist = distancia_km(lat, lon, la, lo)
+            if chave in vistos or dist * 1000 > raio_m:
+                continue
+            vistos.add(chave)
+            lugares.append({
+                "nome": a.get("name") or "(sem nome no mapa)",
+                "tipo": a.get("type"),
+                "lat": la,
+                "lon": lo,
+                "distancia_km": round(dist, 2),
+                "mapa": f"https://www.openstreetmap.org/{a['osm_type']}/{a['osm_id']}",
+            })
+    return lugares
+
+
 def buscar_proximos(item: Item, lat: float, lon: float, raio_m: int = 3000, limite: int = 10) -> list[dict]:
-    """Retorna até `limite` lugares do OSM ordenados pela distância."""
+    """Retorna até `limite` lugares do OSM ordenados pela distância (Overpass; reserva: Nominatim)."""
     consulta = montar_consulta(item, lat, lon, raio_m)
-    for i, url in enumerate(OVERPASS_URLS):
+    resp = None
+    for url in OVERPASS_URLS:
         try:
             resp = requests.post(url, data={"data": consulta},
-                                 headers={"User-Agent": USER_AGENT}, timeout=20)
+                                 headers={"User-Agent": USER_AGENT}, timeout=8)
             resp.raise_for_status()
             break
         except requests.RequestException:
-            if i == len(OVERPASS_URLS) - 1:
-                raise
+            resp = None
+
+    if resp is None:
+        lugares = _buscar_nominatim(item, lat, lon, raio_m)
+        lugares.sort(key=lambda x: x["distancia_km"])
+        return lugares[:limite]
 
     lugares = []
     for el in resp.json().get("elements", []):
