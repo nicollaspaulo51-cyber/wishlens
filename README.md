@@ -32,7 +32,9 @@ Cada busca vira um **registro de desejo**. Com eles, o app gera **gráficos dos 
 
 ## Arquitetura
 ```
-Usuário (foto/câmera) → Streamlit → CLIP (reconhecimento, modelo aberto)
+Usuário (foto/câmera) → Streamlit → CLIP (reconhecimento, modelo aberto, sempre)
+                              ├─► Gemma via Google AI Studio (opcional: marca, modelo e preço)
+                              ├─► Mercado Livre (preço pelos anúncios, quando a API responde)
                               ├─► Supabase (banco de desejos + fotos sem GPS + login)
                               └─► OpenStreetMap / Overpass (lugares próximos)
 Notebooks de análise ◄── CSV anonimizado (data/processed/)
@@ -45,6 +47,8 @@ Notebooks de análise ◄── CSV anonimizado (data/processed/)
 | [Olist – Brazilian E-Commerce](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) | base complementar de consumo | CC BY-NC-SA 4.0 |
 | [OpenStreetMap](https://www.openstreetmap.org/copyright) | lugares próximos | ODbL |
 | [CLIP ViT-B/32](https://huggingface.co/openai/clip-vit-base-patch32) | reconhecimento de imagens | MIT |
+| [Gemma 3](https://ai.google.dev/gemma) (opcional, pela API do Google AI Studio) | marca, modelo e preço estimado | pesos abertos, [Gemma Terms of Use](https://ai.google.dev/gemma/terms) (não é licença OSI) |
+| [API do Mercado Livre](https://developers.mercadolivre.com.br/) | faixa de preço pelos anúncios | termos do Mercado Livre |
 | [LVIS v1](https://www.lvisdataset.org/) (lista de ~1.200 objetos) | vocabulário do reconhecimento (`data/vocabulario.csv`) | CC BY 4.0 |
 | [Open Multilingual Wordnet](https://omwn.org/) / OpenWN-PT | nomes em português do vocabulário | CC BY-SA |
 
@@ -53,6 +57,7 @@ Notebooks de análise ◄── CSV anonimizado (data/processed/)
 - A localização é usada só para buscar lugares próximos; o banco guarda apenas cidade/bairro.
 - O CSV versionado no GitHub é **anonimizado**; fotos brutas nunca entram no repositório (`.gitignore`).
 - A comparação entre duas pessoas exige **aceite das duas**.
+- Com o Gemma ligado, a foto vai para a API do Google **já sem EXIF/GPS** e reduzida (a mesma de `preparar_para_salvar`).
 
 ## Status
 
@@ -63,7 +68,10 @@ Notebooks de análise ◄── CSV anonimizado (data/processed/)
 | Gráficos dos desejos, perfil por K-Means, comparação por cosseno | ✅ funcionando |
 | Notebooks 01–04 do CRISP-DM | ✅ executados, **com dados fictícios** |
 | CSV anonimizado (download no app) | ✅ funcionando |
-| Reconhecimento automático (CLIP) | ✅ ~1.170 objetos: catálogo curado + 1.107 do LVIS (`data/vocabulario.csv`); "Outra coisa…" aceita texto livre. Acurácia em fotos reais ainda não medida |
+| Reconhecimento automático (CLIP) | ✅ ~1.070 rótulos: catálogo curado (com frases de ~40 marcas conhecidas) + 947 do LVIS com categorias revisadas (`data/vocabulario.csv`); "Outra coisa…" aceita texto livre e marca. Acurácia em fotos reais ainda não medida |
+| Marca, modelo e preço com IA (Gemma) | 🧪 opcional: só com `GEMINI_API_KEY` nos Secrets; sem chave, só o CLIP |
+| Preço | 🧪 Mercado Livre (quartis dos anúncios) → estimativa da IA → tabela de referência; a fonte aparece junto do preço |
+| Cartão do lugar no mapa | ✅ endereço, horário, telefone, site, preço de referência e "Como chegar" (Google Maps, Waze, OSM) |
 | Banco e login (Supabase) | ⏳ código e SQL prontos, **não testados** com um projeto real: ver [docs/SUPABASE.md](docs/SUPABASE.md) |
 | Localização (GPS da foto → GPS do navegador → endereço via Nominatim) | ✅ funcionando |
 | Lugares próximos (OpenStreetMap / Overpass, mapa com tiles OSM) | ✅ funcionando (servidor `overpass.openstreetmap.fr` primeiro; reserva: outros Overpass e Nominatim) |
@@ -93,13 +101,22 @@ Testes (sem internet): `python -m pytest tests/` (o teste do CLIP é pulado se `
 `data/vocabulario.csv` e `data/vocabulario_clip.npy` são gerados por `scripts/gerar_vocabulario.py`
 (LVIS + nomes em português do Open Multilingual Wordnet; categoria pela hierarquia do WordNet).
 Só é preciso rodar de novo se mudar o modelo ou as regras: `pip install nltk && python scripts/gerar_vocabulario.py`.
-A categoria de cada objeto é aproximada; quando estiver errada, use "Outra coisa…".
+A categoria automática erra (cenoura caía em "brinquedos", gaiola em "veículos"); as correções manuais ficam em
+`scripts/correcoes_vocabulario.py` e valem sem recalcular o CLIP: `python scripts/correcoes_vocabulario.py`.
+
+## Marca, modelo e preço com o Gemma (opcional)
+1. Crie uma chave gratuita em https://aistudio.google.com/apikey.
+2. No Streamlit Cloud: **Settings → Secrets** e cole `GEMINI_API_KEY = "sua-chave"` (formato em `.streamlit/secrets.toml.example`).
+3. O modelo padrão é `gemma-3-27b-it` (pesos abertos). Se o Google deixar de servir esse modelo, ou para comparar,
+   defina `GEMMA_MODELO` nos Secrets (ex.: `gemma-3-12b-it`, ou `gemini-2.5-flash`, que é fechado).
+
+Sem chave, ou se a API falhar, o app continua só com o CLIP e mostra o motivo em uma linha.
 
 ## Publicar no Streamlit Community Cloud
 1. Entre em https://share.streamlit.io com a conta do GitHub e clique em **Create app**.
 2. Repositório `nicollaspaulo51-cyber/wishlens`, branch `main`, arquivo principal `app/Home.py`.
 3. Em **Advanced settings**, escolha Python 3.12. O `requirements.txt` já instala o torch só-CPU.
-4. (Opcional) Cole as chaves do Supabase em **Secrets** no formato de `.streamlit/secrets.toml.example`.
+4. (Opcional) Cole as chaves do Supabase e a `GEMINI_API_KEY` em **Secrets** no formato de `.streamlit/secrets.toml.example`.
 
 A câmera e o GPS do navegador só funcionam em HTTPS (o Streamlit Cloud já usa) ou em `localhost`.
 

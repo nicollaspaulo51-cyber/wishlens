@@ -74,6 +74,81 @@ def finalidade(tags: dict, nome: str = "") -> str:
     return "comprar"
 
 
+def _site(url: str | None) -> str | None:
+    """Só aceita http(s): o valor vem do OSM, que qualquer pessoa edita."""
+    if not url:
+        return None
+    url = url.strip().split(";")[0].strip()
+    if not url.lower().startswith(("http://", "https://")):
+        url = "https://" + url if re.fullmatch(r"[\w.-]+\.[a-z]{2,}(/\S*)?", url, re.I) else ""
+    return url or None
+
+
+def _telefone(valor: str | None) -> str | None:
+    if not valor:
+        return None
+    valor = valor.split(";")[0].strip()
+    return valor if re.fullmatch(r"[+\d ()./-]{6,25}", valor) else None
+
+
+def detalhes_osm(tags: dict) -> dict:
+    """Endereço, horário, telefone e site a partir das tags do OSM (Overpass ou extratags do Nominatim)."""
+    rua = tags.get("addr:street")
+    numero = tags.get("addr:housenumber")
+    bairro = tags.get("addr:suburb") or tags.get("addr:neighbourhood")
+    cidade = tags.get("addr:city")
+    endereco = ", ".join(x for x in (" ".join(y for y in (rua, numero) if y) if rua else None, bairro, cidade) if x)
+    return {
+        "endereco": endereco or None,
+        "horario": tags.get("opening_hours"),
+        "telefone": _telefone(tags.get("phone") or tags.get("contact:phone")),
+        "site": _site(tags.get("website") or tags.get("contact:website")),
+    }
+
+
+def _endereco_nominatim(end: dict) -> str | None:
+    rua = end.get("road")
+    numero = end.get("house_number")
+    bairro = end.get("suburb") or end.get("neighbourhood")
+    cidade = end.get("city") or end.get("town") or end.get("village")
+    partes = [" ".join(y for y in (rua, numero) if y) if rua else None, bairro, cidade]
+    return ", ".join(x for x in partes if x) or None
+
+
+_DIAS = {"Mo": "seg", "Tu": "ter", "We": "qua", "Th": "qui", "Fr": "sex", "Sa": "sáb", "Su": "dom",
+         "PH": "feriados"}
+
+
+def horario_legivel(horario: str | None) -> str | None:
+    """"Mo-Fr 09:00-18:00; Sa 09:00-13:00" -> "seg–sex 09:00–18:00 · sáb 09:00–13:00"."""
+    if not horario:
+        return None
+    if horario.strip() == "24/7":
+        return "24 horas, todos os dias"
+    texto = re.sub(r"\b(Mo|Tu|We|Th|Fr|Sa|Su|PH)\b", lambda m: _DIAS[m.group(1)], horario)
+    texto = re.sub(r"\boff\b|\bclosed\b", "fechado", texto)
+    texto = re.sub(r"(\d)-(\d)", r"\1–\2", texto).replace("-", "–")
+    return " · ".join(p.strip() for p in texto.split(";") if p.strip())
+
+
+def lugar_mais_proximo(lugares: list[dict], lat: float, lon: float, tolerancia: float = 1e-4) -> dict | None:
+    """O lugar clicado no mapa (o folium devolve só a coordenada do marcador)."""
+    if not lugares or lat is None or lon is None:
+        return None
+    melhor = min(lugares, key=lambda l: (l["lat"] - lat) ** 2 + (l["lon"] - lon) ** 2)
+    perto = abs(melhor["lat"] - lat) <= tolerancia and abs(melhor["lon"] - lon) <= tolerancia
+    return melhor if perto else None
+
+
+def como_chegar(lat: float, lon: float) -> dict[str, str]:
+    """Links de rota até o lugar (abrem o app instalado no celular)."""
+    return {
+        "Google Maps": f"https://www.google.com/maps/dir/?api=1&destination={lat},{lon}",
+        "Waze": f"https://waze.com/ul?ll={lat},{lon}&navigate=yes",
+        "OpenStreetMap": f"https://www.openstreetmap.org/directions?to={lat},{lon}",
+    }
+
+
 def montar_consulta(item: Item, lat: float, lon: float, raio_m: int) -> str:
     filtros = [_ancorado(f) for f in TAGS_POR_CATEGORIA.get(item.categoria, [])]
     partes = "".join(f"nwr[{f}](around:{raio_m},{lat},{lon});" for f in filtros)
@@ -96,14 +171,15 @@ def _buscar_nominatim(item: Item, lat: float, lon: float, raio_m: int) -> list[d
     dlat = raio_m / 111_000
     dlon = dlat / max(math.cos(math.radians(lat)), 0.01)
     caixa = f"{lon - dlon},{lat + dlat},{lon + dlon},{lat - dlat}"
-    vistos, lugares, erro = set(), [], None
+    vistos, lugares, erro, alguma_ok = set(), [], None, False
     for tag in tags_simples(item):
         try:
-            achados = _get("/search", {"q": tag, "viewbox": caixa, "bounded": 1, "limit": 20})
+            achados = _get("/search", {"q": tag, "viewbox": caixa, "bounded": 1, "limit": 20,
+                                       "addressdetails": 1, "extratags": 1})
         except requests.RequestException as e:  # uma tag falhou: segue com as outras
             erro = e
             continue
-        erro = None if lugares or achados else erro
+        alguma_ok = True
         for a in achados:
             chave = (a["osm_type"], a["osm_id"])
             la, lo = float(a["lat"]), float(a["lon"])
@@ -112,6 +188,8 @@ def _buscar_nominatim(item: Item, lat: float, lon: float, raio_m: int) -> list[d
                 continue
             vistos.add(chave)
             nome = a.get("name") or "(sem nome no mapa)"
+            detalhes = detalhes_osm(a.get("extratags") or {})
+            detalhes["endereco"] = detalhes["endereco"] or _endereco_nominatim(a.get("address") or {})
             lugares.append({
                 "nome": nome,
                 "tipo": a.get("type"),
@@ -120,8 +198,9 @@ def _buscar_nominatim(item: Item, lat: float, lon: float, raio_m: int) -> list[d
                 "lon": lo,
                 "distancia_km": round(dist, 2),
                 "mapa": f"https://www.openstreetmap.org/{a['osm_type']}/{a['osm_id']}",
+                **detalhes,
             })
-    if erro and not lugares:
+    if erro is not None and not alguma_ok:  # todas as tags falharam: não é "nada por perto"
         raise erro
     return lugares
 
@@ -152,8 +231,9 @@ def buscar_proximos(item: Item, lat: float, lon: float, raio_m: int = 3000, limi
     lugares = []
     for el in dados.get("elements", []):
         tags = el.get("tags", {})
-        la = el.get("lat") or el.get("center", {}).get("lat")
-        lo = el.get("lon") or el.get("center", {}).get("lon")
+        centro = el.get("center", {})
+        la = el["lat"] if "lat" in el else centro.get("lat")
+        lo = el["lon"] if "lon" in el else centro.get("lon")
         if la is None or lo is None:
             continue
         lugares.append({
@@ -164,6 +244,7 @@ def buscar_proximos(item: Item, lat: float, lon: float, raio_m: int = 3000, limi
             "lon": lo,
             "distancia_km": round(distancia_km(lat, lon, la, lo), 2),
             "mapa": f"https://www.openstreetmap.org/{el['type']}/{el['id']}",
+            **detalhes_osm(tags),
         })
     lugares.sort(key=lambda x: x["distancia_km"])
     return lugares[:limite]

@@ -7,6 +7,9 @@ A pessoa abre o site no celular, aponta a câmera para um **produto, comida ou a
 3. mostra **links online**: lojas para comprar, receitas e delivery, ou adoção.
 
 Todo o stack é **open source** (código, bibliotecas, modelo de IA, dados de mapa). Os links levam a lojas comerciais, o que é permitido.
+Exceções opcionais, desligadas sem configuração: o **Gemma** (pesos abertos, licença Gemma; chamado pela API do
+Google AI Studio porque não cabe no Streamlit Cloud gratuito) para marca/modelo/preço, e a **API do Mercado Livre** para preço.
+O fluxo completo funciona sem os dois.
 
 Fora de escopo nesta etapa: Supabase real, coleta de dados com a turma, notebooks, páginas Meus Desejos / Descobrir / Comparar.
 
@@ -22,8 +25,15 @@ Fora de escopo nesta etapa: Supabase real, coleta de dados com a turma, notebook
 Ordem: reconhecimento, localizacao, busca-online → lugares-proximos → fluxo-app → publicação.
 
 ## Vocabulário (atualizado em 12/11/2026)
-- Reconhecimento sobre ~1.170 rótulos: catálogo curado (`src/categorias.py`, prioridade) + 1.107 objetos do LVIS (CC BY 4.0) com nomes em português do Open Multilingual Wordnet (CC BY-SA).
-- Categoria: hierarquia do WordNet (comida, bebida, animal doméstico, roupa, calçado, móvel, veículo...); o que sobrar vai para a categoria de produto do item curado mais parecido no CLIP. Animais selvagens ficam fora (nada para adotar).
+- Reconhecimento sobre ~1.070 rótulos: catálogo curado (`src/categorias.py`, peso 1,7× no ranking, frases de marcas conhecidas e média de 3 frases por rótulo) + 947 objetos do LVIS (CC BY 4.0) com nomes em português do Open Multilingual Wordnet (CC BY-SA).
+- Categoria: hierarquia do WordNet (comida, bebida, animal doméstico, roupa, calçado, móvel, veículo...); o que sobrar vai para a categoria de produto do item curado mais parecido no CLIP. Animais selvagens ficam fora (nada para adotar). Correções manuais e remoção de rótulos sem sentido (avião, placa de rua...) em `scripts/correcoes_vocabulario.py`.
+- Marca: o CLIP sai com marca quando as frases dela levam ao menos metade da chance do item; com `GEMINI_API_KEY`, o Gemma (`src/visao.py`) sugere objeto, marca, modelo e faixa de preço como 1ª opção.
+
+## Preço (`src/precos.py`, atualizado em 12/11/2026)
+Mercado Livre (1º a 3º quartil dos anúncios novos de "marca modelo item") → faixa do Gemma → tabela de referência. A fonte aparece ao lado do preço. Comida e bebida não buscam anúncios.
+
+## Cartão do lugar
+Clique no marcador (ou na linha da tabela) → cartão com endereço, horário (traduzido do `opening_hours` do OSM), telefone, site, preço de referência e "Como chegar" (Google Maps, Waze, OSM). Texto do OSM sempre escapado; links só `http(s)` e `tel:`.
 - Vetores de texto pré-calculados em `data/vocabulario_clip.npy`; `nltk` só é usado pelo script gerador, não pelo app.
 - "Outra coisa…": nome digitado (validado: letras, números e pontuação simples, até 60) + categoria obrigatória.
 

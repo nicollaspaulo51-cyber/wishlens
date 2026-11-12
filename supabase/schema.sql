@@ -35,8 +35,11 @@ create table if not exists public.desejos (
   confianca    real check (confianca is null or confianca between 0 and 1),
   cidade       text,              -- só cidade/bairro, nunca coordenadas exatas
   acao         text,
-  foto_path    text               -- caminho no bucket "fotos" (foto reduzida, sem EXIF)
+  foto_path    text,              -- caminho no bucket "fotos" (foto reduzida, sem EXIF)
+  marca        text               -- marca reconhecida na foto (opcional)
 );
+-- Banco criado antes desta coluna: rodar de novo este arquivo a adiciona.
+alter table public.desejos add column if not exists marca text;
 create index if not exists desejos_usuario_idx on public.desejos (usuario_id, criado_em desc);
 
 -- ---------------------------------------------------------------- conexões (comparar desejos)

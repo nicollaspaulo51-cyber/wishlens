@@ -33,6 +33,7 @@ sys.path.insert(0, str(RAIZ))
 
 from src.categorias import FAIXA_PRECO, ITENS, tipo_da_categoria  # noqa: E402
 from src.reconhecimento import MODELO, _vetor  # noqa: E402
+from scripts.correcoes_vocabulario import aplicar as aplicar_correcoes  # noqa: E402
 
 LVIS_URL = ("https://raw.githubusercontent.com/facebookresearch/detectron2/main/"
             "detectron2/data/datasets/lvis_v1_categories.py")
@@ -135,9 +136,12 @@ if __name__ == "__main__":
         l["tipo"] = tipo_da_categoria(l["categoria"])
         assert l["categoria"] in FAIXA_PRECO
 
+    linhas, manter = aplicar_correcoes(linhas)  # correções manuais (scripts/correcoes_vocabulario.py)
+    v_lvis = v_lvis[manter]
+
     destino = RAIZ / "data"
     with open(destino / "vocabulario.csv", "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=["rotulo_en", "nome", "categoria", "tipo", "synset"])
+        w = csv.DictWriter(f, fieldnames=["rotulo_en", "nome", "categoria", "tipo", "synset"], lineterminator="\n")
         w.writeheader()
         w.writerows(linhas)
     np.save(destino / "vocabulario_clip.npy", v_lvis.numpy().astype(np.float16))

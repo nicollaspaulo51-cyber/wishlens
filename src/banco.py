@@ -48,7 +48,14 @@ class Sessao:
     def salvar_desejo(self, registro: dict) -> None:
         dados = {**registro, "usuario_id": self.usuario_id,
                  "criado_em": registro["criado_em"].isoformat()}
-        self.cliente.table("desejos").insert(dados).execute()
+        try:
+            self.cliente.table("desejos").insert(dados).execute()
+        except Exception as erro:
+            # banco criado antes da coluna "marca" (supabase/schema.sql): salva sem ela
+            if "marca" not in str(erro):
+                raise
+            dados.pop("marca", None)
+            self.cliente.table("desejos").insert(dados).execute()
 
     def desejos_visiveis(self) -> list[dict]:
         """Os próprios desejos + os de conexões aceitas (a RLS do banco garante isso)."""

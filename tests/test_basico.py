@@ -64,7 +64,9 @@ def test_vocabulario_grande_consistente():
     raiz = Path(__file__).resolve().parents[1] / "data"
     with open(raiz / "vocabulario.csv", encoding="utf-8") as f:
         linhas = list(csv.DictReader(f))
-    assert len(linhas) > 1000
+    assert len(linhas) > 900
+    from scripts.correcoes_vocabulario import CORRECOES
+    assert not CORRECOES.keys() & {l["synset"] for l in linhas if l["categoria"] != CORRECOES.get(l["synset"], l["categoria"])}
     assert np.load(raiz / "vocabulario_clip.npy").shape == (len(linhas), 512)  # vetores em sincronia
     for l in linhas:
         assert l["categoria"] in FAIXA_PRECO and l["categoria"] in TAGS_POR_CATEGORIA

@@ -5,6 +5,7 @@ Cada item tem:
 - nome: nome em português mostrado ao usuário
 - categoria: grupo usado na análise (EDA, clustering, comparação)
 - tipo: "comprar", "receita" ou "adotar" (define o que o app mostra)
+- marca / modelo: opcionais, preenchidos quando a foto mostra a marca (CLIP ou Gemma)
 
 Para reconhecer coisas novas, basta adicionar linhas em ITENS.
 """
@@ -19,6 +20,26 @@ class Item:
     nome: str
     categoria: str
     tipo: str
+    marca: str = ""
+    modelo: str = ""
+
+
+def rotulo_exibicao(item: Item) -> str:
+    """Nome para mostrar: "Tênis · Nike Air Max" quando há marca; senão só "Tênis"."""
+    nome = item.nome[:1].upper() + item.nome[1:]
+    detalhe = " ".join(x for x in (item.marca, item.modelo) if x)
+    return f"{nome} · {detalhe}" if detalhe else nome
+
+
+def reais(valor: float) -> str:
+    """1234.5 -> "R$ 1.235" (sem centavos acima de R$ 100)."""
+    if valor >= 100:
+        return "R$ " + f"{valor:,.0f}".replace(",", ".")
+    return "R$ " + f"{valor:.2f}".replace(".", ",")
+
+
+def faixa_reais(minimo: float, maximo: float) -> str:
+    return reais(minimo) if round(minimo) == round(maximo) else f"{reais(minimo)}–{reais(maximo)}"
 
 
 _NOME_OK = re.compile(r"[\w .,'()/+-]{1,60}")

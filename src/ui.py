@@ -1,5 +1,7 @@
 """Partes de interface compartilhadas entre as páginas: tema claro/escuro, barra lateral e estilos."""
 
+import html
+
 import streamlit as st
 
 from src import armazenamento
@@ -85,6 +87,9 @@ hr {{ border-color: var(--wl-line) !important; }}
               border-bottom:1px solid var(--wl-line); }}
 .wl-list li:last-child {{ border-bottom:0; }}
 .wl-muted {{ color: var(--wl-muted); }}
+.wl-place h3 {{ margin:0 0 .2rem 0; }}
+.wl-place a {{ color: var(--wl-accent); }}
+.wl-place .wl-list li span:first-child {{ white-space:nowrap; }}
 .wl-brand {{ font-family:"Bricolage Grotesque", system-ui, sans-serif; font-weight:800; font-size:1.4rem; line-height:1.1; }}
 @media (prefers-reduced-motion: reduce) {{ [data-testid="stApp"] {{ transition:none; }} }}
 </style>
@@ -195,3 +200,33 @@ def lista(linhas: list[tuple[str, str]]) -> str:
     """Lista HTML simples (segue o tema, ao contrário do st.dataframe)."""
     itens = "".join(f"<li><span>{a}</span><span class='wl-muted'>{b}</span></li>" for a, b in linhas)
     return f'<ul class="wl-list">{itens}</ul>'
+
+
+def cartao_lugar(lugar: dict, finalidade: tuple, horario: str | None, preco, nome_item: str,
+                 rotas: dict[str, str]) -> None:
+    """Cartão do lugar clicado no mapa: endereço, horário, contato, preço de referência e rotas.
+
+    Tudo que vem do OSM é escapado (qualquer pessoa edita o mapa); links só http(s) e tel:.
+    """
+    rotulo, _, _, emoji = finalidade
+    e = html.escape
+    km = f'{lugar["distancia_km"]:.1f}'.replace(".", ",")
+    linhas = [("📏 Distância", f"{km} km em linha reta")]
+    if lugar.get("endereco"):
+        linhas.append(("📍 Endereço", e(lugar["endereco"])))
+    linhas.append(("🕒 Horário", e(horario) if horario else "não informado no mapa"))
+    if lugar.get("telefone"):
+        tel = "".join(c for c in lugar["telefone"] if c.isdigit() or c == "+")
+        linhas.append(("📞 Telefone", f'<a href="tel:{e(tel)}">{e(lugar["telefone"])}</a>'))
+    if lugar.get("finalidade", "comprar") == "comprar" and preco is not None:
+        linhas.append(("💰 Preço de referência", f"{e(preco.texto)} <small>({e(preco.fonte)})</small>"))
+    st.markdown(
+        f'<div class="wl-card wl-place"><h3>{emoji} {e(lugar["nome"])}</h3>'
+        f'{badge(rotulo)}<span class="wl-muted" style="font-size:.85rem">para {e(nome_item)}</span>'
+        f'{lista(linhas)}</div>', unsafe_allow_html=True)
+    botoes = {"🧭 " + k: v for k, v in rotas.items()}
+    if lugar.get("site"):
+        botoes["🌐 Site"] = lugar["site"]
+    botoes["🗺️ No OSM"] = lugar["mapa"]
+    for col, (texto, url) in zip(st.columns(len(botoes)), botoes.items()):
+        col.link_button(texto, url, use_container_width=True)
