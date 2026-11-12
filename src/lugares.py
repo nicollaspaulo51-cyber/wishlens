@@ -11,6 +11,7 @@ from src.categorias import Item
 
 # Servidores públicos do Overpass, tentados em ordem (o primeiro às vezes fica sobrecarregado)
 OVERPASS_URLS = [
+    "https://overpass.openstreetmap.fr/api/interpreter",
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
