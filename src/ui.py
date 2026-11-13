@@ -93,8 +93,15 @@ def _css() -> str:
            background:var(--wl-surface); }}
 .wl-meta .wl-trilho {{ height:8px; border-radius:4px; background:var(--wl-soft); margin-top:.35rem; overflow:hidden; }}
 .wl-meta .wl-trilho b {{ display:block; height:100%; background:var(--wl-accent); transition:width .8s ease-out; }}
-.wl-desafios-box {{ grid-column:1 / -1; }}
-.wl-desafios-box summary {{ cursor:pointer; min-height:44px; display:flex; align-items:center; gap:.3rem; }}
+/* Resumo do dia numa linha (toque para abrir): o botão Fotografar precisa caber na primeira tela do celular */
+.wl-hoje {{ margin:-.2rem 0 .5rem; font-size:.92rem; }}
+.wl-hoje summary {{ cursor:pointer; min-height:44px; display:flex; align-items:center; flex-wrap:wrap;
+                   gap:.2rem .9rem; font-variant-numeric:tabular-nums; }}
+.wl-hoje summary span {{ display:inline-flex; align-items:center; gap:.4rem; white-space:nowrap; }}
+.wl-hoje .wl-dia {{ margin:.2rem 0 0; }}
+.wl-desafios {{ grid-column:1 / -1; }}
+/* menos espaço vazio acima do título no celular */
+@media (max-width:640px) {{ [data-testid="stMainBlockContainer"] {{ padding-top:3.75rem; }} }}
 .wl-desafios {{ list-style:none; margin:0; padding:0 0 .3rem; display:flex; flex-direction:column; gap:.2rem; }}
 .wl-desafios li {{ display:flex; gap:.5rem; align-items:baseline; }}
 .wl-desafios li.ok {{ color:var(--wl-muted); text-decoration:line-through; }}
@@ -129,7 +136,7 @@ def configurar(titulo: str, icone: str = "🔍") -> None:
 def barra_lateral() -> None:
     with st.sidebar:
         st.markdown('<div class="wl-brand">WishLens</div><div class="wl-muted" style="font-size:.85rem">'
-                    'Point. Snap. Discover.</div>', unsafe_allow_html=True)
+                    'Aponte. Fotografe. Descubra.</div>', unsafe_allow_html=True)
 
         if armazenamento.supabase_configurado():
             _conta()
@@ -140,47 +147,64 @@ def barra_lateral() -> None:
             st.text_input("Seu nome de usuário", key="_campo_usuario",
                           on_change=lambda: st.session_state.update(usuario=st.session_state["_campo_usuario"].strip() or "eu"))
         st.divider()
-        st.markdown("**Demonstração**")
-        st.caption("Dados fictícios para ver os gráficos funcionando. Não são dados reais.")
-        if st.button("Carregar dados de exemplo", use_container_width=True):
-            from src.exemplo import gerar_capturas
-            armazenamento.remover_capturas_exemplo()
-            armazenamento.adicionar_capturas(gerar_capturas())
-            st.toast("Dados de exemplo carregados")
-        if st.button("Remover dados de exemplo", use_container_width=True):
-            armazenamento.remover_capturas_exemplo()
-            st.toast("Dados de exemplo removidos")
-        st.divider()
         st.caption(f"Armazenamento: {armazenamento.descricao_backend()}")
 
 
-def _conta() -> None:
-    """Login/cadastro no Supabase (só aparece quando o Supabase está configurado)."""
+def demonstracao() -> None:
+    """Botões dos dados fictícios (página Avaliação: é para quem analisa, não para quem joga)."""
+    st.caption("Dados fictícios para ver os gráficos funcionando. Não são dados reais.")
+    c1, c2 = st.columns(2)
+    if c1.button("Carregar dados de exemplo", use_container_width=True):
+        from src.exemplo import gerar_capturas
+        armazenamento.remover_capturas_exemplo()
+        armazenamento.adicionar_capturas(gerar_capturas())
+        st.rerun()
+    if c2.button("Remover dados de exemplo", use_container_width=True):
+        armazenamento.remover_capturas_exemplo()
+        st.rerun()
+
+
+def precisa_entrar() -> bool:
+    """Supabase ligado e ninguém logado: sem conta, a foto não entraria no pódio da turma."""
+    from src import banco
+    return armazenamento.supabase_configurado() and banco.sessao_atual() is None
+
+
+def entrar_na_pagina() -> None:
+    """O mesmo login da barra lateral, no meio da página (no celular a barra lateral vem fechada)."""
+    with st.container(border=True):
+        st.markdown("**Entre para jogar.** Com uma conta, suas fotos contam no pódio da turma.")
+        _conta("pg_")
+
+
+def _conta(chave: str = "") -> None:
+    """Login/cadastro no Supabase. `chave` separa os campos quando o formulário aparece duas vezes na tela."""
     from src import banco
 
     sessao = banco.sessao_atual()
     if sessao:
         st.markdown(f"Olá, **{sessao.apelido}**")
-        if st.button("Sair", use_container_width=True):
+        if st.button("Sair", use_container_width=True, key=f"{chave}sair"):
             banco.sair()
             st.rerun()
         return
 
     entrar, criar = st.tabs(["Entrar", "Criar conta"])
-    with entrar, st.form("form_entrar"):
-        email = st.text_input("E-mail", key="login_email")
-        senha = st.text_input("Senha", type="password", key="login_senha")
+    with entrar, st.form(f"{chave}form_entrar"):
+        email = st.text_input("E-mail", key=f"{chave}login_email")
+        senha = st.text_input("Senha", type="password", key=f"{chave}login_senha")
         if st.form_submit_button("Entrar", use_container_width=True):
             try:
                 banco.entrar(email, senha)
                 st.rerun()
             except Exception as erro:
                 st.error(f"Não foi possível entrar: confira e-mail e senha. ({type(erro).__name__})")
-    with criar, st.form("form_criar"):
-        apelido = st.text_input("Apelido (aparece para quem você conectar)", key="cad_apelido")
-        email = st.text_input("E-mail", key="cad_email")
-        senha = st.text_input("Senha (mínimo 6 caracteres)", type="password", key="cad_senha")
-        consentimento = st.checkbox("Concordo em guardar minhas capturas do jogo para análise anonimizada", key="cad_ok")
+    with criar, st.form(f"{chave}form_criar"):
+        apelido = st.text_input("Apelido (aparece no pódio)", key=f"{chave}cad_apelido")
+        email = st.text_input("E-mail", key=f"{chave}cad_email")
+        senha = st.text_input("Senha (mínimo 6 caracteres)", type="password", key=f"{chave}cad_senha")
+        consentimento = st.checkbox("Concordo em guardar minhas capturas do jogo para análise anonimizada",
+                                    key=f"{chave}cad_ok")
         if st.form_submit_button("Criar conta", use_container_width=True):
             if not (apelido.strip() and email and len(senha) >= 6 and consentimento):
                 st.warning("Preencha tudo, use senha com 6+ caracteres e marque o consentimento.")
@@ -240,19 +264,23 @@ def painel_do_dia(estado: dict, corrente: int, meta: dict) -> str:
         meta_txt = (f"Meta da turma, das {meta['comeca']} às {meta['termina']}: {meta['alvo']} fotos de "
                     f"{t.nome.lower()}. Todos que ajudarem ganham +10 por foto.")
     largura = min(100, round(100 * meta["feitas"] / meta["alvo"]))
-    meta_html = (f'<div class="wl-meta">{e(meta_txt)}<div class="wl-trilho" role="progressbar" aria-valuemin="0" '
-                 f'aria-valuemax="{meta["alvo"]}" aria-valuenow="{meta["feitas"]}"><b style="width:{largura}%"></b>'
-                 f'</div></div>')
+    meta_html = (f'<div class="wl-meta">{e(meta_txt)}<div class="wl-trilho" role="progressbar" '
+                 f'aria-label="Meta da turma" aria-valuemin="0" aria-valuemax="{meta["alvo"]}" '
+                 f'aria-valuenow="{meta["feitas"]}"><b style="width:{largura}%"></b></div></div>')
     itens = ""
     for d in estado["desafios"]:
         marca = "✔" if d["ok"] else f'{d["feito"]}/{d["alvo"]}'
         itens += (f'<li class="{"ok" if d["ok"] else ""}"><span class="wl-marca">{marca}</span>'
                   f'<span>{e(d["texto"])} (+15)</span></li>')
     feitos = sum(d["ok"] for d in estado["desafios"])
-    # recolhido: no celular o mapa precisa aparecer sem rolar muito
-    return (f'<div class="wl-dia">{lupa}{meta_html}<details class="wl-desafios-box"><summary>Desafios do dia: '
-            f'<b>{feitos} de {len(estado["desafios"])}</b> feitos</summary>'
-            f'<ul class="wl-desafios">{itens}</ul></details></div>')
+    # Uma linha com os três números; abre sozinho quando há o que fazer agora (lupa cheia ou meta aberta)
+    aberto = " open" if estado["lupa_cheia"] or (meta["aberta"] and not meta["cumprida"]) else ""
+    lupa_resumo = (f'<span><span class="wl-lupa {"cheia" if estado["lupa_cheia"] else ""}" aria-hidden="true">'
+                   f'{partes}</span>Lupa <b>{carga}/3</b></span>')
+    return (f'<details class="wl-hoje"{aberto}><summary>{lupa_resumo}'
+            f'<span>Meta <b>{meta["feitas"]} de {meta["alvo"]}</b></span>'
+            f'<span>Desafios <b>{feitos} de {len(estado["desafios"])}</b></span></summary>'
+            f'<div class="wl-dia">{lupa}{meta_html}<ul class="wl-desafios">{itens}</ul></div></details>')
 
 
 def medalhas_html(lista_medalhas: list[dict]) -> str:

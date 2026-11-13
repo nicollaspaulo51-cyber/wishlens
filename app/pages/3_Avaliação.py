@@ -26,9 +26,12 @@ st.markdown(
     f"O CLIP barra a foto quando vê uma tela com chance ≥ {jogo.VETO_TELA:.0%} ou quando o tema da IA "
     f"fica fora dos {jogo.VETO_RANK} primeiros palpites dele (de 7: os 5 temas, tela e nenhum).")
 
+with st.expander("Demonstração"):
+    ui.demonstracao()
+
 pontuadas = jogo.calcular_pontos(armazenamento.capturas())
 if pontuadas.empty:
-    st.info("Sem fotos ainda. Jogue em **Jogar** ou carregue os dados de exemplo na barra lateral.")
+    st.info("Sem fotos ainda. Jogue em **Jogar** ou carregue os dados de exemplo em Demonstração, acima.")
     st.stop()
 if pontuadas["usuario"].astype(str).str.startswith("exemplo:").any():
     st.caption("🧪 Inclui dados fictícios de demonstração.")

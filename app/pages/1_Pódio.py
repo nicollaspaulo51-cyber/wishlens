@@ -20,7 +20,7 @@ st.markdown(ui.selo_tema_do_dia(hoje), unsafe_allow_html=True)
 pontuadas = jogo.calcular_pontos(armazenamento.capturas())
 eu = armazenamento.usuario_atual()
 if pontuadas.empty:
-    st.info("Ninguém jogou ainda. Tire a primeira foto em **Jogar**, ou carregue os dados de exemplo na barra lateral.")
+    st.info("Ninguém jogou ainda. Tire a primeira foto em **Jogar**, ou carregue os dados de exemplo na página Avaliação.")
     st.stop()
 
 opcoes_tema = ["todos"] + [t.id for t in TEMAS]

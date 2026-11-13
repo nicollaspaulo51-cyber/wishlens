@@ -32,7 +32,7 @@ Com ele, cada pessoa tem uma conta, as capturas ficam salvas na nuvem e o pódio
      (modelo em `.streamlit/secrets.toml.example`). Esse arquivo está no `.gitignore` e **nunca** deve ir para o GitHub.
 6. **Instale o pacote** `supabase` (já está no `requirements.txt`).
 
-Pronto: ao abrir o app, a barra lateral mostra **Entrar / Criar conta** em vez do campo de nome.
+Pronto: ao abrir o app, a página Jogar mostra **Entre para jogar** (e a barra lateral, **Entrar / Criar conta**).
 
 ### Testar o pódio compartilhado
 1. Crie duas contas (ex.: no celular e no computador, ou numa janela anônima).

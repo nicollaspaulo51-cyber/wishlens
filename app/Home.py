@@ -82,28 +82,31 @@ def placar_ao_vivo():
 
 
 placar_ao_vivo()
+# A câmera aparece aqui, acima do mapa. O código dela fica depois: precisa dos lugares do mapa (mirante).
+area_foto = st.container()
 pontuadas = jogo.calcular_pontos(armazenamento.capturas())
 
 # ---------- Mapa com o personagem ----------
 posicao = st.session_state.get("gps")
 if posicao is None:
-    endereco = st.text_input("Sem GPS: onde você está?", placeholder="Ex.: Jardim da Penha, Vitória",
-                             help="Permita a localização no navegador para o personagem andar com você.")
-    if endereco:
-        try:
-            achado_end = geocodificar(endereco)
-        except Exception as erro:
-            achado_end = None
-            st.error(f"Não foi possível consultar o endereço agora ({type(erro).__name__}).")
-        if achado_end:
-            posicao = achado_end[:2]
-        else:
-            st.warning("Endereço não encontrado. Tente incluir a cidade.")
+    st.caption("Permita a localização no navegador para ver o mapa com o seu personagem.")
+    with st.popover("Sem GPS? Diga onde você está", icon=":material/location_on:", use_container_width=True):
+        endereco = st.text_input("Bairro e cidade", placeholder="Ex.: Jardim da Penha, Vitória")
+        if endereco:
+            try:
+                achado_end = geocodificar(endereco)
+            except Exception as erro:
+                achado_end = None
+                st.error(f"Não foi possível consultar o endereço agora ({type(erro).__name__}).")
+            if achado_end:
+                posicao = achado_end[:2]
+            else:
+                st.warning("Endereço não encontrado. Tente incluir a cidade.")
 
-escolhidos = st.pills("Temas no mapa", [t.id for t in TEMAS], selection_mode="multi",
-                      default=[t.id for t in TEMAS], format_func=lambda i: f"{POR_ID[i].emoji} {POR_ID[i].nome}",
-                      label_visibility="collapsed") or []
 if posicao is not None:
+    escolhidos = st.pills("Mostrar no mapa", [t.id for t in TEMAS], selection_mode="multi",
+                          default=[t.id for t in TEMAS],
+                          format_func=lambda i: f"{POR_ID[i].emoji} {POR_ID[i].nome}") or []
     lat, lon = posicao
     centro = (round(lat, 3), round(lon, 3))  # ~100 m: a busca no OSM fica em cache enquanto você anda perto
     if st.session_state.get("_centro_mapa") is None or st.button("Atualizar lugares", icon=":material/refresh:", help="Busca de novo a partir de onde você está"):
@@ -133,23 +136,25 @@ if posicao is not None:
                             cor=ui.cores()["accent"], semente=hash(centro) % 10_000,
                             pistas=jogo.pistas_por_tipo(pontuadas))
     components.html(html, height=480)
-else:
-    st.info("Permita a localização, ou digite onde você está, para ver o mapa com o seu personagem.", icon=":material/location_on:")
 
-# ---------- Câmera ----------
-if st.button("Fotografar", icon=":material/photo_camera:", type="primary", use_container_width=True):
-    st.session_state["camera_aberta"] = True
-foto = None
-if st.session_state.get("camera_aberta"):
-    # GPS de novo a cada foto: o do início da página fica velho enquanto você anda
-    _gps_foto = get_geolocation(component_key=f"gps_foto_{st.session_state.get('n_foto', 0)}")
-    if _gps_foto and "coords" in _gps_foto:
-        st.session_state["gps"] = (_gps_foto["coords"]["latitude"], _gps_foto["coords"]["longitude"])
-    foto = st.camera_input("Fotografe algo de um dos temas",
-                           help="Só vale foto tirada agora pela câmera, de algo real na sua frente.")
-if not foto:
-    with st.expander("Como pontuar"):
-        st.markdown("""
+# ---------- Câmera (desenhada em area_foto, acima do mapa) ----------
+with area_foto:
+    if ui.precisa_entrar():
+        ui.entrar_na_pagina()
+        st.stop()
+    if st.button("Fotografar", icon=":material/photo_camera:", type="primary", use_container_width=True):
+        st.session_state["camera_aberta"] = True
+    foto = None
+    if st.session_state.get("camera_aberta"):
+        # GPS de novo a cada foto: o do início da página fica velho enquanto você anda
+        _gps_foto = get_geolocation(component_key=f"gps_foto_{st.session_state.get('n_foto', 0)}")
+        if _gps_foto and "coords" in _gps_foto:
+            st.session_state["gps"] = (_gps_foto["coords"]["latitude"], _gps_foto["coords"]["longitude"])
+        foto = st.camera_input("Fotografe algo de um dos temas",
+                               help="Só vale foto tirada agora pela câmera, de algo real na sua frente.")
+    if not foto:
+        with st.expander("Como pontuar"):
+            st.markdown("""
 - Toda foto aceita vale **10 pontos**.
 - **+10** se é a primeira vez que você acha aquilo.
 - **Até +20** pela raridade: quem acha primeiro ganha mais.
@@ -159,133 +164,133 @@ if not foto:
 - **Desafios do dia**: +15 cada. **7 dias seguidos**: +20. **Com chuva**, plantas e pássaros: +5.
 - **Meta da turma** (12h às 14h): se a turma fizer 20 fotos do tema do dia, cada uma ganha +10.
 - Vale 0: foto repetida, de tela, fora dos temas ou tirada longe demais da anterior (mais de 3 km a mais de 120 km/h).""")
-    st.stop()
+        st.stop()
 
-# Cada foto é julgada e salva uma vez só (o Streamlit roda a página de novo a cada clique)
-dados = foto.getvalue()
-id_foto = hashlib.sha256(dados).hexdigest()
-feita = st.session_state.get("ultima_captura")
+    # Cada foto é julgada e salva uma vez só (o Streamlit roda a página de novo a cada clique)
+    dados = foto.getvalue()
+    id_foto = hashlib.sha256(dados).hexdigest()
+    feita = st.session_state.get("ultima_captura")
 
-if not feita or feita["id"] != id_foto:
-    imagem = Image.open(foto)
-    jpeg = preparar_para_salvar(imagem)  # sem EXIF/GPS: é o que vai para a IA
-    # Dois juízes em toda foto: a IA open source (se houver VISAO_URL) e o CLIP (se instalado).
-    # O que cada um disse fica gravado.
-    captura, aviso, clip = None, None, None
-    if VISAO_URL:
-        try:
-            with st.spinner("O juiz está olhando sua foto..."):
-                captura = julgar_ia(jpeg, VISAO_MODELO)
-        except visao.ErroVisao as erro:
-            aviso = str(erro)
-    if MODELO_DISPONIVEL:
-        from src.reconhecimento import julgar_clip
+    if not feita or feita["id"] != id_foto:
+        imagem = Image.open(foto)
+        jpeg = preparar_para_salvar(imagem)  # sem EXIF/GPS: é o que vai para a IA
+        # Dois juízes em toda foto: a IA open source (se houver VISAO_URL) e o CLIP (se instalado).
+        # O que cada um disse fica gravado.
+        captura, aviso, clip = None, None, None
+        if VISAO_URL:
+            try:
+                with st.spinner("O juiz está olhando sua foto..."):
+                    captura = julgar_ia(jpeg, VISAO_MODELO)
+            except visao.ErroVisao as erro:
+                aviso = str(erro)
+        if MODELO_DISPONIVEL:
+            from src.reconhecimento import julgar_clip
 
-        with st.spinner("O segundo juiz (CLIP) está conferindo..."):
-            clip = julgar_clip(imagem)
-    if aviso:
-        st.caption(f"⚠️ Juiz com IA indisponível agora ({aviso}). Usando só o CLIP.")
-    juiz = ("ia+clip" if clip else "ia") if captura else ("clip" if clip else "manual")
-    if captura is None and clip:  # sem a IA: o CLIP decide sozinho (achado genérico)
-        captura = visao.Captura(clip["tema"], clip["achado"], clip["foto_real"], clip["confianca"])
+            with st.spinner("O segundo juiz (CLIP) está conferindo..."):
+                clip = julgar_clip(imagem)
+        if aviso:
+            st.caption(f"⚠️ Juiz com IA indisponível agora ({aviso}). Usando só o CLIP.")
+        juiz = ("ia+clip" if clip else "ia") if captura else ("clip" if clip else "manual")
+        if captura is None and clip:  # sem a IA: o CLIP decide sozinho (achado genérico)
+            captura = visao.Captura(clip["tema"], clip["achado"], clip["foto_real"], clip["confianca"])
 
-    if captura is None:  # protótipo sem nenhum modelo: a pessoa diz o que é
-        st.info("Reconhecimento automático não instalado: diga o que você fotografou.")
-        c1, c2 = st.columns([1, 2])
-        tema_id = c1.selectbox("Tema", [t.id for t in TEMAS], format_func=lambda i: POR_ID[i].nome)
-        achado = c2.text_input("O que é?", max_chars=60, placeholder=POR_ID[tema_id].achado[:40]).strip()
-        if not achado or not st.button("Valer!", type="primary"):
-            st.stop()
-        if not nome_valido(achado):
-            st.warning("Use só letras, números e pontuação simples.")
-            st.stop()
-        captura = visao.Captura(tema_id, achado, True, None)
+        if captura is None:  # protótipo sem nenhum modelo: a pessoa diz o que é
+            st.info("Reconhecimento automático não instalado: diga o que você fotografou.")
+            c1, c2 = st.columns([1, 2])
+            tema_id = c1.selectbox("Tema", [t.id for t in TEMAS], format_func=lambda i: POR_ID[i].nome)
+            achado = c2.text_input("O que é?", max_chars=60, placeholder=POR_ID[tema_id].achado[:40]).strip()
+            if not achado or not st.button("Valer!", type="primary"):
+                st.stop()
+            if not nome_valido(achado):
+                st.warning("Use só letras, números e pontuação simples.")
+                st.stop()
+            captura = visao.Captura(tema_id, achado, True, None)
 
-    # Localização aproximada (opcional): bairro + quadrado de ~500 m para o mapa da turma, e o contexto das
-    # mecânicas. A coordenada exata não é gravada: só o que sai dela (mirante, tipo de lugar, clima, km).
-    cidade = celula = None
-    contexto = {"mirante": None, "tipo_lugar": None, "clima": None, "km_anterior": None, "min_anterior": None}
-    if gps := st.session_state.get("gps"):
-        lat, lon = gps
-        celula = jogo.celula(lat, lon)
-        try:
-            cidade = bairro_de(round(lat, 3), round(lon, 3))
-        except Exception:
-            pass
-        lugares = st.session_state.get("_lugares") or []
-        perto = min(lugares, key=lambda l: distancia_km(lat, lon, l["lat"], l["lon"]), default=None)
-        contexto["mirante"] = bool(perto) and distancia_km(lat, lon, perto["lat"], perto["lon"]) * 1000 <= jogo.MIRANTE_M
-        contexto["tipo_lugar"] = perto.get("tipo") if contexto["mirante"] else None
-        contexto["clima"] = clima_agora(round(lat, 2), round(lon, 2))
-        # shortcut: a foto anterior fica só nesta sessão do navegador; ao recarregar, a conta recomeça.
-        # Para valer entre aparelhos, guardar no banco a última célula da pessoa (função security definer).
-        if anterior := st.session_state.get("_ultima_foto"):
-            la0, lo0, t0 = anterior
-            contexto["km_anterior"] = round(distancia_km(la0, lo0, lat, lon), 2)
-            contexto["min_anterior"] = round((jogo.agora_naive() - t0).total_seconds() / 60, 1)
-        st.session_state["_ultima_foto"] = (lat, lon, jogo.agora_naive())
-    st.session_state["n_foto"] = st.session_state.get("n_foto", 0) + 1
+        # Localização aproximada (opcional): bairro + quadrado de ~500 m para o mapa da turma, e o contexto das
+        # mecânicas. A coordenada exata não é gravada: só o que sai dela (mirante, tipo de lugar, clima, km).
+        cidade = celula = None
+        contexto = {"mirante": None, "tipo_lugar": None, "clima": None, "km_anterior": None, "min_anterior": None}
+        if gps := st.session_state.get("gps"):
+            lat, lon = gps
+            celula = jogo.celula(lat, lon)
+            try:
+                cidade = bairro_de(round(lat, 3), round(lon, 3))
+            except Exception:
+                pass
+            lugares = st.session_state.get("_lugares") or []
+            perto = min(lugares, key=lambda l: distancia_km(lat, lon, l["lat"], l["lon"]), default=None)
+            contexto["mirante"] = bool(perto) and distancia_km(lat, lon, perto["lat"], perto["lon"]) * 1000 <= jogo.MIRANTE_M
+            contexto["tipo_lugar"] = perto.get("tipo") if contexto["mirante"] else None
+            contexto["clima"] = clima_agora(round(lat, 2), round(lon, 2))
+            # shortcut: a foto anterior fica só nesta sessão do navegador; ao recarregar, a conta recomeça.
+            # Para valer entre aparelhos, guardar no banco a última célula da pessoa (função security definer).
+            if anterior := st.session_state.get("_ultima_foto"):
+                la0, lo0, t0 = anterior
+                contexto["km_anterior"] = round(distancia_km(la0, lo0, lat, lon), 2)
+                contexto["min_anterior"] = round((jogo.agora_naive() - t0).total_seconds() / 60, 1)
+            st.session_state["_ultima_foto"] = (lat, lon, jogo.agora_naive())
+        st.session_state["n_foto"] = st.session_state.get("n_foto", 0) + 1
 
-    juizes = {"juiz": juiz, "clip_tema": clip["tema"] if clip else None,
-              "clip_foto_real": clip["foto_real"] if clip else None,
-              "clip_prob_tema": round(clip["probs"].get(captura.tema, 0.0), 4) if clip and captura.tema else None,
-              "clip_prob_tela": round(clip["probs"].get("tela", 0.0), 4) if clip else None,
-              "clip_rank_tema": jogo.posicao(clip["probs"], captura.tema) if clip and captura.tema else None,
-              **contexto}
-    h = jogo.hash_foto(imagem)
-    historico = armazenamento.capturas()
-    nova = {"usuario": eu, "criado_em": jogo.agora_naive(), "tema": captura.tema or "nenhum",
-            "achado": captura.achado, "foto_real": captura.foto_real, "foto_hash": h, **juizes}
-    resultado = jogo.pontuar_nova(historico, nova)
-    medalhas_antes = {m["id"]: m["nivel"] for m in jogo.medalhas(jogo.calcular_pontos(historico), eu)}
-    vezes = jogo.vezes_achado(jogo.calcular_pontos(historico), captura.tema or "", captura.achado)
-    id_captura = armazenamento.salvar_captura(captura.tema, captura.achado, captura.confianca,
-                                              captura.foto_real, h, cidade, celula, **juizes)
-    feita = {"id": id_foto, "captura": captura, "resultado": resultado, "vezes": vezes,
-             "juizes": juizes, "id_captura": id_captura, "contestada": None}
-    st.session_state["ultima_captura"] = feita
-    # Um aviso por bônus e por medalha nova, mostrados depois do rerun (o placar do topo já com a foto nova)
-    avisos = [(d[0].upper() + d[1:], ":material/bolt:")
-              for d in filter(None, str(resultado.get("detalhes") or "").split("; "))]
-    for m in jogo.medalhas(jogo.calcular_pontos(armazenamento.capturas()), eu):
-        if m["nivel"] and m["nivel"] != medalhas_antes.get(m["id"]):
-            avisos.append((f"Medalha nova: {m['nome']} ({m['nivel']})", ":material/military_tech:"))
-    feita["avisos"] = avisos
-    st.rerun()
+        juizes = {"juiz": juiz, "clip_tema": clip["tema"] if clip else None,
+                  "clip_foto_real": clip["foto_real"] if clip else None,
+                  "clip_prob_tema": round(clip["probs"].get(captura.tema, 0.0), 4) if clip and captura.tema else None,
+                  "clip_prob_tela": round(clip["probs"].get("tela", 0.0), 4) if clip else None,
+                  "clip_rank_tema": jogo.posicao(clip["probs"], captura.tema) if clip and captura.tema else None,
+                  **contexto}
+        h = jogo.hash_foto(imagem)
+        historico = armazenamento.capturas()
+        nova = {"usuario": eu, "criado_em": jogo.agora_naive(), "tema": captura.tema or "nenhum",
+                "achado": captura.achado, "foto_real": captura.foto_real, "foto_hash": h, **juizes}
+        resultado = jogo.pontuar_nova(historico, nova)
+        medalhas_antes = {m["id"]: m["nivel"] for m in jogo.medalhas(jogo.calcular_pontos(historico), eu)}
+        vezes = jogo.vezes_achado(jogo.calcular_pontos(historico), captura.tema or "", captura.achado)
+        id_captura = armazenamento.salvar_captura(captura.tema, captura.achado, captura.confianca,
+                                                  captura.foto_real, h, cidade, celula, **juizes)
+        feita = {"id": id_foto, "captura": captura, "resultado": resultado, "vezes": vezes,
+                 "juizes": juizes, "id_captura": id_captura, "contestada": None}
+        st.session_state["ultima_captura"] = feita
+        # Um aviso por bônus e por medalha nova, mostrados depois do rerun (o placar do topo já com a foto nova)
+        avisos = [(d[0].upper() + d[1:], ":material/bolt:")
+                  for d in filter(None, str(resultado.get("detalhes") or "").split("; "))]
+        for m in jogo.medalhas(jogo.calcular_pontos(armazenamento.capturas()), eu):
+            if m["nivel"] and m["nivel"] != medalhas_antes.get(m["id"]):
+                avisos.append((f"Medalha nova: {m['nome']} ({m['nivel']})", ":material/military_tech:"))
+        feita["avisos"] = avisos
+        st.rerun()
 
-for texto, icone in feita.pop("avisos", []):
-    st.toast(texto, icon=icone)
+    for texto, icone in feita.pop("avisos", []):
+        st.toast(texto, icon=icone)
 
-captura, resultado = feita["captura"], feita["resultado"]
-tema = POR_ID.get(captura.tema or "")
-linha_juizes = ui.linha_juizes(feita["juizes"], captura.tema)
-if tema:
-    ui.cartao_pontos(resultado, tema, captura.achado or tema.generico, feita["vezes"], linha_juizes)
-else:
-    ui.cartao_pontos(resultado, TEMAS[0], "", 0, linha_juizes)
-
-# Contestar: o juiz errou o tema? A pessoa diz o que era. Não dá pontos (sem trapaça), mas fica gravado
-# e aparece na página Avaliação para melhorar o identificador.
-motivo = str(resultado.get("motivo") or "")
-if not resultado.get("aceita") and ("nenhum tema" in motivo or "discordaram" in motivo or "CLIP viu" in motivo):
-    if feita["contestada"]:
-        st.caption(f"Contestação registrada: você disse que era {POR_ID[feita['contestada']].nome.lower()}. "
-                   "Isso ajuda a melhorar o identificador.")
+    captura, resultado = feita["captura"], feita["resultado"]
+    tema = POR_ID.get(captura.tema or "")
+    linha_juizes = ui.linha_juizes(feita["juizes"], captura.tema)
+    if tema:
+        ui.cartao_pontos(resultado, tema, captura.achado or tema.generico, feita["vezes"], linha_juizes)
     else:
-        c1, c2 = st.columns([2, 1])
-        era = c1.selectbox("O juiz errou? Era…", [t.id for t in TEMAS], index=None, placeholder="Escolha o tema",
-                           format_func=lambda i: f"{POR_ID[i].emoji} {POR_ID[i].nome}")
-        if c2.button("Contestar", use_container_width=True, disabled=era is None):
-            armazenamento.contestar(feita["id_captura"], era)
-            feita["contestada"] = era
-            st.rerun()
+        ui.cartao_pontos(resultado, TEMAS[0], "", 0, linha_juizes)
 
-ranking = jogo.podio(jogo.calcular_pontos(armazenamento.capturas()), "hoje")
-pos = jogo.posicao_de(ranking, eu)
-if pos:
-    total = int(ranking.loc[ranking["usuario"] == eu, "pontos"].iloc[0])
-    st.markdown(f"**{pos}º lugar hoje** com {total} pontos.")
+    # Contestar: o juiz errou o tema? A pessoa diz o que era. Não dá pontos (sem trapaça), mas fica gravado
+    # e aparece na página Avaliação para melhorar o identificador.
+    motivo = str(resultado.get("motivo") or "")
+    if not resultado.get("aceita") and ("nenhum tema" in motivo or "discordaram" in motivo or "CLIP viu" in motivo):
+        if feita["contestada"]:
+            st.caption(f"Contestação registrada: você disse que era {POR_ID[feita['contestada']].nome.lower()}. "
+                       "Isso ajuda a melhorar o identificador.")
+        else:
+            c1, c2 = st.columns([2, 1])
+            era = c1.selectbox("O juiz errou? Era…", [t.id for t in TEMAS], index=None, placeholder="Escolha o tema",
+                               format_func=lambda i: f"{POR_ID[i].emoji} {POR_ID[i].nome}")
+            if c2.button("Contestar", use_container_width=True, disabled=era is None):
+                armazenamento.contestar(feita["id_captura"], era)
+                feita["contestada"] = era
+                st.rerun()
 
-if st.button("Ver pódio", icon=":material/trophy:", use_container_width=True):
-    st.switch_page("pages/1_Pódio.py")
-st.caption("Tire outra foto acima para continuar jogando.")
+    ranking = jogo.podio(jogo.calcular_pontos(armazenamento.capturas()), "hoje")
+    pos = jogo.posicao_de(ranking, eu)
+    if pos:
+        total = int(ranking.loc[ranking["usuario"] == eu, "pontos"].iloc[0])
+        st.markdown(f"**{pos}º lugar hoje** com {total} pontos.")
+
+    if st.button("Ver pódio", icon=":material/trophy:", use_container_width=True):
+        st.switch_page("pages/1_Pódio.py")
+    st.caption("Tire outra foto acima para continuar jogando.")

@@ -1,6 +1,6 @@
 # 🔍 WishLens
 
-> **Point. Snap. Discover.**: um jogo de fotos do mundo real. Seu personagem anda no mapa, os lugares onde dá para achar cada tema piscam, e você fotografa carros, plantas, pássaros, cachorros e gatos ou peças de computador para ganhar pontos e subir no pódio.
+> **Aponte. Fotografe. Descubra.**: um jogo de fotos do mundo real. Seu personagem anda no mapa, os lugares onde dá para achar cada tema piscam, e você fotografa carros, plantas, pássaros, cachorros e gatos ou peças de computador para ganhar pontos e subir no pódio.
 
 Projeto final da disciplina **Ciência de Dados I (Turma 12)**, desenvolvido com a metodologia **CRISP-DM**.
 

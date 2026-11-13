@@ -30,7 +30,7 @@ da IA não estão sendo lidos (ou a API falhou: o motivo aparece numa linha acim
 | Toque num ponto | Cartão: o que procurar ali, distância, endereço/horário (quando o mapa tem) e "Como chegar" |
 | Desmarque temas nos botões acima do mapa | Os pontos daquele tema somem |
 | **🔄 Atualizar lugares** depois de andar | Busca os lugares de novo a partir de onde você está |
-| Sem permitir o GPS | Aparece "Sem GPS: onde você está?"; digite o bairro e o mapa abre lá |
+| Sem permitir o GPS | Toque em "Sem GPS? Diga onde você está", digite o bairro e o mapa abre lá |
 | Tema escuro (segue o aparelho; ou ⋮ → Settings no app) | O app e o mapa ficam escuros |
 
 ## 4. Fotos (os dois erros que você encontrou)
@@ -62,7 +62,7 @@ Sem o Supabase, cada pessoa só vê ela mesma (e os exemplos) no pódio.
 ## 7. Pódio, Coleção e Avaliação
 | Faça | Deve acontecer |
 |---|---|
-| Barra lateral → **Carregar dados de exemplo** | Pódio, Coleção e Avaliação ganham jogadores fictícios |
+| Página Avaliação → Demonstração → **Carregar dados de exemplo** | Pódio, Coleção e Avaliação ganham jogadores fictícios |
 | **Pódio** | 3 degraus, abas Hoje/Semana/Geral, filtro por tema, "achados mais raros" |
 | **Minha Coleção** | Estilo de jogador, álbum por tema, gráficos |
 | **Avaliação** | Concordância CLIP × IA, matriz de confusão, vetos, recusas, contestações, CSV |
