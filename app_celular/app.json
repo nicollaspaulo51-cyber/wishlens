@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "WishLens",
+    "slug": "wishlens",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#136B4C",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "O WishLens usa a câmera para você fotografar os achados do jogo.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "O WishLens usa a sua localização para mostrar os lugares perto de você. Só o quadrado de ~500 m é guardado, nunca a coordenada exata."
+        }
+      ]
+    ],
+    "scheme": "wishlens",
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

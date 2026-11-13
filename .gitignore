@@ -12,3 +12,5 @@ data/raw/
 *.png
 *.heic
 .pytest_cache/
+# ícones do app de celular (não são fotos)
+!app_celular/assets/*.png
