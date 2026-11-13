@@ -19,8 +19,9 @@ Projeto final da disciplina **Ciência de Dados I (Turma 12)**, desenvolvido com
 
 ### Dois juízes em toda foto
 O **Gemma** diz o tema, o achado e se é foto real. O **CLIP** da OpenAI (`openai/clip-vit-base-patch32`) julga
-**toda foto** também: ele barra a foto se vir uma tela/impressão (chance ≥ 50%) ou se der menos de 10% de chance ao
-tema do Gemma. O que cada modelo disse fica gravado (`juiz`, `clip_tema`, `clip_prob_tema`, `clip_prob_tela`).
+**toda foto** também: ele barra a foto se vir uma tela/impressão (chance ≥ 50%) ou se o tema do Gemma ficar fora
+dos 2 primeiros palpites dele (de 7: os 5 temas, tela e nenhum). Usa a posição, não a chance, porque o CLIP é
+"confiante demais": uma diferença pequena de parecença vira 95% × 5%. O que cada modelo disse fica gravado (`juiz`, `clip_tema`, `clip_rank_tema`, `clip_prob_tema`, `clip_prob_tela`).
 Sem a chave do Gemma, o CLIP julga sozinho. Quando o juiz erra, a pessoa pode **contestar** ("era um mouse!"):
 não ganha pontos, mas a contestação aparece na página Avaliação para melhorar o identificador.
 

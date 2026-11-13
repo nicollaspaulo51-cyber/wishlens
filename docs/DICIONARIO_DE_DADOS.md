@@ -19,6 +19,7 @@
 | `clip_foto_real` | sim/não | o CLIP achou que não é tela | `true` | mantida |
 | `clip_prob_tema` | 0–1 | chance que o CLIP deu ao tema final | `0.62` | mantida |
 | `clip_prob_tela` | 0–1 | chance de tela/impressão/desenho para o CLIP | `0.08` | mantida |
+| `clip_rank_tema` | 1–7 | posição do tema final entre os palpites do CLIP (1 = o preferido dele); > 2 = veto | `1` | mantida |
 | `contestada` | texto | tema que a pessoa disse que era, numa foto recusada | `pecas` | mantida |
 
 ### Colunas calculadas (`src/jogo.calcular_pontos`)

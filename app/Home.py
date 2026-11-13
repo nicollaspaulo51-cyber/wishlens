@@ -121,7 +121,8 @@ if not feita or feita["id"] != id_foto:
     juizes = {"juiz": juiz, "clip_tema": clip["tema"] if clip else None,
               "clip_foto_real": clip["foto_real"] if clip else None,
               "clip_prob_tema": round(clip["probs"].get(captura.tema, 0.0), 4) if clip and captura.tema else None,
-              "clip_prob_tela": round(clip["probs"].get("tela", 0.0), 4) if clip else None}
+              "clip_prob_tela": round(clip["probs"].get("tela", 0.0), 4) if clip else None,
+              "clip_rank_tema": jogo.posicao(clip["probs"], captura.tema) if clip and captura.tema else None}
     h = jogo.hash_foto(imagem)
     historico = armazenamento.capturas()
     nova = {"usuario": eu, "criado_em": jogo.agora_naive(), "tema": captura.tema or "nenhum",

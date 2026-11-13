@@ -125,7 +125,8 @@ def gerar_capturas(semente: int = 7, dias: int = 14, centro: tuple[float, float]
                 "tema": "nenhum", "achado": "", "confianca": round(rng.uniform(0.3, 0.6), 2), "foto_real": True,
                 "foto_hash": f"{rng.getrandbits(64):016x}", "cidade": "Vitória - ES", "celula": None,
                 "juiz": "gemma+clip", "clip_tema": tema, "clip_foto_real": True,
-                "clip_prob_tema": None, "clip_prob_tela": round(rng.uniform(0.0, 0.1), 2), "contestada": tema,
+                "clip_prob_tema": None, "clip_prob_tela": round(rng.uniform(0.0, 0.1), 2), "clip_rank_tema": None,
+                "contestada": tema,
             })
     return registros
 
@@ -140,4 +141,5 @@ def _opiniao_clip(tema: str, real: bool, rng: random.Random) -> dict:
     prob_tela = rng.uniform(0.55, 0.8) if not real else rng.uniform(0.0, 0.2)
     return {"juiz": "gemma+clip", "clip_tema": None if clip_tema == "nenhum" else clip_tema,
             "clip_foto_real": prob_tela < 0.5, "clip_prob_tema": round(prob_tema, 3),
-            "clip_prob_tela": round(prob_tela, 3), "contestada": None}
+            "clip_prob_tela": round(prob_tela, 3), "clip_rank_tema": 1 if concorda else rng.choice([2, 3, 3, 4, 5]),
+            "contestada": None}

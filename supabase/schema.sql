@@ -67,6 +67,7 @@ alter table public.capturas add column if not exists clip_tema text;
 alter table public.capturas add column if not exists clip_foto_real boolean;
 alter table public.capturas add column if not exists clip_prob_tema real check (clip_prob_tema is null or clip_prob_tema between 0 and 1);
 alter table public.capturas add column if not exists clip_prob_tela real check (clip_prob_tela is null or clip_prob_tela between 0 and 1);
+alter table public.capturas add column if not exists clip_rank_tema smallint check (clip_rank_tema is null or clip_rank_tema between 1 and 20);
 alter table public.capturas add column if not exists contestada text;
 
 -- ---------------------------------------------------------------- conexões (comparar desejos)
@@ -111,7 +112,7 @@ grant update (contestada) on public.capturas to authenticated;
 -- Sem isso, apelido + hora + lugar formariam um rastro de onde cada pessoa esteve.
 revoke select on public.capturas from anon, authenticated;
 grant select (id, usuario_id, criado_em, tema, achado, confianca, foto_real, foto_hash,
-              juiz, clip_tema, clip_foto_real, clip_prob_tema, clip_prob_tela, contestada)
+              juiz, clip_tema, clip_foto_real, clip_prob_tema, clip_prob_tela, clip_rank_tema, contestada)
   on public.capturas to authenticated;
 
 -- O mapa da turma usa só este resumo: por quadrado de ~500 m e tema, sem quem nem quando,

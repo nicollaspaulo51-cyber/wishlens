@@ -23,8 +23,8 @@ st.title("📊 Avaliação dos juízes")
 st.markdown(
     "Fase 5 do CRISP-DM: **os modelos acertam?** Em cada foto do jogo julgam dois modelos: o **Gemma** "
     "(diz o tema, o achado e se é foto real) e o **CLIP** da OpenAI (diz o tema e a chance de ser foto de tela). "
-    f"O CLIP barra a foto quando vê uma tela com chance ≥ {jogo.VETO_TELA:.0%} ou quando dá menos de "
-    f"{jogo.VETO_TEMA:.0%} de chance ao tema do Gemma.")
+    f"O CLIP barra a foto quando vê uma tela com chance ≥ {jogo.VETO_TELA:.0%} ou quando o tema do Gemma "
+    f"fica fora dos {jogo.VETO_RANK} primeiros palpites dele (de 7: os 5 temas, tela e nenhum).")
 
 pontuadas = jogo.calcular_pontos(armazenamento.capturas())
 if pontuadas.empty:

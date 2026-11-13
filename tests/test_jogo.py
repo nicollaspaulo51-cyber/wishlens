@@ -252,3 +252,19 @@ def test_banco_antigo_salva_sem_colunas_dos_juizes():
     s.salvar_captura({"criado_em": datetime(2026, 11, 12, 10), "tema": "carros", "juiz": "gemma+clip",
                       "clip_tema": "carros"})
     assert len(chamadas) == 2 and "juiz" not in chamadas[1] and chamadas[1]["tema"] == "carros"
+
+
+def test_veto_por_posicao_nao_barra_o_mouse():
+    """Com a escala do CLIP (~100), um mouse um pouco mais parecido com "um quarto" dá 95% x 5%.
+    A regra por posição não pode vetar isso: o tema do Gemma é o 2º palpite do CLIP."""
+    import math
+    from src.reconhecimento import probs_por_grupo
+    grupos = ["nenhum", "pecas", "carros", "plantas", "passaros", "pets", "tela"]
+    sims = [0.30, 0.27, 0.22, 0.21, 0.20, 0.21, 0.23]
+    e = [math.exp(100 * s - 30) for s in sims]
+    probs = probs_por_grupo(grupos, [x / sum(e) for x in e])
+    assert probs["pecas"] < jogo.VETO_TEMA          # pela chance, seria vetado (o bug)
+    rank = jogo.posicao(probs, "pecas")
+    assert rank == 2
+    assert jogo.veto_clip("pecas", "gemma+clip", None, probs["pecas"], probs["tela"], rank) is None
+    assert "discordaram" in jogo.veto_clip("pecas", "gemma+clip", "plantas", 0.01, 0.0, 5)

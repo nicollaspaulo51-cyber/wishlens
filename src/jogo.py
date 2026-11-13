@@ -36,8 +36,13 @@ COLUNAS_PONTOS = ["pontos", "base", "novidade", "raridade", "do_dia", "aceita", 
 
 # Segundo juiz (CLIP) ao lado do Gemma: só barra quando discorda com clareza, porque sozinho ele erra
 # bastante (pássaro pequeno na foto, carro de longe). Ajustar depois de ver os dados da turma.
-VETO_TELA = 0.5   # chance mínima de "tela/impressão/desenho" para o CLIP barrar
-VETO_TEMA = 0.10  # abaixo disso de chance para o tema do Gemma, os juízes discordam
+# O CLIP é muito "confiante" (escala ~100 nas similaridades): uma diferença pequena de parecença vira
+# 95% x 5%. Por isso a discordância de tema usa a POSIÇÃO do tema do Gemma entre os palpites do CLIP
+# (1 = o preferido dele), não a chance. Com 7 grupos (5 temas, tela, nenhum), ficar fora dos 2 primeiros
+# é discordar com clareza.
+VETO_RANK = 2     # o CLIP barra se o tema do Gemma ficar além desta posição
+VETO_TELA = 0.5   # chance mínima de "tela/impressão/desenho" (e ser o 1º palpite) para o CLIP barrar
+VETO_TEMA = 0.10  # só para capturas antigas, sem a posição gravada
 
 
 def _valor(x):
@@ -47,15 +52,23 @@ def _valor(x):
     return x
 
 
+def posicao(probs: dict[str, float], grupo: str) -> int:
+    """Posição do grupo entre os palpites do CLIP (1 = o mais provável)."""
+    ordem = sorted(probs, key=probs.get, reverse=True)
+    return ordem.index(grupo) + 1 if grupo in ordem else len(ordem) + 1
+
+
 def veto_clip(tema: str | None, juiz: str | None, clip_tema: str | None,
-              clip_prob_tema: float | None, clip_prob_tela: float | None) -> str | None:
+              clip_prob_tema: float | None, clip_prob_tela: float | None,
+              clip_rank_tema: int | None = None) -> str | None:
     """Motivo para o CLIP barrar a foto que o Gemma aceitou, ou None. Só vale com os dois juízes."""
     if _valor(juiz) != "gemma+clip" or not tema:
         return None
-    tela, prob_tema = _valor(clip_prob_tela), _valor(clip_prob_tema)
+    tela, prob_tema, rank = _valor(clip_prob_tela), _valor(clip_prob_tema), _valor(clip_rank_tema)
     if tela is not None and tela >= VETO_TELA and tema != "pecas":  # monitor ligado é peça, não trapaça
         return "o CLIP viu uma tela ou impressão"
-    if prob_tema is not None and prob_tema < VETO_TEMA:
+    discorda = int(rank) > VETO_RANK if rank is not None else (prob_tema is not None and prob_tema < VETO_TEMA)
+    if discorda:
         nome = POR_ID[tema].nome.lower()
         outro = POR_ID[clip_tema].nome.lower() if _valor(clip_tema) in POR_ID else "nenhum tema"
         return f"os juízes discordaram do tema (Gemma: {nome}; CLIP: {outro})"
@@ -120,7 +133,8 @@ def calcular_pontos(capturas: pd.DataFrame) -> pd.DataFrame:
         elif tema is None:
             motivo = "não é de nenhum tema do jogo"
         elif veto := veto_clip(tema.id, getattr(c, "juiz", None), getattr(c, "clip_tema", None),
-                               getattr(c, "clip_prob_tema", None), getattr(c, "clip_prob_tela", None)):
+                               getattr(c, "clip_prob_tema", None), getattr(c, "clip_prob_tela", None),
+                               getattr(c, "clip_rank_tema", None)):
             motivo = veto
         elif not chave:
             motivo = "não deu para saber o que é"
