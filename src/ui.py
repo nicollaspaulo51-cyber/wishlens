@@ -1,4 +1,8 @@
-"""Partes de interface compartilhadas entre as páginas: tema claro/escuro, barra lateral e estilos."""
+"""Partes de interface compartilhadas entre as páginas: paleta, barra lateral e estilos.
+
+O tema (claro/escuro, fontes, cantos) é o nativo do Streamlit, em .streamlit/config.toml. Aqui ficam só as
+cores que o tema nativo não alcança (mapa, gráficos, cartões em HTML) e as classes wl-*.
+"""
 
 import html
 
@@ -6,126 +10,93 @@ import streamlit as st
 
 from src import armazenamento
 
-# Paleta igual à da prévia (https://claude.ai/artifact/4sZtfAn7K85Kc6bASY7sjJ)
-TEMAS = {
-    "claro": {"bg": "#F6F5FB", "surface": "#FFFFFF", "ink": "#1B1830", "muted": "#666180",
-              "line": "#E3E0EE", "accent": "#6D4AFF", "accent_ink": "#FFFFFF", "soft": "#EEE9FF",
-              "buy": "#6D4AFF", "food": "#E8701F", "adopt": "#17975F", "heat": "Purples"},
-    "escuro": {"bg": "#12101B", "surface": "#1B1828", "ink": "#EEEBFA", "muted": "#A39EBE",
-               "line": "#2D2942", "accent": "#9C86FF", "accent_ink": "#14111F", "soft": "#272043",
-               "buy": "#9C86FF", "food": "#FF9B57", "adopt": "#3FCB8B", "heat": "Purp"},
+# Mesmas cores do config.toml. "sol" é o amarelo da lupa do personagem: só pontos e tema do dia.
+PALETA = {
+    "claro": {"bg": "#EEF2EC", "surface": "#FFFFFF", "ink": "#12241D", "muted": "#4A5F55", "line": "#C9D4CB",
+              "accent": "#136B4C", "accent_ink": "#FFFFFF", "soft": "#DDE8DF",
+              "sol": "#FFC83D", "sol_ink": "#2A2000", "heat": "Greens"},
+    "escuro": {"bg": "#0E1914", "surface": "#16251E", "ink": "#E4EEE8", "muted": "#A3B8AD", "line": "#2C4136",
+               "accent": "#4CC793", "accent_ink": "#06130D", "soft": "#1E3329",
+               "sol": "#FFC83D", "sol_ink": "#2A2000", "heat": "Emrld"},
 }
-
-FONTES = ("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800"
-          "&family=Figtree:wght@400;500;600&display=swap")
+TITULOS = '"Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif'
 
 
 def tema() -> str:
-    return st.session_state.setdefault("tema", "claro")
+    """'claro' ou 'escuro', conforme o tema do Streamlit (segue o aparelho; muda em ⋮ → Settings)."""
+    try:
+        return "escuro" if st.context.theme.type == "dark" else "claro"
+    except Exception:  # fora de uma sessão (testes)
+        return "claro"
 
 
 def cores() -> dict:
-    return TEMAS[tema()]
-
-
-def _alternar_tema() -> None:
-    st.session_state["tema"] = "escuro" if tema() == "claro" else "claro"
+    return PALETA[tema()]
 
 
 def _css() -> str:
     c = cores()
     return f"""
 <style>
-@import url('{FONTES}');
-:root {{ --wl-bg:{c['bg']}; --wl-surface:{c['surface']}; --wl-ink:{c['ink']}; --wl-muted:{c['muted']};
-        --wl-line:{c['line']}; --wl-accent:{c['accent']}; --wl-accent-ink:{c['accent_ink']}; --wl-soft:{c['soft']}; }}
-[data-testid="stApp"], [data-testid="stApp"] p, [data-testid="stApp"] label, [data-testid="stApp"] li,
-[data-testid="stApp"] input, [data-testid="stApp"] button, [data-testid="stMarkdownContainer"],
-[data-testid="stApp"] h4, [data-testid="stApp"] h5, [data-testid="stApp"] h6 {{
-  font-family: "Figtree", "Segoe UI", system-ui, sans-serif; }}
-[data-testid="stApp"] h1, [data-testid="stApp"] h2, [data-testid="stApp"] h3, [data-testid="stMetricValue"] {{
-  font-family: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif !important; letter-spacing:-.01em; }}
-[data-testid="stApp"] {{ background: var(--wl-bg); color: var(--wl-ink); transition: background .35s, color .35s; }}
-[data-testid="stHeader"] {{ background: transparent; }}
-[data-testid="stSidebar"] {{ background: var(--wl-surface); border-right: 1px solid var(--wl-line); }}
-[data-testid="stApp"] h1, [data-testid="stApp"] h2, [data-testid="stApp"] h3, [data-testid="stApp"] h4,
-[data-testid="stApp"] p, [data-testid="stApp"] label, [data-testid="stApp"] li,
-[data-testid="stMetricValue"], [data-testid="stMetricLabel"], [data-testid="stSidebarNav"] span,
-[data-testid="stExpander"] summary, [data-testid="stMarkdownContainer"] {{ color: var(--wl-ink); }}
-[data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p {{ color: var(--wl-muted) !important; }}
-[data-testid="stTextInputRootElement"], [data-testid="stTextInputRootElement"] input,
-[data-testid="stNumberInputContainer"], [data-testid="stNumberInputContainer"] input,
-[data-testid="stSelectbox"] [data-rac], [data-testid="stSelectbox"] input,
-[data-baseweb="input"], [data-baseweb="input"] input, [data-baseweb="select"] > div,
-[data-testid="stFileUploaderDropzone"], [data-testid="stProgressBarTrack"] {{
-  background-color: var(--wl-bg) !important; color: var(--wl-ink) !important; border-color: var(--wl-line) !important; }}
-[data-testid="stSelectbox"] button {{ color: var(--wl-muted); }}
-[data-testid="stCameraInput"] div, [data-testid="stCameraInput"] button {{
-  background-color: var(--wl-bg) !important; color: var(--wl-muted) !important; border-color: var(--wl-line) !important; }}
-[role="listbox"], [role="option"], [data-baseweb="popover"] li, [data-baseweb="menu"] {{
-  background-color: var(--wl-surface); color: var(--wl-ink); }}
-[role="option"]:hover, [role="option"][data-focused="true"] {{ background-color: var(--wl-soft); }}
-[role="tooltip"], [role="tooltip"] *, [data-baseweb="tooltip"] div {{
-  background-color: var(--wl-surface) !important; color: var(--wl-ink) !important; }}
-[data-testid="stExpander"] details, [data-testid="stTabs"] [role="tablist"] {{ border-color: var(--wl-line); }}
-[data-testid="stBaseButton-secondary"], [data-testid="stBaseLinkButton-secondary"] {{
-  background: var(--wl-surface); color: var(--wl-ink); border-color: var(--wl-line); }}
-[data-testid="stBaseButton-primary"] {{ background: var(--wl-accent); color: var(--wl-accent-ink); border-color: var(--wl-accent); }}
-hr {{ border-color: var(--wl-line) !important; }}
-.wl-card {{ padding: 1rem 1.2rem; border-radius: 16px; border: 1px solid var(--wl-line);
+:root {{ --wl-surface:{c['surface']}; --wl-ink:{c['ink']}; --wl-muted:{c['muted']}; --wl-line:{c['line']};
+        --wl-accent:{c['accent']}; --wl-accent-ink:{c['accent_ink']}; --wl-soft:{c['soft']};
+        --wl-sol:{c['sol']}; --wl-sol-ink:{c['sol_ink']}; --wl-titulos:{TITULOS}; }}
+.wl-muted {{ color: var(--wl-muted); }}
+.wl-card {{ padding: 1rem 1.1rem; border-radius: 14px; border: 1px solid var(--wl-line);
            background: var(--wl-surface); margin-bottom: .8rem; }}
-.wl-badge {{ display:inline-block; padding:.15rem .6rem; border-radius:999px; font-size:.8rem;
+.wl-badge {{ display:inline-block; padding:.15rem .6rem; border-radius:999px; font-size:.85rem;
             background: var(--wl-soft); color: var(--wl-ink); margin: 0 .3rem .3rem 0; }}
 .wl-list {{ list-style:none; margin:0; padding:0; }}
-.wl-list li {{ display:flex; justify-content:space-between; gap:.8rem; padding:.45rem 0;
+.wl-list li {{ display:flex; justify-content:space-between; gap:.8rem; padding:.5rem 0;
               border-bottom:1px solid var(--wl-line); }}
 .wl-list li:last-child {{ border-bottom:0; }}
-.wl-muted {{ color: var(--wl-muted); }}
-.wl-place h3 {{ margin:0 0 .2rem 0; }}
-.wl-place a {{ color: var(--wl-accent); }}
-.wl-place .wl-list li span:first-child {{ white-space:nowrap; }}
-.wl-hero {{ padding:1rem 1.2rem; border-radius:18px; margin-bottom:.8rem; color:var(--wl-accent-ink);
-           background: linear-gradient(135deg, var(--wl-accent), color-mix(in srgb, var(--wl-accent) 55%, #ff7a59)); }}
-.wl-hero .wl-k {{ font-size:.75rem; letter-spacing:.08em; text-transform:uppercase; opacity:.85; }}
-.wl-hero .wl-t {{ font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:800; font-size:1.6rem; line-height:1.15; }}
-.wl-hero small {{ opacity:.9; }}
-.wl-pontos {{ font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:800; font-size:2.4rem; color:var(--wl-accent); line-height:1; }}
+.wl-list li span:last-child {{ text-align:right; }}
+/* Barra do jogo: marca à esquerda, placar à direita */
+.wl-barra {{ display:flex; justify-content:space-between; align-items:center; gap:.6rem; margin:-1.5rem 0 .6rem; }}
+.wl-brand {{ font-family:var(--wl-titulos); font-weight:800; font-size:1.5rem; line-height:1; letter-spacing:-.02em; }}
+.wl-placar {{ display:flex; gap:.4rem; }}
+.wl-placar span {{ border:1px solid var(--wl-line); background:var(--wl-surface); border-radius:999px;
+                  padding:.3rem .7rem; font-size:.9rem; white-space:nowrap; }}
+.wl-placar b {{ font-family:var(--wl-titulos); }}
+/* Selo do tema do dia: o único bloco amarelo da tela */
+.wl-selo {{ display:flex; align-items:center; gap:.8rem; padding:.7rem .9rem; border-radius:14px;
+           background:var(--wl-sol); color:var(--wl-sol-ink); margin-bottom:.7rem; }}
+.wl-selo .wl-emoji {{ font-size:2rem; line-height:1; }}
+.wl-selo .wl-t {{ font-family:var(--wl-titulos); font-weight:800; font-size:1.25rem; line-height:1.15; }}
+.wl-selo .wl-dobro {{ margin-left:auto; font-family:var(--wl-titulos); font-weight:800; font-size:1.7rem; line-height:1; }}
+.wl-selo small {{ display:block; font-size:.85rem; }}
+/* Resultado da foto */
+.wl-pontos {{ font-family:var(--wl-titulos); font-weight:800; font-size:3rem; line-height:1; letter-spacing:-.03em; }}
+.wl-pontos small {{ font-size:1.1rem; letter-spacing:0; }}
+.wl-valeu {{ border-left:8px solid var(--wl-sol); }}
+.wl-recusa .wl-pontos {{ color:var(--wl-muted); }}
+.wl-estilo {{ font-family:var(--wl-titulos); font-weight:800; font-size:1.7rem; line-height:1.15; color:var(--wl-accent); }}
+/* Pódio */
 .wl-podio {{ display:flex; align-items:flex-end; justify-content:center; gap:.5rem; margin:.5rem 0 1rem; }}
-.wl-degrau {{ flex:1; max-width:9rem; text-align:center; }}
+.wl-degrau {{ flex:1; max-width:9rem; text-align:center; min-width:0; }}
 .wl-degrau .wl-bloco {{ border-radius:12px 12px 0 0; background:var(--wl-soft); border:1px solid var(--wl-line);
-                        font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:800; font-size:1.5rem;
+                        font-family:var(--wl-titulos); font-weight:800; font-size:1.6rem;
                         display:flex; align-items:flex-start; justify-content:center; padding-top:.4rem; }}
-.wl-degrau.p1 .wl-bloco {{ height:6.5rem; background:var(--wl-accent); color:var(--wl-accent-ink); }}
+.wl-degrau.p1 .wl-bloco {{ height:6.5rem; background:var(--wl-sol); color:var(--wl-sol-ink); border-color:var(--wl-sol); }}
 .wl-degrau.p2 .wl-bloco {{ height:4.8rem; }}
 .wl-degrau.p3 .wl-bloco {{ height:3.6rem; }}
-.wl-degrau .wl-nome {{ font-weight:600; font-size:.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
-.wl-barra {{ display:flex; justify-content:space-between; align-items:center; gap:.6rem; margin:-1.5rem 0 .4rem; }}
-.wl-placar {{ display:flex; gap:.4rem; }}
-.wl-placar span {{ background:var(--wl-soft); border:1px solid var(--wl-line); border-radius:999px;
-                  padding:.25rem .65rem; font-size:.9rem; white-space:nowrap; }}
+.wl-degrau .wl-nome {{ font-weight:700; font-size:.95rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
 /* o componente que pede o GPS não precisa aparecer (continua funcionando com altura zero) */
 [data-testid="stElementContainer"]:has(iframe[title*="streamlit_js_eval"]) {{ height:0; min-height:0; overflow:hidden; margin:0; }}
-.wl-brand {{ font-family:"Bricolage Grotesque", system-ui, sans-serif; font-weight:800; font-size:1.4rem; line-height:1.1; }}
-@media (prefers-reduced-motion: reduce) {{ [data-testid="stApp"] {{ transition:none; }} }}
 </style>
 """
 
 
 def configurar(titulo: str, icone: str = "🔍") -> None:
     st.set_page_config(page_title=f"WishLens · {titulo}", page_icon=icone, layout="centered")
-    tema()
     st.markdown(_css(), unsafe_allow_html=True)
     barra_lateral()
 
 
 def barra_lateral() -> None:
     with st.sidebar:
-        c1, c2 = st.columns([3, 1], vertical_alignment="center")
-        c1.markdown('<div class="wl-brand">🔍 WishLens</div><div class="wl-muted" style="font-size:.8rem">'
+        st.markdown('<div class="wl-brand">WishLens</div><div class="wl-muted" style="font-size:.85rem">'
                     'Point. Snap. Discover.</div>', unsafe_allow_html=True)
-        escuro = tema() == "escuro"
-        c2.button("🌙" if escuro else "☀️", key="botao_tema", on_click=_alternar_tema,
-                  help="Tema escuro: clique para clarear" if escuro else "Tema claro: clique para escurecer")
 
         if armazenamento.supabase_configurado():
             _conta()
@@ -194,7 +165,7 @@ def estilizar(fig, altura: int = 320):
     fig.update_layout(
         template="plotly_dark" if tema() == "escuro" else "plotly_white",
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Figtree, system-ui, sans-serif", color=c["ink"]),
+        font=dict(family="Atkinson Hyperlegible, system-ui, sans-serif", color=c["ink"]),
         height=altura, margin=dict(l=0, r=0, t=10, b=0), legend_title_text="",
     )
     return fig
@@ -210,15 +181,11 @@ def lista(linhas: list[tuple[str, str]]) -> str:
     return f'<ul class="wl-list">{itens}</ul>'
 
 
-def faixa_tema_do_dia(tema, outros) -> None:
-    """Destaque do tema do dia (vale o dobro) e os outros temas, que valem sempre."""
-    chips = "".join(badge(f"{t.emoji} {t.nome}") for t in outros if t.id != tema.id)
-    st.markdown(
-        f'<div class="wl-hero"><div class="wl-k">Tema do dia · pontos em dobro</div>'
-        f'<div class="wl-t">{tema.emoji} {html.escape(tema.nome)}</div>'
-        f'<small>Procure em {html.escape(tema.onde)}.</small></div>'
-        f'<div style="margin:-.3rem 0 .6rem"><span class="wl-muted" style="font-size:.8rem">Também valem: </span>{chips}</div>',
-        unsafe_allow_html=True)
+def selo_tema_do_dia(tema) -> str:
+    """Bloco amarelo com o tema do dia (vale o dobro): o destaque da tela de jogo."""
+    return (f'<div class="wl-selo"><span class="wl-emoji" aria-hidden="true">{tema.emoji}</span>'
+            f'<div><div class="wl-t">{html.escape(tema.nome)}</div><small>Tema de hoje. Procure em '
+            f'{html.escape(tema.onde)}.</small></div><div class="wl-dobro" aria-label="pontos em dobro">×2</div></div>')
 
 
 def linha_juizes(juizes: dict | None, tema_final: str | None) -> str:
@@ -241,12 +208,12 @@ def linha_juizes(juizes: dict | None, tema_final: str | None) -> str:
 def cartao_pontos(resultado: dict, tema, achado: str, vezes_antes: int, juizes: str = "") -> None:
     """Resultado de uma captura: pontos e parcelas, ou o motivo da recusa."""
     e = html.escape
-    rodape = f'<div class="wl-muted" style="font-size:.75rem;margin-top:.4rem">{e(juizes)}</div>' if juizes else ""
+    rodape = f'<div class="wl-muted" style="font-size:.8rem;margin-top:.5rem">{e(juizes)}</div>' if juizes else ""
     if not resultado.get("aceita"):
         st.markdown(
-            f'<div class="wl-card"><div class="wl-pontos" style="color:var(--wl-muted)">0 pontos</div>'
-            f'<div style="margin-top:.4rem">❌ {e(str(resultado.get("motivo") or "não valeu"))}</div>'
-            f'<div class="wl-muted" style="font-size:.85rem;margin-top:.3rem">Vale só foto tirada agora, '
+            f'<div class="wl-card wl-recusa"><div class="wl-pontos">0 <small>pontos</small></div>'
+            f'<div style="margin-top:.5rem"><b>Não valeu:</b> {e(str(resultado.get("motivo") or "foto recusada"))}.</div>'
+            f'<div class="wl-muted" style="font-size:.9rem;margin-top:.3rem">Vale foto tirada agora, '
             f'de algo real na sua frente, de um dos temas.</div>{rodape}</div>', unsafe_allow_html=True)
         return
     partes = [f"base +{resultado['base']}"]
@@ -257,17 +224,17 @@ def cartao_pontos(resultado: dict, tema, achado: str, vezes_antes: int, juizes: 
     if resultado["do_dia"]:
         partes.append("tema do dia ×2")
     if vezes_antes == 0 and resultado["raridade"]:
-        destaque = "🥇 Primeira pessoa a achar isso!"
+        destaque = "Você é a primeira pessoa a achar isso."
     elif vezes_antes:
         destaque = f"Já foi achado {vezes_antes}× pela turma."
     else:
         destaque = "Diga o modelo, a espécie ou a raça para ganhar mais pontos."
     st.markdown(
-        f'<div class="wl-card"><div class="wl-muted" style="font-size:.8rem">{tema.emoji} {e(tema.nome)}</div>'
-        f'<h3 style="margin:.1rem 0 .4rem">{e(achado[:1].upper() + achado[1:])}</h3>'
-        f'<div class="wl-pontos">+{int(resultado["pontos"])} pontos</div>'
-        f'<div style="margin:.5rem 0 .2rem">{"".join(badge(p) for p in partes)}</div>'
-        f'<div class="wl-muted" style="font-size:.85rem">{destaque}</div>{rodape}</div>', unsafe_allow_html=True)
+        f'<div class="wl-card wl-valeu"><div class="wl-pontos">+{int(resultado["pontos"])} <small>pontos</small></div>'
+        f'<h3 style="margin:.5rem 0 0;padding:0">{e(achado[:1].upper() + achado[1:])}</h3>'
+        f'<div class="wl-muted" style="font-size:.9rem">{tema.emoji} {e(tema.nome)}</div>'
+        f'<div style="margin:.6rem 0 .2rem">{"".join(badge(p) for p in partes)}</div>'
+        f'<div class="wl-muted" style="font-size:.9rem">{destaque}</div>{rodape}</div>', unsafe_allow_html=True)
 
 
 def nome_publico(usuario: str) -> str:

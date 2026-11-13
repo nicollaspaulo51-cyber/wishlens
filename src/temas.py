@@ -26,7 +26,7 @@ class Tema:
     tags_osm: tuple[str, ...]  # onde procurar no mapa (filtros do Overpass)
     onde: str                  # texto curto: onde costuma ter
     conta: str = ""            # o que conta como este tema (vai no prompt da IA)
-    cor: str = "#6D4AFF"       # cor do tema no mapa
+    cor: str = "#136B4C"       # cor do tema no mapa
 
     @property
     def frases_clip(self) -> tuple[str, ...]:

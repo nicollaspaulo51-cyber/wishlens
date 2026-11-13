@@ -1,2 +1,25 @@
+# Identidade do WishLens: mapa de trilha. Verde-pinheiro para agir, amarelo-sol (a lupa do personagem) só para
+# pontos e tema do dia. As mesmas cores estão em src/ui.py (PALETA), para o mapa, os gráficos e os cartões.
 [theme]
-primaryColor = "#7C5CFF"
+font = "'Atkinson Hyperlegible':https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap"
+headingFont = "'Bricolage Grotesque':https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap"
+headingFontWeights = 800
+baseRadius = "0.75rem"
+buttonRadius = "full"
+showWidgetBorder = true
+
+[theme.light]
+primaryColor = "#136B4C"
+backgroundColor = "#EEF2EC"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#12241D"
+linkColor = "#0F5C41"
+borderColor = "#C9D4CB"
+
+[theme.dark]
+primaryColor = "#4CC793"
+backgroundColor = "#0E1914"
+secondaryBackgroundColor = "#16251E"
+textColor = "#E4EEE8"
+linkColor = "#7FDDB4"
+borderColor = "#2C4136"

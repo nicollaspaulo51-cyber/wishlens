@@ -63,10 +63,10 @@ meus = ranking[ranking["usuario"] == eu]
 pontos_hoje = int(meus["pontos"].iloc[0]) if not meus.empty else 0
 posicao_hoje = f'{int(meus["posicao"].iloc[0])}º' if not meus.empty else "—"
 st.markdown(
-    f'<div class="wl-barra"><div><div class="wl-brand">🎯 WishLens</div>'
-    f'<div class="wl-muted" style="font-size:.8rem">Tema do dia: {hoje.emoji} <b>{hoje.nome}</b> ×2</div></div>'
-    f'<div class="wl-placar"><span>⭐ <b>{pontos_hoje}</b> pts</span><span>🏆 <b>{posicao_hoje}</b></span></div></div>',
-    unsafe_allow_html=True)
+    f'<div class="wl-barra"><div class="wl-brand">WishLens</div>'
+    f'<div class="wl-placar"><span><b>{pontos_hoje}</b> pontos hoje</span>'
+    f'<span aria-label="sua posição hoje"><b>{posicao_hoje}</b> lugar</span></div></div>'
+    + ui.selo_tema_do_dia(hoje), unsafe_allow_html=True)
 
 # ---------- Mapa com o personagem ----------
 posicao = st.session_state.get("gps")
@@ -90,7 +90,7 @@ escolhidos = st.pills("Temas no mapa", [t.id for t in TEMAS], selection_mode="mu
 if posicao is not None:
     lat, lon = posicao
     centro = (round(lat, 3), round(lon, 3))  # ~100 m: a busca no OSM fica em cache enquanto você anda perto
-    if st.session_state.get("_centro_mapa") is None or st.button("🔄 Atualizar lugares", help="Busca de novo a partir de onde você está"):
+    if st.session_state.get("_centro_mapa") is None or st.button("Atualizar lugares", icon=":material/refresh:", help="Busca de novo a partir de onde você está"):
         st.session_state["_centro_mapa"] = centro
     centro = st.session_state["_centro_mapa"]
     temas_mapa = [POR_ID[i] for i in escolhidos]
@@ -113,18 +113,23 @@ if posicao is not None:
                             cor=ui.cores()["accent"], semente=hash(centro) % 10_000)
     components.html(html, height=480)
 else:
-    st.info("📍 Permita a localização (ou digite onde você está) para ver o mapa com o seu personagem.")
+    st.info("Permita a localização, ou digite onde você está, para ver o mapa com o seu personagem.", icon=":material/location_on:")
 
 # ---------- Câmera ----------
-if st.button("📷 Fotografar", type="primary", use_container_width=True):
+if st.button("Fotografar", icon=":material/photo_camera:", type="primary", use_container_width=True):
     st.session_state["camera_aberta"] = True
 foto = None
 if st.session_state.get("camera_aberta"):
     foto = st.camera_input("Fotografe algo de um dos temas",
                            help="Só vale foto tirada agora pela câmera, de algo real na sua frente.")
 if not foto:
-    st.caption("Regras: base 10 · +10 se é novo pra você · até +20 pela raridade (quem acha primeiro ganha mais) "
-               "· tema do dia ×2. Foto repetida, de tela ou fora dos temas vale 0.")
+    with st.expander("Como pontuar"):
+        st.markdown("""
+- Toda foto aceita vale **10 pontos**.
+- **+10** se é a primeira vez que você acha aquilo.
+- **Até +20** pela raridade: quem acha primeiro ganha mais.
+- No tema de hoje, tudo vale **o dobro**.
+- Foto repetida, de tela ou fora dos temas vale 0.""")
     st.stop()
 
 # Cada foto é julgada e salva uma vez só (o Streamlit roda a página de novo a cada clique)
@@ -207,7 +212,7 @@ else:
 motivo = str(resultado.get("motivo") or "")
 if not resultado.get("aceita") and ("nenhum tema" in motivo or "discordaram" in motivo or "CLIP viu" in motivo):
     if feita["contestada"]:
-        st.caption(f"✅ Obrigado! Você disse que era: {POR_ID[feita['contestada']].nome}. "
+        st.caption(f"Contestação registrada: você disse que era {POR_ID[feita['contestada']].nome.lower()}. "
                    "Isso ajuda a melhorar o identificador.")
     else:
         c1, c2 = st.columns([2, 1])
@@ -224,6 +229,6 @@ if pos:
     total = int(ranking.loc[ranking["usuario"] == eu, "pontos"].iloc[0])
     st.markdown(f"**{pos}º lugar hoje** com {total} pontos.")
 
-if st.button("🏆 Ver pódio", use_container_width=True):
+if st.button("Ver pódio", icon=":material/trophy:", use_container_width=True):
     st.switch_page("pages/1_Pódio.py")
 st.caption("Tire outra foto acima para continuar jogando.")

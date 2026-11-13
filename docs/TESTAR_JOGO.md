@@ -31,7 +31,7 @@ da IA não estão sendo lidos (ou a API falhou: o motivo aparece numa linha acim
 | Desmarque temas nos botões acima do mapa | Os pontos daquele tema somem |
 | **🔄 Atualizar lugares** depois de andar | Busca os lugares de novo a partir de onde você está |
 | Sem permitir o GPS | Aparece "Sem GPS: onde você está?"; digite o bairro e o mapa abre lá |
-| Tema escuro (🌙 na barra lateral) | O mapa fica escuro também |
+| Tema escuro (segue o aparelho; ou ⋮ → Settings no app) | O app e o mapa ficam escuros |
 
 ## 4. Fotos (os dois erros que você encontrou)
 | Faça | Deve acontecer |

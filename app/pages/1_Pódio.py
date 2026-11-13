@@ -13,9 +13,9 @@ from src.temas import POR_ID, TEMAS, tema_do_dia
 
 ui.configurar("Pódio", "🏆")
 
-st.title("🏆 Pódio")
+st.title("Pódio")
 hoje = tema_do_dia()
-st.caption(f"Tema do dia: {hoje.emoji} **{hoje.nome}** (pontos em dobro).")
+st.markdown(ui.selo_tema_do_dia(hoje), unsafe_allow_html=True)
 
 pontuadas = jogo.calcular_pontos(armazenamento.capturas())
 eu = armazenamento.usuario_atual()
@@ -39,13 +39,13 @@ for aba, periodo in zip(st.tabs(["Hoje", "Semana", "Geral"]), ["hoje", "semana",
         if pos:
             st.markdown(f"Você está em **{pos}º** de {len(ranking)}.")
         tabela = ranking.assign(
-            jogador=[ui.nome_publico(u) + (" ⭐" if u == eu else "") for u in ranking["usuario"]])
+            jogador=[ui.nome_publico(u) + (" (você)" if u == eu else "") for u in ranking["usuario"]])
         st.dataframe(tabela[["posicao", "jogador", "pontos", "achados"]], hide_index=True,
                      use_container_width=True,
                      column_config={"posicao": st.column_config.NumberColumn("#", width="small")})
 
 # ---------- Achados mais raros da semana ----------
-st.subheader("💎 Achados mais raros da semana")
+st.subheader("Achados mais raros da semana")
 semana = jogo.no_periodo(pontuadas, "semana")
 semana = semana[semana["aceita"]] if not semana.empty else semana
 if tema:
@@ -56,5 +56,5 @@ else:
     raros = semana.sort_values(["raridade", "criado_em"], ascending=[False, True]).head(5)
     st.markdown(ui.lista([
         (f'{POR_ID[r.tema].emoji} {html.escape(r.achado)}',
-         f'{html.escape(ui.nome_publico(r.usuario))} · +{int(r.raridade)} de raridade')
+         f'{html.escape(ui.nome_publico(r.usuario))}, +{int(r.raridade)} de raridade')
         for r in raros.itertuples()]), unsafe_allow_html=True)

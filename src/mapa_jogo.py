@@ -62,7 +62,7 @@ PAGINA = """<!doctype html>
                      animation: onda 1.2s ease-out infinite; }
   .wl-ponto .wl-emoji { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
                         font-size: calc(var(--t) * .62); }
-  .wl-ponto.turma { background:#FFC53D; box-shadow:0 0 0 3px #fff, 0 0 14px #FFC53D; }
+  .wl-ponto.turma { background:#FFC83D; box-shadow:0 0 0 3px #fff, 0 0 14px #FFC83D; }
   /* aparece, pisca e some: cada ponto com duração e atraso próprios */
   @keyframes piscar {
     0% { opacity:0; transform:scale(.3) } 12% { opacity:1; transform:scale(1.1) } 20% { transform:scale(1) }
@@ -74,17 +74,19 @@ PAGINA = """<!doctype html>
          pointer-events:none; }
   .chip { background:rgba(20,17,31,.78); color:#fff; padding:5px 10px; border-radius:999px; font-size:12px;
           backdrop-filter: blur(4px); }
-  .chip b { color:#FFD166; }
+  .chip b { color:#FFC83D; }
   #cartao { position:absolute; left:10px; right:10px; bottom:10px; z-index:600; display:none;
             background:__SUPERFICIE__; color:__TINTA__; border-radius:16px; padding:12px 14px;
             box-shadow:0 8px 30px rgba(0,0,0,.35); }
   #cartao h4 { margin:0 0 4px; font-size:16px; }
-  #cartao .sub { font-size:12px; opacity:.75; margin-bottom:6px; }
+  #cartao .sub { font-size:13px; opacity:.8; margin-bottom:6px; }
   #cartao .linha { font-size:13px; margin:2px 0; }
   #cartao .botoes { display:flex; gap:6px; margin-top:8px; }
-  #cartao a { flex:1; text-align:center; text-decoration:none; padding:7px 4px; border-radius:10px;
-              background:__COR__; color:#fff; font-size:13px; }
-  #fechar { position:absolute; top:6px; right:10px; border:0; background:none; font-size:18px; color:inherit; }
+  #cartao a { flex:1; text-align:center; text-decoration:none; padding:12px 4px; border-radius:999px;
+              background:__COR__; color:__TINTA_COR__; font-size:14px; font-weight:700; }
+  #fechar { position:absolute; top:0; right:0; width:44px; height:44px; border:0; background:none; font-size:22px;
+            color:inherit; cursor:pointer; }
+  #cartao a:focus-visible, #fechar:focus-visible { outline:3px solid __TINTA__; outline-offset:2px; }
   @media (prefers-reduced-motion: reduce) {
     .wl-personagem, .wl-alcance, .wl-ponto, .wl-ponto::after { animation:none !important; opacity:1; }
   }
@@ -182,7 +184,7 @@ def _json_seguro(dados) -> str:
 
 
 def montar(lat: float, lon: float, pontos: list[dict], manchas: list[dict], hoje, temas, escuro: bool = False,
-           cor: str = "#6D4AFF", gps_vivo: bool = True, semente: int = 0,
+           cor: str = "#136B4C", gps_vivo: bool = True, semente: int = 0,
            leaflet_js: str = LEAFLET_JS, leaflet_css: str = LEAFLET_CSS) -> str:
     """Página HTML do mapa do jogo.
 
@@ -208,11 +210,11 @@ def montar(lat: float, lon: float, pontos: list[dict], manchas: list[dict], hoje
                      "raros": [str(x) for x in (m.get("raros") or [])], "turma": True,
                      **ritmo(False)} for m in manchas],
     }
-    fundo, superficie, tinta = ("#12101B", "#1B1828", "#EEEBFA") if escuro else ("#E9E6F5", "#FFFFFF", "#1B1830")
+    fundo, superficie, tinta = ("#0E1914", "#16251E", "#E4EEE8") if escuro else ("#DDE8DF", "#FFFFFF", "#12241D")
     trocas = {"__CSS__": leaflet_css, "__JS__": leaflet_js, "__FUNDO__": fundo, "__SUPERFICIE__": superficie,
-              "__TINTA__": tinta, "__COR__": cor, "__COR_FRACA__": cor + "40", "__CLASSE__": "escuro" if escuro else "",
+              "__TINTA__": tinta, "__TINTA_COR__": "#06130D" if escuro else "#FFFFFF", "__COR__": cor, "__COR_FRACA__": cor + "40", "__CLASSE__": "escuro" if escuro else "",
               "__DADOS__": _json_seguro(dados)}
     html = PAGINA
-    for chave, valor in trocas.items():
+    for chave, valor in sorted(trocas.items(), key=lambda kv: -len(kv[0])):  # chave mais longa primeiro
         html = html.replace(chave, valor)
     return html

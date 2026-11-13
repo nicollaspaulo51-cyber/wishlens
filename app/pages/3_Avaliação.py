@@ -19,7 +19,7 @@ from src.exportar import COLUNAS_CSV, anonimizar
 ui.configurar("Avaliação", "📊")
 cor = ui.cores()
 
-st.title("📊 Avaliação dos juízes")
+st.title("Avaliação dos juízes")
 st.markdown(
     "Fase 5 do CRISP-DM: **os modelos acertam?** Em cada foto do jogo julgam dois modelos open source: a **IA** "
     "(diz o tema, o achado e se é foto real) e o **CLIP** da OpenAI (diz o tema e a chance de ser foto de tela). "

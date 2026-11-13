@@ -15,7 +15,7 @@ from src.temas import POR_ID, TEMAS
 ui.configurar("Minha Coleção", "📚")
 cor = ui.cores()
 
-st.title("📚 Minha Coleção")
+st.title("Minha coleção")
 
 pontuadas = jogo.calcular_pontos(armazenamento.capturas())
 jogadores = sorted(pontuadas["usuario"].unique()) if not pontuadas.empty else []
@@ -31,18 +31,15 @@ if aceitas.empty:
     st.info("Nenhum achado ainda. Vá em **Jogar** e tire a primeira foto!")
     st.stop()
 if quem.startswith("exemplo:"):
-    st.caption("🧪 Dados fictícios de demonstração.")
+    st.caption("Dados fictícios de demonstração.")
 
 # ---------- Resumo e estilo ----------
 estilo = jogo.estilo_jogador(pontuadas, quem)
 if estilo:
     st.markdown(
-        f'<div class="wl-card"><span class="wl-muted" style="font-size:.8rem;letter-spacing:.08em;'
-        f'text-transform:uppercase">Seu estilo de jogador</span>'
-        f'<div style="font-family:\'Bricolage Grotesque\',system-ui,sans-serif;font-size:1.7rem;'
-        f'font-weight:800;color:{cor["accent"]}">{html.escape(estilo)}</div>'
-        f'<span class="wl-muted" style="font-size:.85rem">Grupo encontrado pelo K-Means comparando a proporção '
-        f'das suas capturas por tema com a de {pontuadas["usuario"].nunique()} jogadores.</span></div>',
+        f'<div class="wl-card"><div class="wl-estilo">{html.escape(estilo)}</div>'
+        f'<span class="wl-muted" style="font-size:.9rem">É o seu estilo de jogador: o grupo em que o K-Means '
+        f'colocou você ao comparar o que você fotografa com {pontuadas["usuario"].nunique()} jogadores.</span></div>',
         unsafe_allow_html=True)
 
 c1, c2, c3, c4 = st.columns(4)
@@ -58,15 +55,15 @@ contagem_turma = (pontuadas[pontuadas["aceita"]].assign(chave=lambda d: d["achad
 for tema in TEMAS:
     meus = aceitas[aceitas["tema"] == tema.id]
     unicos = meus.assign(chave=meus["achado"].map(jogo.normalizar)).drop_duplicates("chave")
-    with st.expander(f"{tema.emoji} {tema.nome} · {len(unicos)} achados", expanded=len(unicos) > 0):
+    with st.expander(f"{tema.emoji} {tema.nome} ({len(unicos)})", expanded=len(unicos) > 0):
         if unicos.empty:
             st.caption(f"Nada ainda. Procure em {tema.onde}.")
             continue
         linhas = []
         for r in unicos.itertuples():
             vezes = int(contagem_turma.get((tema.id, r.chave), 1))
-            raridade = "💎 raro" if vezes <= 1 else ("✨ incomum" if vezes <= 3 else "comum")
-            linhas.append((html.escape(r.achado), f"{raridade} · achado {vezes}× pela turma"))
+            raridade = "raro" if vezes <= 1 else ("incomum" if vezes <= 3 else "comum")
+            linhas.append((html.escape(r.achado), f"{raridade}, {vezes}× na turma"))
         st.markdown(ui.lista(linhas), unsafe_allow_html=True)
 
 # ---------- Gráficos ----------
