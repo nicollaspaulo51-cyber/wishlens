@@ -9,6 +9,7 @@ import html
 import streamlit as st
 
 from src import armazenamento
+from src.cartao import linha_juizes, partes_e_destaque  # noqa: F401 (linha_juizes: usada pelo app)
 
 # Mesmas cores do config.toml. "sol" é o amarelo da lupa do personagem: só pontos e tema do dia.
 PALETA = {
@@ -358,23 +359,6 @@ def medalhas_html(lista_medalhas: list[dict]) -> str:
     return f'<div class="wl-medalhas">{"".join(cartoes)}</div>'
 
 
-def linha_juizes(juizes: dict | None, tema_final: str | None) -> str:
-    """'Juízes: IA ✔ · CLIP ✔' (o CLIP leva ✖ quando o tema dele é outro)."""
-    if not juizes or juizes.get("juiz") == "manual":
-        return "Juiz: você (reconhecimento automático não instalado)"
-    from src.jogo import normalizar_juiz
-
-    juiz = normalizar_juiz(juizes["juiz"])
-    partes = []
-    if juiz in ("ia+clip", "ia"):
-        partes.append("IA ✔")
-    if juiz in ("ia+clip", "clip"):
-        viu_tela = juizes.get("clip_foto_real") is False and tema_final != "pecas"
-        concorda = juiz == "clip" or juizes.get("clip_tema") == tema_final
-        partes.append("CLIP ✖ (viu tela)" if viu_tela else "CLIP " + ("✔" if concorda else "✖"))
-    return "Juízes: " + " · ".join(partes)
-
-
 def cartao_pontos(resultado: dict, tema, achado: str, vezes_antes: int, juizes: str = "") -> None:
     """Resultado de uma captura: pontos e parcelas, ou o motivo da recusa."""
     e = html.escape
@@ -387,22 +371,7 @@ def cartao_pontos(resultado: dict, tema, achado: str, vezes_antes: int, juizes: 
             f'de algo real na sua frente, de um dos temas.</div>{rodape}</div>', unsafe_allow_html=True)
         return
     pontos = int(resultado["pontos"])
-    bonus = [d for d in str(resultado.get("detalhes") or "").split("; ") if d]
-    partes = [f"base +{resultado['base']}"]
-    if resultado["novidade"]:
-        partes.append(f"novo pra você +{resultado['novidade']}")
-    if resultado["raridade"]:
-        partes.append(f"raridade +{resultado['raridade']}")
-    if resultado["do_dia"]:
-        partes.append("tema do dia ×2")
-    if resultado.get("mesmo_objeto") == "turma":
-        destaque = "Esse mesmo objeto já foi fotografado por alguém da turma aqui: vale, mas sem bônus de raridade."
-    elif vezes_antes == 0 and resultado["raridade"]:
-        destaque = "Você é a primeira pessoa a achar isso."
-    elif vezes_antes:
-        destaque = f"Já foi achado {vezes_antes}× pela turma."
-    else:
-        destaque = "Diga o modelo, a espécie ou a raça para ganhar mais pontos."
+    partes, bonus, destaque = partes_e_destaque(resultado, vezes_antes)
     st.markdown(
         f'<div class="wl-card wl-valeu"><div class="wl-pontos"><span class="wl-conta" style="--fim:{pontos}" '
         f'aria-hidden="true"></span><span class="wl-sr">+{pontos}</span> <small>pontos</small></div>'

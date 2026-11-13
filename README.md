@@ -86,6 +86,10 @@ Celular (GPS + câmera) → Streamlit
 Página Avaliação ──► CSV anonimizado ──► notebooks
 ```
 
+**Em construção: app de celular.** O jogo está indo para um app nativo (Expo / React Native, em `app_celular/`).
+O CLIP roda no **servidor do juiz** (`servidor/`, FastAPI, publicado no Hugging Face Spaces), que reaproveita
+as mesmas regras de `src/`. Como publicar: [servidor/README.md](servidor/README.md).
+
 ## Fontes de dados e licenças
 | Fonte | Uso | Licença |
 |---|---|---|
@@ -166,6 +170,7 @@ A câmera e o GPS do navegador só funcionam em HTTPS (o Streamlit Cloud já usa
 ## Estrutura
 ```
 app/            Jogar (Home) + páginas Pódio, Minha Coleção e Avaliação
+servidor/       servidor do juiz para o app de celular (FastAPI + CLIP) e os arquivos do Space
 src/            temas, jogo (pontos e pódio), mapa_jogo (personagem e mapa), visao (IA open source), reconhecimento (CLIP),
                 lugares (OSM), localizacao, fotos, armazenamento/banco, clustering, exportação, interface
 notebooks/      análise CRISP-DM do jogo (01 → 05)

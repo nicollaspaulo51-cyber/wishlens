@@ -14,9 +14,18 @@ import importlib.util
 from dataclasses import dataclass
 from datetime import datetime
 
-import streamlit as st
-
+# Sem `import streamlit` no topo: o servidor do juiz (servidor/) usa a Sessao sem o Streamlit.
 _CHAVE_SESSAO = "_wl_supabase"
+
+COLUNAS_CAPTURA = ["id", "usuario", "criado_em", "tema", "achado", "confianca", "foto_real",
+                   "foto_hash", "cidade", "celula",
+                   # o que cada juiz disse (avaliação CLIP x IA) e a contestação da pessoa
+                   "juiz", "clip_tema", "clip_foto_real", "clip_prob_tema", "clip_prob_tela", "clip_rank_tema",
+                   "contestada",
+                   # contexto da foto para as mecânicas (src/jogo.py), sem a localização exata
+                   "mirante", "tipo_lugar", "clima", "km_anterior", "min_anterior",
+                   # resultado da comparação com o vetor do CLIP: "seu", "turma" ou vazio
+                   "mesmo_objeto"]
 
 
 # Colunas com a opinião de cada juiz (CLIP x IA) e o contexto das mecânicas; bancos antigos não as têm
@@ -40,6 +49,8 @@ def para_brasilia(valor) -> datetime:
 
 
 def _segredos() -> tuple[str, str] | None:
+    import streamlit as st
+
     try:
         url, chave = st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"]
     except (KeyError, FileNotFoundError, AttributeError):
@@ -129,6 +140,8 @@ class Sessao:
 
 
 def sessao_atual() -> Sessao | None:
+    import streamlit as st
+
     return st.session_state.get(_CHAVE_SESSAO)
 
 
@@ -138,6 +151,8 @@ def entrar(email: str, senha: str) -> Sessao:
     uid = auth.user.id
     perfil = cliente.table("perfis").select("apelido").eq("id", uid).single().execute()
     sessao = Sessao(cliente, uid, perfil.data["apelido"])
+    import streamlit as st
+
     st.session_state[_CHAVE_SESSAO] = sessao
     return sessao
 
@@ -152,6 +167,8 @@ def cadastrar(email: str, senha: str, apelido: str) -> None:
 
 
 def sair() -> None:
+    import streamlit as st
+
     sessao = st.session_state.pop(_CHAVE_SESSAO, None)
     if sessao:
         sessao.cliente.auth.sign_out()

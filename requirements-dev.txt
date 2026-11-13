@@ -8,3 +8,7 @@ pillow>=10.4
 requests>=2.32
 streamlit-js-eval>=0.1.7
 pytest>=8
+# servidor do juiz (servidor/app.py) e os testes dele
+fastapi>=0.115
+httpx>=0.27
+python-multipart>=0.0.9

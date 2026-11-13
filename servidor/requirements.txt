@@ -1,0 +1,12 @@
+# Servidor do juiz (servidor/app.py). torch só-CPU: menor e suficiente para o CLIP ViT-B/32.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.4
+transformers>=4.45
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+pandas>=2.2
+pillow>=10.4
+requests>=2.32
+supabase>=2.9
+scikit-learn>=1.5
