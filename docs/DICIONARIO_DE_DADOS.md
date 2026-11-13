@@ -7,14 +7,14 @@
 | `id` | uuid | banco | `3f2a…` | removida |
 | `usuario` | texto | apelido de quem fotografou | `ana` | vira `u01`, `u02`… |
 | `criado_em` | data e hora | hora da captura (Brasília) | `2026-11-12 15:40` | arredondada para a hora |
-| `tema` | texto | juiz (Gemma ou CLIP): `carros`, `plantas`, `passaros`, `pets`, `pecas` ou `nenhum` | `carros` | mantida |
+| `tema` | texto | juiz (IA open source ou CLIP): `carros`, `plantas`, `passaros`, `pets`, `pecas` ou `nenhum` | `carros` | mantida |
 | `achado` | texto | juiz | `Volkswagen Fusca` | mantida |
 | `confianca` | 0–1 | certeza do juiz | `0.9` | mantida |
 | `foto_real` | sim/não | juiz: falso se for tela, impressão, desenho ou brinquedo | `true` | mantida |
 | `foto_hash` | 16 hex | dHash da foto (detecta repetida) | `a1b2…` | removida |
 | `cidade` | texto | bairro, cidade (GPS do navegador) | `Jardim da Penha, Vitória - ES` | só a cidade |
 | `celula` | texto | quadrado de ~500 m | `-20.290,-40.295` | removida |
-| `juiz` | texto | quem julgou: `gemma+clip`, `gemma`, `clip` ou `manual` | `gemma+clip` | mantida |
+| `juiz` | texto | quem julgou: `ia+clip`, `ia`, `clip` ou `manual` (capturas antigas: `gemma+clip`/`gemma`, lidas como `ia+clip`/`ia`) | `ia+clip` | mantida |
 | `clip_tema` | texto | tema mais provável para o CLIP (vazio = nenhum) | `pecas` | mantida |
 | `clip_foto_real` | sim/não | o CLIP achou que não é tela | `true` | mantida |
 | `clip_prob_tema` | 0–1 | chance que o CLIP deu ao tema final | `0.62` | mantida |

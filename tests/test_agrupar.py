@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
-def test_decidir_captura_sem_gemma():
+def test_decidir_captura_sem_ia():
     from src.reconhecimento import decidir_captura
     g = ["carros", "carros", "plantas", "tela", "nenhum"]
     tema, real, conf = decidir_captura(g, [0.4, 0.3, 0.1, 0.1, 0.1])
@@ -41,7 +41,7 @@ def test_frases_dos_temas():
 
 
 def test_clip_da_nome_especifico_mouse_e_teclado():
-    """Erro do teste no celular: sem Gemma, tudo do computador virava "peça de computador"."""
+    """Erro do teste no celular: sem a IA, tudo do computador virava "peça de computador"."""
     from src.reconhecimento import achado_do_tema, frases_captura
     frases = frases_captura()
     def probs_para(objeto):

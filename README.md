@@ -12,7 +12,7 @@ Projeto final da disciplina **Ciência de Dados I (Turma 12)**, desenvolvido com
 | 🎯 **Jogar** (início) | Mapa com o **personagem** do WishLens (um explorador com uma lupa) na sua posição, andando com o GPS. Os lugares onde dá para achar cada tema **aparecem, piscam e somem**; os do tema do dia são maiores. Tocar num ponto mostra o que procurar ali e "Como chegar". Embaixo, **📷 Fotografar**: a foto é julgada e vira pontos na hora. |
 | 🏆 **Pódio** | Ranking de hoje, da semana e geral, por tema, e os achados mais raros da semana. |
 | 📚 **Minha Coleção** | Álbum por tema, raridade de cada achado, estilo de jogador (K-Means) e gráficos. |
-| 📊 **Avaliação** | CLIP × Gemma: concordância de tema, matriz de confusão, vetos, motivos de recusa e contestações. |
+| 📊 **Avaliação** | CLIP × IA: concordância de tema, matriz de confusão, vetos, motivos de recusa e contestações. |
 
 ### Temas e pontos
 Temas (todos valem sempre): 🚗 carros · 🌿 plantas e flores · 🐦 pássaros · 🐶 cachorros e gatos · 🖥️ peças e periféricos de computador (mouse, teclado e monitor contam).
@@ -30,13 +30,14 @@ O **tema do dia** muda à meia-noite (rodízio pela data) e vale **o dobro**.
 Os pontos são **recalculados a partir das capturas** (`src/jogo.py`): gravar um número falso no banco não vale nada.
 
 ### Dois juízes em toda foto
-- **Gemma** (juiz principal, com a `GEMINI_API_KEY`): diz o tema, o achado (modelo do carro, espécie, raça, peça) e
+- **IA open source** (juiz principal, com a `VISAO_URL`): um modelo de visão com licença OSI, como o Qwen2.5-VL 7B
+  ou o Mistral Small (Apache 2.0). Diz o tema, o achado (modelo do carro, espécie, raça, peça) e
   se é foto real. O prompt lista os sinais de foto de tela (borda do monitor, moiré, reflexo, bordas de janela).
 - **CLIP** da OpenAI (`openai/clip-vit-base-patch32`), em **toda foto**: compara a foto com frases de cada tema e com
   frases "gêmeas" de tela ("a photo of a computer screen showing a bird"). Ele barra a foto se "tela" for o 1º palpite
-  dele (exceto peças: monitor ligado é peça) ou se o tema do Gemma ficar fora dos 2 primeiros palpites dele.
+  dele (exceto peças: monitor ligado é peça) ou se o tema da IA ficar fora dos 2 primeiros palpites dele.
   Usa a posição, não a chance, porque o CLIP é "confiante demais": uma diferença pequena de parecença vira 95% × 5%.
-- Sem a chave, o CLIP julga sozinho e o achado é o objeto que mais combinou ("mouse", "teclado", "flor", "carro").
+- Sem a IA, o CLIP julga sozinho e o achado é o objeto que mais combinou ("mouse", "teclado", "flor", "carro").
 - O que cada modelo disse fica gravado. Quando o juiz erra, a pessoa pode **contestar** ("era um mouse!"):
   não ganha pontos, mas a contestação aparece na página Avaliação para melhorar o identificador.
 
@@ -47,7 +48,7 @@ Os pontos são **recalculados a partir das capturas** (`src/jogo.py`): gravar um
 | 2. Dados | Capturas do jogo: tema, achado, hora, bairro, o que cada juiz disse ([dicionário](docs/DICIONARIO_DE_DADOS.md)) | `src/jogo.py`, CSV na página Avaliação |
 | 3. Preparação | Normalização dos achados ("VW Gol" = "Volkswagen Gol"), foto repetida, vetor de perfil por tema | `src/jogo.py` |
 | 4. Modelagem | K-Means (estilos de jogador por tema) + raridade pela frequência dos achados | `src/clustering.py`, `src/jogo.py` |
-| 5. Avaliação | CLIP e Gemma concordam (matriz de confusão)? Taxa de fotos recusadas e contestadas? Privacidade (LGPD)? | página 📊 Avaliação |
+| 5. Avaliação | CLIP e IA concordam (matriz de confusão)? Taxa de fotos recusadas e contestadas? Privacidade (LGPD)? | página 📊 Avaliação |
 | 6. Produto | Site publicado | `app/` |
 
 Os notebooks `01`–`04` usam os dados do jogo. Enquanto a turma não joga, leem `data/processed/capturas_demo.csv`
@@ -59,7 +60,7 @@ passam a usar os dados reais sozinhos.
 Celular (GPS + câmera) → Streamlit
    ├─ mapa do jogo (Leaflet, no navegador): personagem, pontos que piscam, cartão do lugar
    ├─► OpenStreetMap / Overpass (onde procurar cada tema)
-   ├─► Gemma via Google AI Studio (juiz principal) + CLIP (segundo juiz, no servidor)
+   ├─► IA open source por API compatível com a da OpenAI (juiz principal) + CLIP (segundo juiz, no servidor)
    └─► Supabase (capturas + login; sem a foto, só um hash)
 Página Avaliação ──► CSV anonimizado ──► notebooks
 ```
@@ -71,13 +72,16 @@ Página Avaliação ──► CSV anonimizado ──► notebooks
 | [OpenStreetMap](https://www.openstreetmap.org/copyright) | mapa e lugares de cada tema | ODbL |
 | [Leaflet](https://leafletjs.com/) | mapa no navegador | BSD-2 |
 | [CLIP ViT-B/32](https://huggingface.co/openai/clip-vit-base-patch32) | segundo juiz das fotos | MIT |
-| [Gemma 3](https://ai.google.dev/gemma) (pela API do Google AI Studio) | juiz principal | pesos abertos, [Gemma Terms of Use](https://ai.google.dev/gemma/terms) (não é licença OSI) |
+| [Qwen2.5-VL 7B](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct) no [Ollama](https://ollama.com) ou [Mistral Small](https://huggingface.co/mistralai) pela API da Mistral | juiz principal | Apache 2.0 (Ollama: MIT) |
+
+Todo o projeto usa só modelos com licença aprovada pela OSI. O Gemma, usado antes como juiz principal, saiu porque a
+licença dele (Gemma Terms of Use) não é OSI.
 
 O personagem do mapa é um desenho próprio do WishLens (SVG em `src/mapa_jogo.py`).
 
 ## Privacidade
 - A foto **não é guardada**: só um hash de 16 caracteres para detectar foto repetida.
-- Com o Gemma ligado, a foto vai para a API do Google **já sem EXIF/GPS** e reduzida (`src/fotos.py`).
+- A foto vai para a IA **já sem EXIF/GPS** e reduzida (`src/fotos.py`).
 - O GPS move o personagem no seu navegador; o banco guarda só o bairro e um **quadrado de ~500 m** (`celula`) para o
   mapa da turma, nunca a coordenada exata. Hash e célula saem do CSV anonimizado.
 - O pódio mostra só o apelido. Os jogadores logados veem tema, achado e hora das capturas dos outros (é o que permite
@@ -88,7 +92,7 @@ O personagem do mapa é um desenho próprio do WishLens (SVG em `src/mapa_jogo.p
 | Parte | Situação |
 |---|---|
 | Jogo: mapa com personagem, temas, pontos, pódio, coleção, avaliação | ✅ funcionando (testado com IA e mapa simulados) |
-| Juízes (Gemma + CLIP) | 🧪 a testar com a chave real e fotos reais |
+| Juízes (IA open source + CLIP) | 🧪 a testar com a chave real e fotos reais |
 | Banco e login (Supabase) | ⏳ código e SQL prontos, **não testados** com um projeto real: ver [docs/SUPABASE.md](docs/SUPABASE.md) |
 | Notebooks do CRISP-DM | ✅ refeitos com os dados do jogo e executados, **com dados fictícios**; rodar de novo com o CSV real |
 | Coleta de dados reais com a turma | ⏳ a fazer |
@@ -110,26 +114,31 @@ pede para a pessoa dizer o tema e o que fotografou.
 
 Testes (sem internet): `python -m pytest tests/` (o teste do CLIP real é pulado sem `torch` ou sem internet).
 
-## Gemma (juiz principal)
-1. Crie uma chave gratuita em https://aistudio.google.com/apikey.
-2. No Streamlit Cloud: **Settings → Secrets** e cole `GEMINI_API_KEY = "sua-chave"` (formato em `.streamlit/secrets.toml.example`).
-3. O modelo padrão é `gemma-3-27b-it` (pesos abertos). Se o Google deixar de servir esse modelo, defina `GEMMA_MODELO`
-   nos Secrets (ex.: `gemma-3-12b-it`, ou `gemini-2.5-flash`, que é fechado).
+## IA open source (juiz principal)
+`src/visao.py` fala com qualquer API compatível com a da OpenAI (`/chat/completions`). Só use modelos com licença OSI
+(Apache 2.0, MIT). Formato completo em `.streamlit/secrets.toml.example`.
 
-Sem chave, ou se a API falhar, o app continua só com o CLIP e mostra o motivo em uma linha.
+- **No computador (tudo local):** instale o [Ollama](https://ollama.com), rode `ollama pull qwen2.5vl:7b` e use
+  `VISAO_URL = "http://localhost:11434/v1"`. Sem GPU, cada foto leva de 20 a 60 s.
+- **No Streamlit Cloud** (não tem RAM para rodar o modelo): crie uma chave em https://console.mistral.ai e cole nos
+  Secrets `VISAO_URL = "https://api.mistral.ai/v1"`, `VISAO_CHAVE = "sua-chave"` e `VISAO_MODELO = "mistral-small-latest"`.
+- Atenção ao trocar de modelo: o Qwen2.5-VL 3B e o 72B **não** são Apache 2.0; o 7B e o 32B são.
+
+Sem a `VISAO_URL`, ou se a API falhar, o app continua só com o CLIP e mostra o motivo em uma linha.
+Capturas antigas, gravadas quando o juiz era o Gemma (`juiz = "gemma+clip"`), são lidas como `"ia+clip"`.
 
 ## Publicar no Streamlit Community Cloud
 1. Entre em https://share.streamlit.io com a conta do GitHub e clique em **Create app**.
 2. Repositório `nicollaspaulo51-cyber/wishlens`, a branch desejada, arquivo principal `app/Home.py`.
 3. Em **Advanced settings**, escolha Python 3.12. O `requirements.txt` já instala o torch só-CPU.
-4. Cole as chaves do Supabase e a `GEMINI_API_KEY` em **Secrets** no formato de `.streamlit/secrets.toml.example`.
+4. Cole as chaves do Supabase e as da IA (`VISAO_URL`, `VISAO_CHAVE`, `VISAO_MODELO`) em **Secrets** no formato de `.streamlit/secrets.toml.example`.
 
 A câmera e o GPS do navegador só funcionam em HTTPS (o Streamlit Cloud já usa) ou em `localhost`.
 
 ## Estrutura
 ```
 app/            Jogar (Home) + páginas Pódio, Minha Coleção e Avaliação
-src/            temas, jogo (pontos e pódio), mapa_jogo (personagem e mapa), visao (Gemma), reconhecimento (CLIP),
+src/            temas, jogo (pontos e pódio), mapa_jogo (personagem e mapa), visao (IA open source), reconhecimento (CLIP),
                 lugares (OSM), localizacao, fotos, armazenamento/banco, clustering, exportação, interface
 notebooks/      análise CRISP-DM do jogo (01 → 04)
 data/processed/ dados de demonstração da versão anterior (fictícios)
@@ -141,7 +150,7 @@ tests/          testes automáticos (rodam no GitHub Actions a cada push)
 ## Roadmap
 - [x] Jogo: temas, tema do dia, pontos, pódio, coleção
 - [x] Mapa com personagem e pontos que piscam
-- [x] Dois juízes (Gemma + CLIP) e página de Avaliação
+- [x] Dois juízes (IA open source + CLIP) e página de Avaliação
 - [ ] Criar o projeto Supabase e jogar com a turma
 - [x] Refazer os notebooks com os dados do jogo (fictícios)
 - [ ] Rodar os notebooks com o CSV real da turma

@@ -45,15 +45,15 @@ def eh_generico(tema_id: str, chave: str) -> bool:
     """O achado é só o nome do tema/categoria, sem modelo, espécie ou raça (chave já normalizada)."""
     return chave == normalizar(POR_ID[tema_id].generico) or chave in GENERICOS
 
-# Segundo juiz (CLIP) ao lado do Gemma: só barra quando discorda com clareza, porque sozinho ele erra
+# Segundo juiz (CLIP) ao lado da IA (juiz principal, src/visao.py): só barra quando discorda com clareza, porque sozinho ele erra
 # bastante (pássaro pequeno na foto, carro de longe). Ajustar depois de ver os dados da turma.
 # O CLIP é muito "confiante" (escala ~100 nas similaridades): uma diferença pequena de parecença vira
-# 95% x 5%. Por isso a discordância de tema usa a POSIÇÃO do tema do Gemma entre os palpites do CLIP
+# 95% x 5%. Por isso a discordância de tema usa a POSIÇÃO do tema da IA entre os palpites do CLIP
 # (1 = o preferido dele), não a chance. Com 7 grupos (5 temas, tela, nenhum), ficar fora dos 2 primeiros
 # é discordar com clareza.
-VETO_RANK = 2     # o CLIP barra se o tema do Gemma ficar além desta posição
+VETO_RANK = 2     # o CLIP barra se o tema da IA ficar além desta posição
 VETO_TELA = 0.5   # só para capturas antigas, sem clip_foto_real: chance mínima de "tela" para barrar
-# Com os dois juízes, o CLIP só derruba o "é real" do Gemma se "tela" for bem mais provável que o tema
+# Com os dois juízes, o CLIP só derruba o "é real" da IA se "tela" for bem mais provável que o tema
 # (o grupo "tela" tem ~90 frases e sempre leva alguma vantagem pequena). Sozinho, vale o 1º palpite.
 RAZAO_TELA = 3
 VETO_TEMA = 0.10  # só para capturas antigas, sem a posição gravada
@@ -66,6 +66,16 @@ def _valor(x):
     return x
 
 
+# O juiz principal era o Gemma (licença não OSI) e foi trocado por um modelo open source: capturas
+# antigas gravaram "gemma"/"gemma+clip" e são lidas como "ia"/"ia+clip".
+JUIZ_ANTIGO = {"gemma+clip": "ia+clip", "gemma": "ia"}
+
+
+def normalizar_juiz(juiz) -> str | None:
+    v = _valor(juiz)
+    return JUIZ_ANTIGO.get(v, v)
+
+
 def posicao(probs: dict[str, float], grupo: str) -> int:
     """Posição do grupo entre os palpites do CLIP (1 = o mais provável)."""
     ordem = sorted(probs, key=probs.get, reverse=True)
@@ -75,12 +85,12 @@ def posicao(probs: dict[str, float], grupo: str) -> int:
 def veto_clip(tema: str | None, juiz: str | None, clip_tema: str | None,
               clip_prob_tema: float | None, clip_prob_tela: float | None,
               clip_rank_tema: int | None = None, clip_foto_real: bool | None = None) -> str | None:
-    """Motivo para o CLIP barrar a foto que o Gemma aceitou, ou None. Só vale com os dois juízes.
+    """Motivo para o CLIP barrar a foto que a IA aceitou, ou None. Só vale com os dois juízes.
 
-    Tela: barra se "tela/impressão" foi o 1º palpite do CLIP (clip_foto_real falso), mesmo que o
-    Gemma tenha dito que é real. Não vale para peças de computador (monitor ligado é peça).
+    Tela: barra se "tela/impressão" foi o 1º palpite do CLIP (clip_foto_real falso), mesmo que a
+    IA tenha dito que é real. Não vale para peças de computador (monitor ligado é peça).
     """
-    if _valor(juiz) != "gemma+clip" or not tema:
+    if normalizar_juiz(juiz) != "ia+clip" or not tema:
         return None
     tela, prob_tema, rank = _valor(clip_prob_tela), _valor(clip_prob_tema), _valor(clip_rank_tema)
     clip_real = _valor(clip_foto_real)
@@ -96,7 +106,7 @@ def veto_clip(tema: str | None, juiz: str | None, clip_tema: str | None,
     if discorda:
         nome = POR_ID[tema].nome.lower()
         outro = POR_ID[clip_tema].nome.lower() if _valor(clip_tema) in POR_ID else "nenhum tema"
-        return f"os juízes discordaram do tema (Gemma: {nome}; CLIP: {outro})"
+        return f"os juízes discordaram do tema (IA: {nome}; CLIP: {outro})"
     return None
 
 
@@ -279,11 +289,11 @@ def estilo_jogador(pontuadas: pd.DataFrame, usuario: str) -> str | None:
 
 # ---------------------------------------------------------------- avaliação dos juízes (CRISP-DM, fase 5)
 def avaliar_juizes(pontuadas: pd.DataFrame) -> dict:
-    """Compara CLIP e Gemma nas fotos em que os dois julgaram.
+    """Compara o CLIP e a IA (juiz principal) nas fotos em que os dois julgaram.
 
-    Devolve: comparadas, concordancia (0-1), matriz (Gemma x CLIP, contagens), por_tema (concordância
-    por tema do Gemma), vetos (por motivo), recusas (por motivo), especificos (fração de achados com
-    modelo/espécie/raça entre as aceitas pelo Gemma) e contestadas (o que as pessoas disseram que era).
+    Devolve: comparadas, concordancia (0-1), matriz (IA x CLIP, contagens), por_tema (concordância
+    por tema da IA), vetos (por motivo), recusas (por motivo), especificos (fração de achados com
+    modelo/espécie/raça entre as aceitas pela IA) e contestadas (o que as pessoas disseram que era).
     """
     vazio = {"comparadas": 0, "concordancia": None, "matriz": pd.DataFrame(), "por_tema": pd.Series(dtype=float),
              "vetos": pd.Series(dtype=int), "recusas": pd.Series(dtype=int), "especificos": None,
@@ -298,15 +308,15 @@ def avaliar_juizes(pontuadas: pd.DataFrame) -> dict:
     saida = dict(vazio)
     saida["recusas"] = df.loc[~df["aceita"], "motivo"].value_counts()
 
-    ambos = df[df["juiz"] == "gemma+clip"].copy()
+    ambos = df[df["juiz"].map(normalizar_juiz) == "ia+clip"].copy()
     if not ambos.empty:
-        ambos["gemma"] = ambos["tema"].map(nome)
+        ambos["ia"] = ambos["tema"].map(nome)
         ambos["clip"] = ambos["clip_tema"].map(lambda t: nome(_valor(t)))
-        ambos["concorda"] = ambos["gemma"] == ambos["clip"]
+        ambos["concorda"] = ambos["ia"] == ambos["clip"]
         saida["comparadas"] = len(ambos)
         saida["concordancia"] = float(ambos["concorda"].mean())
-        saida["matriz"] = pd.crosstab(ambos["gemma"], ambos["clip"]).rename_axis(index="Gemma", columns="CLIP")
-        saida["por_tema"] = ambos.groupby("gemma")["concorda"].mean().drop("nenhum", errors="ignore").sort_values()
+        saida["matriz"] = pd.crosstab(ambos["ia"], ambos["clip"]).rename_axis(index="IA", columns="CLIP")
+        saida["por_tema"] = ambos.groupby("ia")["concorda"].mean().drop("nenhum", errors="ignore").sort_values()
         vetadas = ambos[ambos["motivo"].fillna("").str.contains("CLIP|juízes")]
         saida["vetos"] = vetadas["motivo"].str.replace(r" \(.*\)$", "", regex=True).value_counts()
 

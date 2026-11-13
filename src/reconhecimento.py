@@ -105,7 +105,7 @@ def julgar_clip(imagem: Image.Image) -> dict:
 
 
 def capturar(imagem: Image.Image):
-    """Reserva do jogo sem Gemma: o CLIP decide sozinho (achado = o objeto que mais combinou)."""
+    """Reserva do jogo sem a IA (juiz principal): o CLIP decide sozinho (achado = o objeto que mais combinou)."""
     from src.visao import Captura
 
     j = julgar_clip(imagem)

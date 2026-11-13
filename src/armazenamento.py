@@ -17,7 +17,7 @@ import streamlit as st
 
 COLUNAS_CAPTURA = ["id", "usuario", "criado_em", "tema", "achado", "confianca", "foto_real",
                    "foto_hash", "cidade", "celula",
-                   # o que cada juiz disse (avaliação CLIP x Gemma) e a contestação da pessoa
+                   # o que cada juiz disse (avaliação CLIP x IA) e a contestação da pessoa
                    "juiz", "clip_tema", "clip_foto_real", "clip_prob_tema", "clip_prob_tela", "clip_rank_tema",
                    "contestada"]
 COLUNAS_JUIZES = COLUNAS_CAPTURA[10:]

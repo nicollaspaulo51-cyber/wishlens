@@ -124,7 +124,7 @@ def gerar_capturas(semente: int = 7, dias: int = 14, centro: tuple[float, float]
                 "id": str(uuid.uuid4()), "usuario": usuario, "criado_em": fim - timedelta(days=rng.randint(0, dias)),
                 "tema": "nenhum", "achado": "", "confianca": round(rng.uniform(0.3, 0.6), 2), "foto_real": True,
                 "foto_hash": f"{rng.getrandbits(64):016x}", "cidade": "Vitória - ES", "celula": None,
-                "juiz": "gemma+clip", "clip_tema": tema, "clip_foto_real": True,
+                "juiz": "ia+clip", "clip_tema": tema, "clip_foto_real": True,
                 "clip_prob_tema": None, "clip_prob_tela": round(rng.uniform(0.0, 0.1), 2), "clip_rank_tema": None,
                 "contestada": tema,
             })
@@ -132,14 +132,14 @@ def gerar_capturas(semente: int = 7, dias: int = 14, centro: tuple[float, float]
 
 
 def _opiniao_clip(tema: str, real: bool, rng: random.Random) -> dict:
-    """CLIP fictício: concorda com o Gemma ~85% das vezes; às vezes discorda com clareza (vira veto)."""
+    """CLIP fictício: concorda com a IA ~85% das vezes; às vezes discorda com clareza (vira veto)."""
     from src.temas import TEMAS
 
     concorda = rng.random() < 0.85
     clip_tema = tema if concorda else rng.choice([t.id for t in TEMAS if t.id != tema] + ["nenhum"])
     prob_tema = rng.uniform(0.35, 0.9) if concorda else rng.uniform(0.02, 0.25)
     prob_tela = rng.uniform(0.55, 0.8) if not real else rng.uniform(0.0, 0.2)
-    return {"juiz": "gemma+clip", "clip_tema": None if clip_tema == "nenhum" else clip_tema,
+    return {"juiz": "ia+clip", "clip_tema": None if clip_tema == "nenhum" else clip_tema,
             "clip_foto_real": prob_tela < 0.5, "clip_prob_tema": round(prob_tema, 3),
             "clip_prob_tela": round(prob_tela, 3), "clip_rank_tema": 1 if concorda else rng.choice([2, 3, 3, 4, 5]),
             "contestada": None}

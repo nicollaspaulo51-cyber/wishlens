@@ -18,15 +18,16 @@ os notebooks 01–04 foram refeitos com os dados do jogo (CSV da página Avalia�
 - Sem GPS: endereço digitado (Nominatim). Sem o componente de GPS contínuo: o personagem fica na posição inicial.
 
 ## Juízes
-- **Gemma** (`visao.identificar_captura`): tema, achado, foto_real, certeza. Prompt com o que conta em cada tema e
+- **IA open source** (`visao.identificar_captura`, API compatível com a da OpenAI; Qwen2.5-VL 7B no Ollama ou
+  Mistral Small na API da Mistral, ambos Apache 2.0): tema, achado, foto_real, certeza. Prompt com o que conta em cada tema e
   os sinais de foto de tela (borda, moiré, reflexo, bordas de janela).
 - **CLIP** (`reconhecimento.julgar_clip`), em toda foto: grupos = 5 temas + "tela" + "nenhum"; a chance de cada
   grupo é a da sua melhor frase. "tela" tem frases gêmeas de cada objeto dos temas. Devolve tema, achado (nome da
   frase do tema que mais combinou: "mouse", "teclado", "flor"), foto_real (falso se "tela" é o 1º palpite, exceto
   peças) e a chance de cada grupo.
-- **Veto** (`jogo.veto_clip`, aplicado na leitura): CLIP viu tela (exceto peças) ou o tema do Gemma fora dos 2
+- **Veto** (`jogo.veto_clip`, aplicado na leitura): CLIP viu tela (exceto peças) ou o tema da IA fora dos 2
   primeiros palpites do CLIP.
-- Sem Gemma: o CLIP decide sozinho. Sem nenhum modelo: a pessoa escolhe o tema e digita.
+- Sem a IA: o CLIP decide sozinho. Sem nenhum modelo: a pessoa escolhe o tema e digita.
 - Recusa por tema pode ser contestada (coluna `contestada`, sem pontos).
 
 ## Pontos (`src/jogo.py`)
@@ -37,7 +38,7 @@ até 3 por tema por dia. 0 com motivo: não é foto real, fora dos temas, vetada
 ## Pódio, coleção, avaliação
 - Pódio: hoje, semana (segunda até hoje) e geral; filtro por tema; empate para quem chegou antes.
 - Coleção: álbum por tema, raridade, estilo de jogador (K-Means por tema).
-- Avaliação: concordância CLIP × Gemma, matriz de confusão, vetos, recusas, contestações, CSV anonimizado.
+- Avaliação: concordância CLIP × IA, matriz de confusão, vetos, recusas, contestações, CSV anonimizado.
 
 ## Banco
 Tabela `capturas` (RLS: logados leem as colunas sem localização; cada um insere as suas com `criado_em` de agora;
@@ -61,4 +62,4 @@ python -m pytest -q tests/
 - Memória do Streamlit Cloud com torch + CLIP (~1 GB): torch só-CPU; o CLIP agora carrega só o modelo (sem o
   vocabulário de produtos).
 - Overpass e Nominatim públicos têm limite de uso: servidores de reserva, cache e mensagem amigável.
-- Foto de tela bem tirada (de perto, sem borda) ainda pode enganar o CLIP sozinho: o Gemma é o juiz principal.
+- Foto de tela bem tirada (de perto, sem borda) ainda pode enganar o CLIP sozinho: a IA é o juiz principal.

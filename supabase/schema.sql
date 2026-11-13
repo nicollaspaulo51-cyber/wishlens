@@ -62,9 +62,12 @@ create table if not exists public.capturas (
 );
 create index if not exists capturas_data_idx on public.capturas (criado_em);
 
--- O que cada juiz disse (avaliação CLIP x Gemma) e a contestação da pessoa. Rodar de novo este arquivo
+-- O que cada juiz disse (avaliação CLIP x IA; "gemma" é o nome antigo do juiz principal) e a contestação da pessoa. Rodar de novo este arquivo
 -- acrescenta as colunas num banco antigo.
-alter table public.capturas add column if not exists juiz text check (juiz is null or juiz in ('gemma+clip', 'gemma', 'clip', 'manual'));
+alter table public.capturas add column if not exists juiz text;
+alter table public.capturas drop constraint if exists capturas_juiz_check;
+alter table public.capturas add constraint capturas_juiz_check
+  check (juiz is null or juiz in ('ia+clip', 'ia', 'clip', 'manual', 'gemma+clip', 'gemma'));
 alter table public.capturas add column if not exists clip_tema text;
 alter table public.capturas add column if not exists clip_foto_real boolean;
 alter table public.capturas add column if not exists clip_prob_tema real check (clip_prob_tema is null or clip_prob_tema between 0 and 1);

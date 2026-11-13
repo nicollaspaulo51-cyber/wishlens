@@ -19,7 +19,7 @@ import streamlit as st
 _CHAVE_SESSAO = "_wl_supabase"
 
 
-# Colunas com a opinião de cada juiz (CLIP x Gemma); bancos antigos não as têm
+# Colunas com a opinião de cada juiz (CLIP x IA); bancos antigos não as têm
 COLUNAS_JUIZES_BANCO = ("juiz", "clip_tema", "clip_foto_real", "clip_prob_tema", "clip_prob_tela",
                         "clip_rank_tema", "contestada")
 

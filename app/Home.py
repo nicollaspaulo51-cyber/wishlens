@@ -37,14 +37,15 @@ def _segredo(nome: str) -> str | None:
         return None
 
 
-CHAVE_GEMMA = _segredo("GEMINI_API_KEY")
-MODELO_GEMMA = _segredo("GEMMA_MODELO") or visao.MODELO_PADRAO
+VISAO_URL = _segredo("VISAO_URL")
+VISAO_CHAVE = _segredo("VISAO_CHAVE")
+VISAO_MODELO = _segredo("VISAO_MODELO") or visao.MODELO_PADRAO
 
 
 @st.cache_data(ttl=86400, show_spinner=False, max_entries=300)
-def julgar_gemma(jpeg: bytes, modelo: str) -> visao.Captura:
-    """Mesma foto = mesma resposta (economiza a cota gratuita). Erros não ficam em cache."""
-    return visao.identificar_captura(jpeg, CHAVE_GEMMA, modelo)
+def julgar_ia(jpeg: bytes, modelo: str) -> visao.Captura:
+    """Mesma foto = mesma resposta (economiza cota e tempo). Erros não ficam em cache."""
+    return visao.identificar_captura(jpeg, VISAO_URL, modelo, VISAO_CHAVE)
 
 
 # Posição: GPS do navegador (pedido logo ao abrir); sem ele, um endereço digitado
@@ -134,12 +135,13 @@ feita = st.session_state.get("ultima_captura")
 if not feita or feita["id"] != id_foto:
     imagem = Image.open(foto)
     jpeg = preparar_para_salvar(imagem)  # sem EXIF/GPS: é o que vai para a IA
-    # Dois juízes em toda foto: Gemma (se houver chave) e CLIP (se instalado). O que cada um disse fica gravado.
+    # Dois juízes em toda foto: a IA open source (se houver VISAO_URL) e o CLIP (se instalado).
+    # O que cada um disse fica gravado.
     captura, aviso, clip = None, None, None
-    if CHAVE_GEMMA:
+    if VISAO_URL:
         try:
             with st.spinner("O juiz está olhando sua foto..."):
-                captura = julgar_gemma(jpeg, MODELO_GEMMA)
+                captura = julgar_ia(jpeg, VISAO_MODELO)
         except visao.ErroVisao as erro:
             aviso = str(erro)
     if MODELO_DISPONIVEL:
@@ -149,8 +151,8 @@ if not feita or feita["id"] != id_foto:
             clip = julgar_clip(imagem)
     if aviso:
         st.caption(f"⚠️ Juiz com IA indisponível agora ({aviso}). Usando só o CLIP.")
-    juiz = ("gemma+clip" if clip else "gemma") if captura else ("clip" if clip else "manual")
-    if captura is None and clip:  # sem Gemma: o CLIP decide sozinho (achado genérico)
+    juiz = ("ia+clip" if clip else "ia") if captura else ("clip" if clip else "manual")
+    if captura is None and clip:  # sem a IA: o CLIP decide sozinho (achado genérico)
         captura = visao.Captura(clip["tema"], clip["achado"], clip["foto_real"], clip["confianca"])
 
     if captura is None:  # protótipo sem nenhum modelo: a pessoa diz o que é

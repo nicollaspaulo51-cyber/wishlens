@@ -1,12 +1,15 @@
-"""Juiz principal do jogo: Gemma (pesos abertos do Google) pela API do Google AI Studio.
+"""Juiz principal do jogo: um modelo de visão open source (licença OSI) por API compatível com a da OpenAI.
 
 Diz o tema, o achado (modelo do carro, espécie, raça, peça) e se a foto é real (não é tela/impressão).
-Só roda com GEMINI_API_KEY em .streamlit/secrets.toml (chave gratuita em aistudio.google.com).
-Sem chave, ou se a chamada falhar, o CLIP julga sozinho (src/reconhecimento.py).
+Só roda com VISAO_URL em .streamlit/secrets.toml. Sem ela, ou se a chamada falhar, o CLIP julga
+sozinho (src/reconhecimento.py).
 
-Por que Gemma: o projeto pede stack aberto. Gemma tem pesos abertos (licença Gemma, não é OSI),
-mas é grande demais para rodar no Streamlit Cloud gratuito (~1 GB de RAM, sem GPU); por isso é
-chamado pela API. O modelo pode ser trocado em GEMMA_MODELO (secrets).
+Open source: só modelos com licença aprovada pela OSI (Apache 2.0, MIT). O Gemma saiu porque a licença
+dele não é OSI. O mesmo código fala com:
+- Ollama no próprio computador (MIT): VISAO_URL = "http://localhost:11434/v1", modelo qwen2.5vl:7b (Apache 2.0);
+- um provedor na nuvem, para o Streamlit Cloud (que não tem RAM para rodar o modelo): ex. a API da Mistral
+  com o Mistral Small (Apache 2.0), VISAO_URL = "https://api.mistral.ai/v1" + VISAO_CHAVE + VISAO_MODELO.
+Atenção ao trocar de modelo: o Qwen2.5-VL 3B e o 72B NÃO são Apache 2.0; o 7B e o 32B são.
 
 Privacidade: a foto enviada é a de fotos.preparar_para_salvar (sem EXIF/GPS, no máximo 1024 px).
 """
@@ -23,16 +26,15 @@ import requests
 from src.categorias import nome_valido
 from src.temas import TEMAS
 
-API = "https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent"
-MODELO_PADRAO = "gemma-3-27b-it"
-TIMEOUT = 20
+MODELO_PADRAO = "qwen2.5vl:7b"
+TIMEOUT = 90  # no Ollama sem GPU um modelo de 7B leva dezenas de segundos por foto
 
 class ErroVisao(Exception):
-    """Falha ao consultar o Gemma (rede, chave, cota ou resposta fora do formato)."""
+    """Falha ao consultar o modelo (rede, chave, cota, modelo inexistente ou resposta fora do formato)."""
 
 
 def _extrair_json(texto: str) -> dict:
-    """O Gemma não tem modo JSON na API: tira ```json ... ``` e pega o 1º objeto do texto."""
+    """Tolera ```json ... ``` e texto em volta (nem todo provedor respeita o modo JSON): pega o 1º objeto."""
     achado = re.search(r"\{.*\}", texto, re.S)
     if not achado:
         raise ErroVisao("resposta sem JSON")
@@ -59,31 +61,38 @@ def _texto(valor, limite: int = 40) -> str:
     return v if v and nome_valido(v) else ""
 
 
-def _chamar(jpeg: bytes, chave: str, modelo: str, prompt: str) -> str:
-    """Envia texto + foto ao modelo e devolve o texto da resposta. Lança ErroVisao em falha."""
+def _chamar(jpeg: bytes, url: str, modelo: str, prompt: str, chave: str | None = None) -> str:
+    """Envia texto + foto a /chat/completions e devolve o texto da resposta. Lança ErroVisao em falha."""
+    imagem = "data:image/jpeg;base64," + base64.b64encode(jpeg).decode()
     corpo = {
-        "contents": [{"parts": [
-            {"text": prompt},
-            {"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(jpeg).decode()}},
+        "model": modelo,
+        "messages": [{"role": "user", "content": [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": imagem}},
         ]}],
-        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 300},
+        "temperature": 0.1,
+        "max_tokens": 300,
+        "response_format": {"type": "json_object"},
     }
+    cabecalhos = {"Authorization": f"Bearer {chave}"} if chave else {}
     try:
-        resp = requests.post(API.format(modelo=modelo), json=corpo, timeout=TIMEOUT,
-                             headers={"x-goog-api-key": chave})
+        resp = requests.post(url.rstrip("/") + "/chat/completions", json=corpo, timeout=TIMEOUT, headers=cabecalhos)
     except requests.RequestException as e:
         raise ErroVisao(f"sem conexão com a API ({type(e).__name__})") from e
     if resp.status_code != 200:
         try:
-            motivo = resp.json()["error"]["message"][:200]
+            erro = resp.json().get("error") or resp.json().get("message")
+            motivo = str(erro.get("message", erro) if isinstance(erro, dict) else erro)[:200]
         except Exception:
             motivo = resp.text[:200]
         raise ErroVisao(f"API respondeu {resp.status_code}: {motivo}")
     try:
-        partes = resp.json()["candidates"][0]["content"]["parts"]
-        return "".join(p.get("text", "") for p in partes)
+        texto = resp.json()["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError, ValueError) as e:
-        raise ErroVisao("resposta vazia (a foto pode ter sido bloqueada pelo filtro)") from e
+        raise ErroVisao("resposta vazia do modelo") from e
+    if not texto:
+        raise ErroVisao("resposta vazia do modelo")
+    return texto
 
 
 # ---------------------------------------------------------------- jogo: captura de um tema
@@ -128,6 +137,6 @@ def interpretar_captura(dados: dict) -> Captura:
     return Captura(tema, achado, real, min(certeza, 1.0) if certeza is not None else None)
 
 
-def identificar_captura(jpeg: bytes, chave: str, modelo: str = MODELO_PADRAO) -> Captura:
+def identificar_captura(jpeg: bytes, url: str, modelo: str = MODELO_PADRAO, chave: str | None = None) -> Captura:
     """Tema, achado (marca/modelo, espécie, raça ou peça) e se é foto real. Lança ErroVisao em falha."""
-    return interpretar_captura(_extrair_json(_chamar(jpeg, chave, modelo, PROMPT_CAPTURA)))
+    return interpretar_captura(_extrair_json(_chamar(jpeg, url, modelo, PROMPT_CAPTURA, chave)))

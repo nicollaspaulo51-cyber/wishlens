@@ -169,20 +169,20 @@ def test_para_brasilia():
 # ---------------------------------------------------------------- segundo juiz (CLIP)
 def test_veto_do_clip():
     v = jogo.veto_clip
-    assert "tela" in v("carros", "gemma+clip", "carros", 0.15, 0.6)  # tela 4x o tema
-    assert "discordaram" in v("carros", "gemma+clip", "plantas", 0.05, 0.1)
-    assert "CLIP: plantas" in v("carros", "gemma+clip", "plantas", 0.05, 0.1)
-    assert v("carros", "gemma+clip", "plantas", 0.3, 0.1) is None    # discorda pouco: passa
-    assert v("pecas", "gemma+clip", "pecas", 0.4, 0.7) is None       # monitor ligado é peça
+    assert "tela" in v("carros", "ia+clip", "carros", 0.15, 0.6)  # tela 4x o tema
+    assert "discordaram" in v("carros", "ia+clip", "plantas", 0.05, 0.1)
+    assert "CLIP: plantas" in v("carros", "ia+clip", "plantas", 0.05, 0.1)
+    assert v("carros", "ia+clip", "plantas", 0.3, 0.1) is None    # discorda pouco: passa
+    assert v("pecas", "ia+clip", "pecas", 0.4, 0.7) is None       # monitor ligado é peça
     assert v("carros", "clip", "carros", 0.01, 0.9) is None          # só um juiz: sem veto
     assert v("carros", None, None, None, None) is None
-    assert v("carros", "gemma+clip", None, float("nan"), float("nan")) is None
+    assert v("carros", "ia+clip", None, float("nan"), float("nan")) is None
 
 
 def test_foto_vetada_nao_conta_para_raridade():
-    vetada = {**cap("ana", "Fiat Mobi", hora=8), "juiz": "gemma+clip", "clip_tema": "plantas",
+    vetada = {**cap("ana", "Fiat Mobi", hora=8), "juiz": "ia+clip", "clip_tema": "plantas",
               "clip_prob_tema": 0.03, "clip_prob_tela": 0.05}
-    ok = {**cap("bia", "Fiat Mobi", hora=9), "juiz": "gemma+clip", "clip_tema": OUTRO,
+    ok = {**cap("bia", "Fiat Mobi", hora=9), "juiz": "ia+clip", "clip_tema": OUTRO,
           "clip_prob_tema": 0.6, "clip_prob_tela": 0.05}
     r = pts(vetada, ok)
     assert not r.loc[0, "aceita"] and "discordaram" in r.loc[0, "motivo"]
@@ -190,7 +190,7 @@ def test_foto_vetada_nao_conta_para_raridade():
 
 
 def test_avaliacao_dos_juizes():
-    base = {"juiz": "gemma+clip", "clip_prob_tela": 0.05}
+    base = {"juiz": "ia+clip", "clip_prob_tela": 0.05}
     r = pts({**cap("ana", "Gol", tema="carros", hora=8), **base, "clip_tema": "carros", "clip_prob_tema": 0.7},
             {**cap("bia", "Uno", tema="carros", hora=9), **base, "clip_tema": "plantas", "clip_prob_tema": 0.05},
             {**cap("caio", "mouse", tema="pecas", hora=10), **base, "clip_tema": "pecas", "clip_prob_tema": 0.5},
@@ -222,10 +222,10 @@ def test_contestar_em_memoria(monkeypatch):
 
     monkeypatch.setattr(st, "session_state", Sessao({"capturas": []}))
     monkeypatch.setattr(armazenamento, "_banco", lambda: None)
-    i = armazenamento.salvar_captura(None, "", 0.5, True, None, None, None, juiz="gemma+clip", clip_tema="pecas")
+    i = armazenamento.salvar_captura(None, "", 0.5, True, None, None, None, juiz="ia+clip", clip_tema="pecas")
     armazenamento.contestar(i, "pecas")
     df = armazenamento.capturas()
-    assert df.loc[0, "contestada"] == "pecas" and df.loc[0, "juiz"] == "gemma+clip"
+    assert df.loc[0, "contestada"] == "pecas" and df.loc[0, "juiz"] == "ia+clip"
 
 
 def test_banco_antigo_salva_sem_colunas_dos_juizes():
@@ -249,14 +249,14 @@ def test_banco_antigo_salva_sem_colunas_dos_juizes():
 
     s = banco.Sessao.__new__(banco.Sessao)
     s.cliente, s.usuario_id = Cliente(), "u1"
-    s.salvar_captura({"criado_em": datetime(2026, 11, 12, 10), "tema": "carros", "juiz": "gemma+clip",
+    s.salvar_captura({"criado_em": datetime(2026, 11, 12, 10), "tema": "carros", "juiz": "ia+clip",
                       "clip_tema": "carros"})
     assert len(chamadas) == 2 and "juiz" not in chamadas[1] and chamadas[1]["tema"] == "carros"
 
 
 def test_veto_por_posicao_nao_barra_o_mouse():
     """Com a escala do CLIP (~100), um mouse um pouco mais parecido com "um quarto" dá 95% x 5%.
-    A regra por posição não pode vetar isso: o tema do Gemma é o 2º palpite do CLIP."""
+    A regra por posição não pode vetar isso: o tema da IA é o 2º palpite do CLIP."""
     import math
     from src.reconhecimento import probs_por_grupo
     grupos = ["nenhum", "pecas", "carros", "plantas", "passaros", "pets", "tela"]
@@ -266,8 +266,8 @@ def test_veto_por_posicao_nao_barra_o_mouse():
     assert probs["pecas"] < jogo.VETO_TEMA          # pela chance, seria vetado (o bug)
     rank = jogo.posicao(probs, "pecas")
     assert rank == 2
-    assert jogo.veto_clip("pecas", "gemma+clip", None, probs["pecas"], probs["tela"], rank) is None
-    assert "discordaram" in jogo.veto_clip("pecas", "gemma+clip", "plantas", 0.01, 0.0, 5)
+    assert jogo.veto_clip("pecas", "ia+clip", None, probs["pecas"], probs["tela"], rank) is None
+    assert "discordaram" in jogo.veto_clip("pecas", "ia+clip", "plantas", 0.01, 0.0, 5)
 
 
 def test_generico_repetido_vale_ate_3_vezes_por_dia():
@@ -279,8 +279,8 @@ def test_generico_repetido_vale_ate_3_vezes_por_dia():
     assert list(r["aceita"]) == [True, True] and (r["novidade"] == 10).all()
 
 
-def test_clip_ve_tela_e_barra_mesmo_com_gemma_dizendo_real():
-    base = {"juiz": "gemma+clip", "clip_tema": "passaros", "clip_rank_tema": 1, "clip_prob_tela": 0.3}
+def test_clip_ve_tela_e_barra_mesmo_com_ia_dizendo_real():
+    base = {"juiz": "ia+clip", "clip_tema": "passaros", "clip_rank_tema": 1, "clip_prob_tela": 0.3}
     r = pts({**cap("ana", "periquito", tema="passaros"), **base, "clip_foto_real": False})
     assert not r.loc[0, "aceita"] and "tela" in r.loc[0, "motivo"]
     r = pts({**cap("ana", "monitor", tema="pecas"), **base, "clip_tema": "pecas", "clip_foto_real": False})
@@ -290,11 +290,11 @@ def test_clip_ve_tela_e_barra_mesmo_com_gemma_dizendo_real():
 
 
 def test_veto_de_tela_precisa_de_margem_com_dois_juizes():
-    """Pássaro de verdade com "tela" só um pouco à frente no CLIP: o Gemma (foto real) vence."""
+    """Pássaro de verdade com "tela" só um pouco à frente no CLIP: a IA (foto real) vence."""
     v = jogo.veto_clip
-    assert v("passaros", "gemma+clip", "passaros", 0.35, 0.40, 2, False) is None
-    assert "tela" in v("passaros", "gemma+clip", "passaros", 0.10, 0.80, 2, False)
-    assert v("passaros", "gemma+clip", "passaros", 0.10, 0.80, 1, True) is None  # CLIP achou real
+    assert v("passaros", "ia+clip", "passaros", 0.35, 0.40, 2, False) is None
+    assert "tela" in v("passaros", "ia+clip", "passaros", 0.10, 0.80, 2, False)
+    assert v("passaros", "ia+clip", "passaros", 0.10, 0.80, 1, True) is None  # CLIP achou real
 
 
 def test_csv_demo_tem_colunas_do_notebook_e_nada_que_identifique(tmp_path):

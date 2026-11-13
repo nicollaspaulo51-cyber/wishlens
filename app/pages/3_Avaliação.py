@@ -1,6 +1,6 @@
-"""WishLens · Avaliação: CLIP x Gemma nas fotos do jogo (fase 5 do CRISP-DM).
+"""WishLens · Avaliação: CLIP x IA nas fotos do jogo (fase 5 do CRISP-DM).
 
-Em toda foto julgam dois modelos: o Gemma (diz tema, achado e se é foto real) e o CLIP da OpenAI
+Em toda foto julgam dois modelos open source: a IA (diz tema, achado e se é foto real) e o CLIP da OpenAI
 (diz o tema e a chance de ser foto de tela). Esta página compara os dois com os dados do jogo.
 """
 
@@ -21,9 +21,9 @@ cor = ui.cores()
 
 st.title("📊 Avaliação dos juízes")
 st.markdown(
-    "Fase 5 do CRISP-DM: **os modelos acertam?** Em cada foto do jogo julgam dois modelos: o **Gemma** "
+    "Fase 5 do CRISP-DM: **os modelos acertam?** Em cada foto do jogo julgam dois modelos open source: a **IA** "
     "(diz o tema, o achado e se é foto real) e o **CLIP** da OpenAI (diz o tema e a chance de ser foto de tela). "
-    f"O CLIP barra a foto quando vê uma tela com chance ≥ {jogo.VETO_TELA:.0%} ou quando o tema do Gemma "
+    f"O CLIP barra a foto quando vê uma tela com chance ≥ {jogo.VETO_TELA:.0%} ou quando o tema da IA "
     f"fica fora dos {jogo.VETO_RANK} primeiros palpites dele (de 7: os 5 temas, tela e nenhum).")
 
 pontuadas = jogo.calcular_pontos(armazenamento.capturas())
@@ -39,26 +39,26 @@ c1, c2, c3, c4 = st.columns(4)
 c1.metric("Fotos com os 2 juízes", a["comparadas"])
 c2.metric("Concordância de tema", f'{a["concordancia"]:.0%}' if a["concordancia"] is not None else "—")
 c3.metric("Vetos do CLIP", int(a["vetos"].sum()) if len(a["vetos"]) else 0)
-c4.metric("Achado específico (Gemma)", f'{a["especificos"]:.0%}' if a["especificos"] is not None else "—",
+c4.metric("Achado específico (IA)", f'{a["especificos"]:.0%}' if a["especificos"] is not None else "—",
           help="Fotos aceitas com modelo, espécie, raça ou peça. Sozinho, o CLIP só diria o genérico ('carro').")
 
 if a["comparadas"]:
-    st.subheader("Matriz de confusão: tema do Gemma × tema do CLIP")
+    st.subheader("Matriz de confusão: tema da IA × tema do CLIP")
     st.caption("Na diagonal, os dois concordam. Fora dela, onde discordam.")
     m = a["matriz"]
     fig = px.imshow(m, text_auto=True, aspect="auto", color_continuous_scale=cor["heat"],
-                    labels={"x": "CLIP", "y": "Gemma", "color": "fotos"})
+                    labels={"x": "CLIP", "y": "IA", "color": "fotos"})
     fig.update_layout(coloraxis_showscale=False)
     st.plotly_chart(ui.estilizar(fig, 380), use_container_width=True)
 
     st.subheader("Onde o CLIP mais discorda")
-    por_tema = a["por_tema"].rename("concordância").reset_index().rename(columns={"gemma": "tema"})
+    por_tema = a["por_tema"].rename("concordância").reset_index().rename(columns={"ia": "tema"})
     fig = px.bar(por_tema, x="concordância", y="tema", orientation="h", range_x=[0, 1],
                  labels={"tema": ""}, color_discrete_sequence=[cor["accent"]])
     fig.update_xaxes(tickformat=".0%")
     st.plotly_chart(ui.estilizar(fig, 260), use_container_width=True)
 else:
-    st.info("Ainda não há fotos julgadas pelos dois modelos (precisa da GEMINI_API_KEY e do CLIP instalado).")
+    st.info("Ainda não há fotos julgadas pelos dois modelos (precisa da VISAO_URL e do CLIP instalado).")
 
 st.subheader("Por que as fotos foram recusadas")
 if len(a["recusas"]):

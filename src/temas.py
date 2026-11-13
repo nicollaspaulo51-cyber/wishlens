@@ -19,13 +19,13 @@ class Tema:
     nome: str
     emoji: str
     generico: str              # achado genérico (sem detalhe): vale só a pontuação base
-    achado: str                # o que a IA deve dizer como "achado" (vai no prompt do Gemma)
+    achado: str                # o que a IA deve dizer como "achado" (vai no prompt da IA)
     # CLIP: (objeto em inglês, nome em português). A frase é "a photo of <objeto>"; o nome da frase que
     # mais combinou vira o achado quando só o CLIP julga (mouse e teclado são achados diferentes).
     objetos_clip: tuple[tuple[str, str], ...]
     tags_osm: tuple[str, ...]  # onde procurar no mapa (filtros do Overpass)
     onde: str                  # texto curto: onde costuma ter
-    conta: str = ""            # o que conta como este tema (vai no prompt do Gemma)
+    conta: str = ""            # o que conta como este tema (vai no prompt da IA)
     cor: str = "#6D4AFF"       # cor do tema no mapa
 
     @property

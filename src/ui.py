@@ -222,15 +222,18 @@ def faixa_tema_do_dia(tema, outros) -> None:
 
 
 def linha_juizes(juizes: dict | None, tema_final: str | None) -> str:
-    """'Juízes: Gemma ✔ · CLIP ✔' (o CLIP leva ✖ quando o tema dele é outro)."""
+    """'Juízes: IA ✔ · CLIP ✔' (o CLIP leva ✖ quando o tema dele é outro)."""
     if not juizes or juizes.get("juiz") == "manual":
         return "Juiz: você (reconhecimento automático não instalado)"
+    from src.jogo import normalizar_juiz
+
+    juiz = normalizar_juiz(juizes["juiz"])
     partes = []
-    if juizes["juiz"] in ("gemma+clip", "gemma"):
-        partes.append("Gemma ✔")
-    if juizes["juiz"] in ("gemma+clip", "clip"):
+    if juiz in ("ia+clip", "ia"):
+        partes.append("IA ✔")
+    if juiz in ("ia+clip", "clip"):
         viu_tela = juizes.get("clip_foto_real") is False and tema_final != "pecas"
-        concorda = juizes["juiz"] == "clip" or juizes.get("clip_tema") == tema_final
+        concorda = juiz == "clip" or juizes.get("clip_tema") == tema_final
         partes.append("CLIP ✖ (viu tela)" if viu_tela else "CLIP " + ("✔" if concorda else "✖"))
     return "Juízes: " + " · ".join(partes)
 
