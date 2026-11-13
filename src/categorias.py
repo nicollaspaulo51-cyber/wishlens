@@ -1,13 +1,8 @@
-"""Catálogo de itens que o WishLens sabe reconhecer.
+"""Categorias da VERSÃO ANTERIOR do WishLens (desejos de consumo).
 
-Cada item tem:
-- rotulo_en: texto em inglês usado no prompt do CLIP (o modelo entende melhor inglês)
-- nome: nome em português mostrado ao usuário
-- categoria: grupo usado na análise (EDA, clustering, comparação)
-- tipo: "comprar", "receita" ou "adotar" (define o que o app mostra)
-- marca / modelo: opcionais, preenchidos quando a foto mostra a marca (CLIP ou Gemma)
-
-Para reconhecer coisas novas, basta adicionar linhas em ITENS.
+O jogo só usa `nome_valido`. O resto (ITENS, CATEGORIAS, faixa de preço) fica porque os notebooks
+01–04, os dados de exemplo de desejos (`src/exemplo.gerar_exemplos`) e os testes do K-Means usam;
+será refeito com os temas do jogo na próxima etapa.
 """
 
 import re
@@ -20,31 +15,6 @@ class Item:
     nome: str
     categoria: str
     tipo: str
-    marca: str = ""
-    modelo: str = ""
-
-
-def rotulo_exibicao(item: Item) -> str:
-    """Nome para mostrar: "Tênis · Nike Air Max" quando há marca; senão só "Tênis"."""
-    nome = item.nome[:1].upper() + item.nome[1:]
-    detalhe = " ".join(x for x in (item.marca, item.modelo) if x)
-    return f"{nome} · {detalhe}" if detalhe else nome
-
-
-def termo_de_busca(item: Item) -> str:
-    """"Nike Air Max tênis": marca e modelo primeiro (usado nos links das lojas e na busca de preço)."""
-    return " ".join(x for x in (item.marca, item.modelo, item.nome.split("/")[0]) if x)
-
-
-def reais(valor: float) -> str:
-    """1234.5 -> "R$ 1.235" (sem centavos acima de R$ 100)."""
-    if valor >= 100:
-        return "R$ " + f"{valor:,.0f}".replace(",", ".")
-    return "R$ " + f"{valor:.2f}".replace(".", ",")
-
-
-def faixa_reais(minimo: float, maximo: float) -> str:
-    return reais(minimo) if round(minimo) == round(maximo) else f"{reais(minimo)}–{reais(maximo)}"
 
 
 _NOME_OK = re.compile(r"[\w .,'()/+-]{1,60}")
@@ -81,46 +51,11 @@ FAIXA_PRECO = {
 }
 
 # Faixa estimada por item (R$, novo, Brasil, 2026). Estimativa escrita à mão: o preço real está nos links.
-PRECO_ITEM = {
-    # vestuário / calçados
-    "camiseta": "R$ 30–150", "jaqueta": "R$ 120–600", "vestido": "R$ 80–400", "calça jeans": "R$ 80–350",
-    "boné/chapéu": "R$ 30–200", "mochila": "R$ 80–500", "relógio": "R$ 100–2.000", "óculos de sol": "R$ 50–800",
-    "tênis": "R$ 150–1.200", "sandália/chinelo": "R$ 30–250",
-    # eletrônicos
-    "celular": "R$ 800–8.000", "notebook": "R$ 2.500–8.000", "fone de ouvido": "R$ 50–2.000",
-    "televisão": "R$ 1.200–6.000", "câmera fotográfica": "R$ 1.500–10.000", "smartwatch": "R$ 200–3.000",
-    "teclado": "R$ 50–800", "mouse": "R$ 30–300", "tablet": "R$ 700–6.000", "monitor": "R$ 600–3.000",
-    "caixa de som": "R$ 100–1.500", "carregador": "R$ 30–200", "impressora": "R$ 500–2.000",
-    # brinquedos e games
-    "videogame": "R$ 2.500–5.000", "brinquedo": "R$ 30–300", "controle de videogame": "R$ 200–600",
-    # casa
-    "sofá": "R$ 1.200–5.000", "cadeira": "R$ 100–1.500", "luminária": "R$ 50–400", "garrafa": "R$ 20–200",
-    "travesseiro/almofada": "R$ 30–200", "mesa": "R$ 300–3.000", "planta": "R$ 20–200", "caneca": "R$ 15–80",
-    "eletrodoméstico": "R$ 150–3.000",
-    # esporte / beleza / papelaria / veículos
-    "bicicleta": "R$ 700–5.000", "bola de futebol": "R$ 50–400", "violão/guitarra": "R$ 300–3.000",
-    "prancha de surfe": "R$ 800–3.500", "perfume": "R$ 80–900", "maquiagem": "R$ 20–300",
-    "livro": "R$ 30–120", "caneta/lápis": "R$ 2–50", "caderno": "R$ 15–80",
-    "carro": "R$ 50.000–200.000", "moto": "R$ 12.000–60.000",
-    # comida e bebida (prato em restaurante/delivery)
-    "pizza": "R$ 40–120", "hambúrguer": "R$ 25–70", "sushi": "R$ 50–150", "arroz e feijão": "R$ 20–45",
-    "macarrão": "R$ 30–80", "salada": "R$ 20–50", "bolo": "R$ 30–120", "sorvete": "R$ 10–40",
-    "açaí": "R$ 15–40", "churrasco": "R$ 50–150", "cachorro-quente": "R$ 10–30", "pastel": "R$ 8–25",
-    "café": "R$ 5–20", "suco": "R$ 8–20",
-    "batata frita": "R$ 15–40", "sanduíche": "R$ 15–45", "pão de queijo": "R$ 5–20", "coxinha": "R$ 6–15",
-    "tapioca": "R$ 10–30", "feijoada": "R$ 35–90", "frango frito": "R$ 25–70", "chocolate": "R$ 5–30",
-    "biscoito": "R$ 3–15", "salgadinho": "R$ 5–15", "pipoca": "R$ 5–25", "brigadeiro": "R$ 3–10 (unidade)",
-    "energético": "R$ 8–15", "refrigerante": "R$ 4–12", "cerveja": "R$ 4–15", "água mineral": "R$ 2–6",
-    "vinho": "R$ 40–200", "chá": "R$ 5–15", "leite": "R$ 5–8", "drink": "R$ 20–50",
-}
 
 
 def faixa_preco(item: Item) -> str:
-    """Faixa do item; sem ela (vocabulário grande, texto livre), a da categoria marcada como estimativa."""
-    if item.nome in PRECO_ITEM:
-        return PRECO_ITEM[item.nome]
-    faixa = FAIXA_PRECO.get(item.categoria, "—")
-    return faixa if item.categoria == "animais" else f"{faixa} (estimativa da categoria)"
+    return FAIXA_PRECO.get(item.categoria, "—")
+
 
 ITENS: list[Item] = [
     # vestuário / calçados
@@ -222,29 +157,3 @@ ITENS: list[Item] = [
 ]
 
 CATEGORIAS = sorted({i.categoria for i in ITENS})
-
-# Emoji de cada item, usado nos cartões do feed "Descobrir"
-EMOJI = {
-    "camiseta": "👕", "jaqueta": "🧥", "vestido": "👗", "calça jeans": "👖", "boné/chapéu": "🧢",
-    "mochila": "🎒", "relógio": "⌚", "óculos de sol": "🕶️", "tênis": "👟", "sandália/chinelo": "🩴",
-    "celular": "📱", "notebook": "💻", "fone de ouvido": "🎧", "televisão": "📺", "câmera fotográfica": "📷",
-    "smartwatch": "⌚", "teclado": "⌨️", "mouse": "🖱️", "tablet": "📱", "monitor": "🖥️", "caixa de som": "🔊",
-    "carregador": "🔌", "impressora": "🖨️", "controle de videogame": "🎮", "garrafa": "🍶",
-    "travesseiro/almofada": "🛏️", "mesa": "🪑", "caneta/lápis": "✏️", "caderno": "📓", "videogame": "🎮", "brinquedo": "🧸", "sofá": "🛋️",
-    "cadeira": "🪑", "luminária": "💡", "planta": "🪴", "caneca": "☕", "eletrodoméstico": "🍳",
-    "bicicleta": "🚲", "bola de futebol": "⚽", "violão/guitarra": "🎸", "prancha de surfe": "🏄",
-    "perfume": "🧴", "maquiagem": "💄", "livro": "📚", "carro": "🚗", "moto": "🏍️",
-    "pizza": "🍕", "hambúrguer": "🍔", "sushi": "🍣", "arroz e feijão": "🍛", "macarrão": "🍝",
-    "salada": "🥗", "bolo": "🍰", "sorvete": "🍨", "açaí": "🫐", "churrasco": "🥩",
-    "cachorro-quente": "🌭", "pastel": "🥟", "café": "☕", "suco": "🧃",
-    "batata frita": "🍟", "sanduíche": "🥪", "pão de queijo": "🧀", "coxinha": "🍗", "tapioca": "🫓",
-    "feijoada": "🍲", "frango frito": "🍗", "chocolate": "🍫", "biscoito": "🍪", "salgadinho": "🥔",
-    "pipoca": "🍿", "brigadeiro": "🍫", "energético": "⚡", "refrigerante": "🥤", "cerveja": "🍺",
-    "água mineral": "💧", "vinho": "🍷", "chá": "🍵", "leite": "🥛", "drink": "🍹",
-    "cachorro": "🐶", "gato": "🐱", "coelho": "🐰", "pássaro": "🐦",
-    "hamster": "🐹", "porquinho-da-índia": "🐹", "peixe de aquário": "🐟", "tartaruga": "🐢",
-}
-
-
-def emoji(item: Item) -> str:
-    return EMOJI.get(item.nome, {"comprar": "🛍️", "receita": "🍲", "adotar": "🐾"}[item.tipo])

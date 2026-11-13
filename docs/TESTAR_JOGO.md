@@ -1,89 +1,77 @@
-# Como testar o jogo (tema do dia, pódio e mapa)
+# Como testar o jogo (personagem no mapa, juízes e pódio)
 
-Branch: `claude/vibrant-feynman-4fhs11`. O app atual no Streamlit continua igual até o merge.
+Branch: `claude/vibrant-feynman-4fhs11`.
 
-## 1. Publicar uma cópia de teste
-Abra (o formulário já vem preenchido):
+## 1. Atualizar o app de teste
+O app de teste desta branch nem sempre atualiza sozinho depois de um push. Abra o app, toque em
+**Gerenciar aplicativo** (canto de baixo) → **⋮ → Reboot app** e espere 2 ou 3 minutos.
+Confira que atualizou: o menu deve ter só **Home, Pódio, Minha Coleção e Avaliação**, e a tela inicial abre com o mapa.
+
+Ainda não criou o app de teste? Abra (o formulário já vem preenchido):
 https://share.streamlit.io/deploy?repository=nicollaspaulo51-cyber/wishlens&branch=claude/vibrant-feynman-4fhs11&mainModule=app/Home.py
-
-Se você já criou o app de teste desta branch, ele atualiza sozinho: abra e, se precisar, clique em **⋮ → Reboot app**.
 
 ## 2. Secrets (⋮ → Settings → Secrets)
 ```toml
-GEMINI_API_KEY = "sua-chave"                     # juiz com IA (https://aistudio.google.com/apikey)
+GEMINI_API_KEY = "sua-chave"                     # juiz principal (https://aistudio.google.com/apikey)
 SUPABASE_URL = "https://SEU-PROJETO.supabase.co" # pódio compartilhado (passo 6)
 SUPABASE_KEY = "sua-anon-key"
 ```
-Dá para testar em etapas: primeiro sem nada, depois só com o Gemma, depois com o Supabase.
+Com a chave, o rodapé do cartão de pontos mostra **"Juízes: Gemma ✔ · CLIP ✔"**. Se mostrar só "CLIP", a chave não
+está sendo lida.
 
-## 3. Antes de tudo: a câmera do celular
-No celular, abra o app e confira se a câmera do `Jogar` deixa usar a **câmera traseira** (ícone de trocar câmera)
-e se a foto sai nítida o bastante para ler o modelo de um carro. O jogo depende disso e não dá para testar daqui.
-
-## 4. Teste rápido, sem chave nenhuma
+## 3. Tela principal: personagem no mapa
 | Faça | Deve acontecer |
 |---|---|
-| Abra o app | Faixa roxa com o **tema do dia** e os outros 4 temas embaixo |
-| Barra lateral → **Carregar dados de exemplo** | Pódio e Coleção ganham jogadores fictícios |
-| Tire uma foto de um carro | Cartão com o tema "Carros" e pontos (sem a chave, o achado é genérico, "carro", e vale só a base) |
-| Tire a **mesma** foto de novo (ou aponte para a mesma cena parada) | 0 pontos: "foto repetida" |
-| **Pódio** | 3 degraus, abas Hoje/Semana/Geral, filtro por tema, "achados mais raros" |
-| **Minha Coleção** | Estilo de jogador, álbum por tema, gráficos |
+| Abra o app no celular e **permita a localização** | Mapa com o **personagem** (explorador com lupa) na sua posição, balançando, com um círculo pulsando |
+| Olhe os pontos coloridos | Eles **aparecem, piscam e somem**, cada um no seu ritmo; os do tema do dia são maiores |
+| Ande alguns metros com o app aberto | O personagem anda junto (se o navegador permitir GPS contínuo) |
+| Toque num ponto | Cartão: o que procurar ali, distância, endereço/horário (quando o mapa tem) e "Como chegar" |
+| Desmarque temas nos botões acima do mapa | Os pontos daquele tema somem |
+| **🔄 Atualizar lugares** depois de andar | Busca os lugares de novo a partir de onde você está |
+| Sem permitir o GPS | Aparece "Sem GPS: onde você está?"; digite o bairro e o mapa abre lá |
+| Tema escuro (🌙 na barra lateral) | O mapa fica escuro também |
 
-## 5. Com o Gemma (juiz com IA)
+## 4. Fotos (os dois erros que você encontrou)
 | Faça | Deve acontecer |
 |---|---|
-| Foto de um carro na rua | "Volkswagen Gol", "Fiat Mobi"… e pontos com novidade e raridade |
-| Foto de uma planta, um pássaro, um cachorro e uma peça | Tema certo e o nome (espécie, raça, peça) |
-| Foto de um **mouse**, de um **teclado** e de um **monitor** | Valem como "Peças e periféricos de computador" (antes o mouse era recusado) |
-| Olhe o rodapé do cartão | "Juízes: Gemma ✔ · CLIP ✔" (o CLIP julga toda foto) |
-| Foto **da tela do computador** mostrando um carro | 0 pontos: "não é foto real" (Gemma) ou "o CLIP viu uma tela" |
-| Foto recusada por tema | Aparece "O juiz errou? Era…": escolha o tema e **Contestar** (não dá pontos, vai para a Avaliação) |
-| Foto de algo fora dos temas (uma caneca) | 0 pontos: "não é de nenhum tema" |
-| Mesma coisa duas vezes no mesmo dia | A 2ª vale 0: "você já achou isso hoje" |
-| Algo do **tema do dia** | Selo "tema do dia ×2" no cartão |
-| Botão **🔎 Onde encontrar** (carros, plantas, pets, peças) | Abre preço, lojas online e mapa daquele achado |
+| **📷 Fotografar** → foto de um **mouse** | Peças e periféricos de computador · Mouse, com pontos |
+| Depois, foto de um **teclado** | Também vale: Teclado (antes dava "você já achou isso hoje") |
+| Foto do **pássaro na tela do computador** | 0 pontos: "não é foto real" (Gemma) ou "o CLIP viu uma tela ou impressão" |
+| Pássaro, planta ou cachorro de verdade | Vale, com o nome (espécie/raça) se o Gemma estiver ligado |
+| Mesmo mouse de novo no mesmo dia | 0: "você já achou isso hoje" (mesmo achado específico) |
+| Carros sem o modelo (só "carro") | Valem a base até 3 vezes por dia; a 4ª dá 0 com o motivo |
+| Foto recusada por tema | "O juiz errou? Era…": escolha e **Contestar** (não dá pontos, vai para a Avaliação) |
+
+Com o CLIP sozinho (sem a chave), uma foto de tela bem tirada (de perto, sem borda) ainda pode passar. O Gemma é
+o juiz principal para isso.
 
 Erro 404 no Gemma? Acrescente `GEMMA_MODELO = "gemma-3-12b-it"` nos Secrets.
 
-## 6. Supabase (pódio entre pessoas)
-Siga o [docs/SUPABASE.md](SUPABASE.md): criar o projeto gratuito, rodar o `supabase/schema.sql` e colar as chaves.
-Para conferir a privacidade: no Supabase, **SQL Editor** → `select cidade from capturas` funciona (você é admin),
-mas o app nunca recebe bairro/célula dos outros; o mapa mostra só manchas com 2+ capturas.
-Depois:
-1. Crie duas contas (celular e computador, ou uma janela anônima).
-2. Tire uma foto com cada uma.
-3. Em **Pódio**, as duas devem aparecer. Quem achar um carro primeiro ganha mais raridade que o segundo.
+## 5. Antes de tudo: a câmera do celular
+Confira se a câmera deixa usar a **câmera traseira** (ícone de trocar câmera) e se a foto sai nítida o bastante
+para ler o modelo de um carro.
 
+## 6. Supabase (pódio entre pessoas)
+Siga o [docs/SUPABASE.md](SUPABASE.md). Se já rodou o `supabase/schema.sql` antes, **rode de novo** (ele só
+acrescenta o que falta). Depois, crie duas contas, tire uma foto com cada uma e veja as duas no **Pódio**.
 Sem o Supabase, cada pessoa só vê ela mesma (e os exemplos) no pódio.
 
-## 7. Avaliação dos juízes (página 📊 Avaliação)
+## 7. Pódio, Coleção e Avaliação
 | Faça | Deve acontecer |
 |---|---|
-| Com dados de exemplo, abra **Avaliação** | Concordância CLIP × Gemma (~85%), matriz de confusão, vetos, motivos de recusa, contestações |
-| Depois de jogar com a chave do Gemma | As suas fotos entram na matriz; a contestação que você fez aparece na lista |
-| Botão de baixar | CSV anonimizado com o que cada juiz disse (para o notebook de avaliação) |
-
-## 8. Explorar (mapa que pisca)
-| Faça | Deve acontecer |
-|---|---|
-| Abra **Explorar** e permita o GPS (ou digite o bairro) | Mapa com pontos coloridos **pulsando** por tema |
-| Olhe o tema do dia | Os pontos dele são maiores e pulsam mais rápido |
-| Com dados de exemplo em Vitória-ES (ou fotos com GPS) | 🟡 pontos amarelos = onde a turma achou coisas |
-| Toque num ponto | Cartão com o lugar, horário e "Como chegar" (Google Maps/Waze) |
-| Desmarque temas no filtro | Os pontos daquele tema somem |
+| Barra lateral → **Carregar dados de exemplo** | Pódio, Coleção e Avaliação ganham jogadores fictícios |
+| **Pódio** | 3 degraus, abas Hoje/Semana/Geral, filtro por tema, "achados mais raros" |
+| **Minha Coleção** | Estilo de jogador, álbum por tema, gráficos |
+| **Avaliação** | Concordância CLIP × Gemma, matriz de confusão, vetos, recusas, contestações, CSV |
 
 ## Já verificado aqui
-- `pytest`: 75 testes passando (rede e IA simuladas): pontos, raridade, ×2, recusas, hash de foto repetida,
-  pódio, tema do dia virando à meia-noite de Brasília, juiz do Gemma, busca de pontos por tema, exportação sem hash e célula,
-  capturas do Supabase (datas com fuso) misturadas com as da memória.
-- Busca no Supabase em páginas de 1.000 (o limite da API), para o pódio não perder as capturas mais novas.
-- Foto repetida só conta para o mesmo achado: dois pássaros diferentes contra o céu não são barrados.
-- O CLIP (`julgar_clip` e `capturar`) rodou de ponta a ponta com pesos aleatórios, sem erro.
-- Com os dois juízes simulados: mouse aceito como peça ("Gemma ✔ · CLIP ✔"); foto com tema discordante vetada,
-  contestação gravada; página Avaliação com matriz de confusão, recusas e contestações.
-- App rodando com a IA e o OpenStreetMap simulados, câmera falsa do Chromium:
-  foto → +27 pontos; foto de tela → recusada; Pódio, Coleção e "Onde encontrar" navegando pelo menu.
-- Pulso do mapa: conferido renderizando o mapa com o Leaflet local (aqui o CDN do Leaflet é bloqueado).
+- `pytest`: 58 testes passando (rede e IA simuladas), incluindo: mouse e teclado viram achados diferentes só com o
+  CLIP; frases gêmeas de tela; "tela" como 1º palpite do CLIP barra a foto mesmo com o Gemma dizendo que é real
+  (menos peças); limite de 3 fotos genéricas por dia; HTML do mapa sem brecha para nome malicioso do OSM; nenhuma
+  página importa código removido.
+- Mapa renderizado no Chromium com o Leaflet local: personagem aparece, 7 de 8 pontos mudaram de visível para
+  invisível (ou o contrário) em 1,7 s, cartão abre ao tocar, tema claro e escuro.
+- App com os juízes simulados: mouse +40, teclado +40, pássaro na tela recusado; menu com 4 páginas.
 
-**Não** testado aqui: o Gemma real, o CLIP real (o Hugging Face está bloqueado), o Supabase real e o mapa dentro do app publicado.
+**Não** testado aqui: o mapa dentro do app publicado (o Leaflet vem de um CDN bloqueado neste ambiente), o GPS
+contínuo no celular, o Gemma real, o CLIP real e o Supabase real.

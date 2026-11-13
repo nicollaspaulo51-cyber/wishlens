@@ -5,7 +5,6 @@ import html
 import streamlit as st
 
 from src import armazenamento
-from src.exemplo import gerar_exemplos
 
 # Paleta igual à da prévia (https://claude.ai/artifact/4sZtfAn7K85Kc6bASY7sjJ)
 TEMAS = {
@@ -27,11 +26,6 @@ def tema() -> str:
 
 def cores() -> dict:
     return TEMAS[tema()]
-
-
-def cor_tipo() -> dict:
-    c = cores()
-    return {"comprar": c["buy"], "receita": c["food"], "adotar": c["adopt"]}
 
 
 def _alternar_tema() -> None:
@@ -105,6 +99,12 @@ hr {{ border-color: var(--wl-line) !important; }}
 .wl-degrau.p2 .wl-bloco {{ height:4.8rem; }}
 .wl-degrau.p3 .wl-bloco {{ height:3.6rem; }}
 .wl-degrau .wl-nome {{ font-weight:600; font-size:.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
+.wl-barra {{ display:flex; justify-content:space-between; align-items:center; gap:.6rem; margin:-1.5rem 0 .4rem; }}
+.wl-placar {{ display:flex; gap:.4rem; }}
+.wl-placar span {{ background:var(--wl-soft); border:1px solid var(--wl-line); border-radius:999px;
+                  padding:.25rem .65rem; font-size:.9rem; white-space:nowrap; }}
+/* o componente que pede o GPS não precisa aparecer (continua funcionando com altura zero) */
+[data-testid="stElementContainer"]:has(iframe[title*="streamlit_js_eval"]) {{ height:0; min-height:0; overflow:hidden; margin:0; }}
 .wl-brand {{ font-family:"Bricolage Grotesque", system-ui, sans-serif; font-weight:800; font-size:1.4rem; line-height:1.1; }}
 @media (prefers-reduced-motion: reduce) {{ [data-testid="stApp"] {{ transition:none; }} }}
 </style>
@@ -140,13 +140,10 @@ def barra_lateral() -> None:
         st.caption("Dados fictícios para ver os gráficos funcionando. Não são dados reais.")
         if st.button("Carregar dados de exemplo", use_container_width=True):
             from src.exemplo import gerar_capturas
-            armazenamento.remover_exemplos()
-            armazenamento.adicionar_varios(gerar_exemplos())
             armazenamento.remover_capturas_exemplo()
             armazenamento.adicionar_capturas(gerar_capturas())
             st.toast("Dados de exemplo carregados")
         if st.button("Remover dados de exemplo", use_container_width=True):
-            armazenamento.remover_exemplos()
             armazenamento.remover_capturas_exemplo()
             st.toast("Dados de exemplo removidos")
         st.divider()
@@ -179,7 +176,7 @@ def _conta() -> None:
         apelido = st.text_input("Apelido (aparece para quem você conectar)", key="cad_apelido")
         email = st.text_input("E-mail", key="cad_email")
         senha = st.text_input("Senha (mínimo 6 caracteres)", type="password", key="cad_senha")
-        consentimento = st.checkbox("Concordo em guardar meus desejos para análise anonimizada", key="cad_ok")
+        consentimento = st.checkbox("Concordo em guardar minhas capturas do jogo para análise anonimizada", key="cad_ok")
         if st.form_submit_button("Criar conta", use_container_width=True):
             if not (apelido.strip() and email and len(senha) >= 6 and consentimento):
                 st.warning("Preencha tudo, use senha com 6+ caracteres e marque o consentimento.")
@@ -203,14 +200,6 @@ def estilizar(fig, altura: int = 320):
     return fig
 
 
-def usuario_padrao(usuarios: list[str]) -> str:
-    """Usuário atual; se ele tiver poucos desejos e houver exemplos, mostra o exemplo."""
-    atual = armazenamento.usuario_atual()
-    if len(armazenamento.do_usuario(atual)) < 3 and "exemplo:eu" in usuarios:
-        return "exemplo:eu"
-    return atual
-
-
 def badge(texto: str) -> str:
     return f'<span class="wl-badge">{texto}</span>'
 
@@ -219,36 +208,6 @@ def lista(linhas: list[tuple[str, str]]) -> str:
     """Lista HTML simples (segue o tema, ao contrário do st.dataframe)."""
     itens = "".join(f"<li><span>{a}</span><span class='wl-muted'>{b}</span></li>" for a, b in linhas)
     return f'<ul class="wl-list">{itens}</ul>'
-
-
-def cartao_lugar(lugar: dict, finalidade: tuple, horario: str | None, preco, nome_item: str,
-                 rotas: dict[str, str]) -> None:
-    """Cartão do lugar clicado no mapa: endereço, horário, contato, preço de referência e rotas.
-
-    Tudo que vem do OSM é escapado (qualquer pessoa edita o mapa); links só http(s) e tel:.
-    """
-    rotulo, _, _, emoji = finalidade
-    e = html.escape
-    km = f'{lugar["distancia_km"]:.1f}'.replace(".", ",")
-    linhas = [("📏 Distância", f"{km} km em linha reta")]
-    if lugar.get("endereco"):
-        linhas.append(("📍 Endereço", e(lugar["endereco"])))
-    linhas.append(("🕒 Horário", e(horario) if horario else "não informado no mapa"))
-    if lugar.get("telefone"):
-        tel = "".join(c for c in lugar["telefone"] if c.isdigit() or c == "+")
-        linhas.append(("📞 Telefone", f'<a href="tel:{e(tel)}">{e(lugar["telefone"])}</a>'))
-    if lugar.get("finalidade", "comprar") == "comprar" and preco is not None:
-        linhas.append(("💰 Preço de referência", f"{e(preco.texto)} <small>({e(preco.fonte)})</small>"))
-    st.markdown(
-        f'<div class="wl-card wl-place"><h3>{emoji} {e(lugar["nome"])}</h3>'
-        f'{badge(rotulo)}<span class="wl-muted" style="font-size:.85rem">para {e(nome_item)}</span>'
-        f'{lista(linhas)}</div>', unsafe_allow_html=True)
-    botoes = {"🧭 " + k: v for k, v in rotas.items()}
-    if lugar.get("site"):
-        botoes["🌐 Site"] = lugar["site"]
-    botoes["🗺️ No OSM"] = lugar["mapa"]
-    for col, (texto, url) in zip(st.columns(len(botoes)), botoes.items()):
-        col.link_button(texto, url, use_container_width=True)
 
 
 def faixa_tema_do_dia(tema, outros) -> None:
@@ -270,8 +229,9 @@ def linha_juizes(juizes: dict | None, tema_final: str | None) -> str:
     if juizes["juiz"] in ("gemma+clip", "gemma"):
         partes.append("Gemma ✔")
     if juizes["juiz"] in ("gemma+clip", "clip"):
+        viu_tela = juizes.get("clip_foto_real") is False and tema_final != "pecas"
         concorda = juizes["juiz"] == "clip" or juizes.get("clip_tema") == tema_final
-        partes.append("CLIP " + ("✔" if concorda else "✖"))
+        partes.append("CLIP ✖ (viu tela)" if viu_tela else "CLIP " + ("✔" if concorda else "✖"))
     return "Juízes: " + " · ".join(partes)
 
 

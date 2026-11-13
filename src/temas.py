@@ -20,62 +20,81 @@ class Tema:
     emoji: str
     generico: str              # achado genérico (sem detalhe): vale só a pontuação base
     achado: str                # o que a IA deve dizer como "achado" (vai no prompt do Gemma)
-    frases_clip: tuple[str, ...]  # reserva sem chave: o CLIP decide o tema por estas frases
+    # CLIP: (objeto em inglês, nome em português). A frase é "a photo of <objeto>"; o nome da frase que
+    # mais combinou vira o achado quando só o CLIP julga (mouse e teclado são achados diferentes).
+    objetos_clip: tuple[tuple[str, str], ...]
     tags_osm: tuple[str, ...]  # onde procurar no mapa (filtros do Overpass)
     onde: str                  # texto curto: onde costuma ter
-    categoria: str | None      # categoria do catálogo para "Onde encontrar" (None: não se compra)
     conta: str = ""            # o que conta como este tema (vai no prompt do Gemma)
+    cor: str = "#6D4AFF"       # cor do tema no mapa
+
+    @property
+    def frases_clip(self) -> tuple[str, ...]:
+        return tuple(f"a photo of {o}" for o, _ in self.objetos_clip)
 
 
 TEMAS: list[Tema] = [
     Tema("carros", "Carros", "🚗", "carro",
          "marca e modelo do carro (ex.: Volkswagen Gol, Fiat Mobi, Toyota Corolla); se não der, só a marca",
-         ("a photo of a car", "a photo of a car parked on the street", "a photo of the front of a car",
-          "a photo of the back of a car", "a side view photo of a car", "a photo of a pickup truck",
-          "a photo of an SUV"),
+         (("a car", "carro"), ("a car parked on the street", "carro"), ("the front of a car", "carro"),
+          ("the back of a car", "carro"), ("a car seen from the side", "carro"), ("a pickup truck", "caminhonete"),
+          ("an SUV", "SUV")),
          ('amenity="parking"', 'shop="car"', 'amenity="fuel"'),
-         "estacionamentos, concessionárias e postos", "veículos",
-         "carros, caminhonetes e SUVs de verdade (inteiros ou só a frente/traseira). Carro de brinquedo NÃO conta"),
+         "estacionamentos, concessionárias e postos",
+         "carros, caminhonetes e SUVs de verdade (inteiros ou só a frente/traseira). Carro de brinquedo NÃO conta",
+         "#E5484D"),
     Tema("plantas", "Plantas e flores", "🌿", "planta",
          "nome popular da planta ou flor em português (ex.: ipê-amarelo, girassol, costela-de-adão)",
-         ("a photo of a plant", "a photo of a flower", "a photo of a tree", "a close-up photo of a leaf",
-          "a photo of a potted plant", "a photo of a succulent", "a photo of a cactus", "a photo of a flowering bush"),
+         (("a plant", "planta"), ("a flower", "flor"), ("a tree", "árvore"), ("a leaf, close-up", "folha"),
+          ("a potted plant", "planta em vaso"), ("a succulent", "suculenta"), ("a cactus", "cacto"),
+          ("a flowering bush", "arbusto florido")),
          ('leisure~"park|garden"', 'shop="florist"', 'landuse="forest"'),
-         "parques, praças, jardins e floriculturas", "casa e decoração",
-         "qualquer planta viva: árvore, flor, folha, arbusto, planta em vaso, suculenta, cacto. Planta de plástico NÃO conta"),
+         "parques, praças, jardins e floriculturas",
+         "qualquer planta viva: árvore, flor, folha, arbusto, planta em vaso, suculenta, cacto. Planta de plástico NÃO conta",
+         "#30A46C"),
     Tema("passaros", "Pássaros", "🐦", "pássaro",
          "nome popular do pássaro em português (ex.: bem-te-vi, sabiá-laranjeira, pombo, quero-quero)",
-         ("a photo of a bird", "a photo of a bird on a tree branch", "a photo of a bird flying",
-          "a photo of a pigeon", "a photo of a small bird on the ground", "a photo of a bird on a wire"),
+         (("a bird", "pássaro"), ("a bird on a tree branch", "pássaro"), ("a bird flying", "pássaro"),
+          ("a pigeon", "pombo"), ("a small bird on the ground", "pássaro"), ("a bird on a wire", "pássaro"),
+          ("a parakeet", "periquito")),
          ('leisure="park"', 'natural~"wood|water|beach"'),
-         "parques, matas, lagoas e praias", None,
-         "qualquer ave viva, mesmo pequena na foto: pombo, pardal, galinha, pato, papagaio de estimação"),
+         "parques, matas, lagoas e praias",
+         "qualquer ave viva, mesmo pequena na foto: pombo, pardal, galinha, pato, papagaio de estimação",
+         "#0091FF"),
     Tema("pets", "Cachorros e gatos", "🐶", "cachorro ou gato",
          "espécie e raça em português (ex.: cachorro vira-lata caramelo, gato siamês, cachorro shih-tzu)",
-         ("a photo of a dog", "a photo of a cat", "a photo of a puppy", "a photo of a kitten",
-          "a photo of a dog lying down", "a photo of a cat sleeping", "a photo of a dog on a leash"),
+         (("a dog", "cachorro"), ("a cat", "gato"), ("a puppy", "filhote de cachorro"), ("a kitten", "filhote de gato"),
+          ("a dog lying down", "cachorro"), ("a cat sleeping", "gato"), ("a dog on a leash", "cachorro")),
          ('leisure="dog_park"', 'shop="pet"', 'amenity="veterinary"'),
-         "parcões, pet shops e veterinários", "animais",
-         "cachorros e gatos de verdade, de qualquer raça ou vira-lata, filhotes também"),
+         "parcões, pet shops e veterinários",
+         "cachorros e gatos de verdade, de qualquer raça ou vira-lata, filhotes também",
+         "#F76B15"),
     Tema("pecas", "Peças e periféricos de computador", "🖥️", "peça de computador",
          "nome da peça ou periférico em português (ex.: mouse, teclado, monitor, headset, webcam, pendrive, "
          "placa de vídeo, memória RAM, processador, placa-mãe, SSD, fonte)",
-         ("a photo of a computer mouse", "a photo of a computer keyboard", "a photo of a computer monitor",
-          "a photo of a gaming headset", "a photo of a webcam", "a photo of a USB flash drive",
-          "a photo of a graphics card", "a photo of RAM memory sticks", "a photo of a computer motherboard",
-          "a photo of a computer power supply", "a photo of a computer part"),
+         (("a computer mouse", "mouse"), ("a computer keyboard", "teclado"), ("a computer monitor", "monitor"),
+          ("a gaming headset", "headset"), ("a webcam", "webcam"), ("a USB flash drive", "pendrive"),
+          ("a graphics card", "placa de vídeo"), ("RAM memory sticks", "memória RAM"),
+          ("a computer motherboard", "placa-mãe"), ("a computer power supply", "fonte"),
+          ("a computer part", "peça de computador")),
          ('shop~"computer|electronics"', 'craft="electronics_repair"'),
-         "lojas de informática e assistências técnicas", "eletrônicos",
+         "lojas de informática e assistências técnicas",
          "peças internas E periféricos: mouse, teclado, monitor, headset/fone, webcam, microfone, caixinha de som de PC, "
          "cabo, pendrive, HD/SSD externo, roteador, gabinete, placa de vídeo, RAM, processador, placa-mãe, cooler, fonte. "
-         "Um monitor ou notebook de verdade conta (a tela dele ligada não é trapaça)"),
+         "Um monitor ou notebook de verdade conta (a tela dele ligada não é trapaça)",
+         "#8E4EC6"),
 ]
 POR_ID = {t.id: t for t in TEMAS}
 
-# Reserva sem chave: frases de "não vale" (foto de tela/impressão) e de "nenhum tema".
+# "Não vale": frases genéricas de tela/impressão + frases GÊMEAS de cada objeto dos temas
+# ("um pássaro numa tela de computador"), para "pássaro de verdade" disputar com "pássaro na tela".
+MODELOS_TELA = ("a photo of a computer screen showing {}", "a photo of a phone screen displaying {}",
+                "a printed picture of {}")
+FRASES_TELA = (("a photo of a computer screen showing a picture", "a photo of a phone screen showing a picture",
+                "a printed photo on paper", "a drawing or cartoon", "a toy model")
+               + tuple(dict.fromkeys(m.format(o) for t in TEMAS if t.id != "pecas"
+                                     for o, _ in t.objetos_clip for m in MODELOS_TELA)))
 # "nenhum" não pode ter frases genéricas ("um objeto do dia a dia"): elas roubavam o mouse do tema de peças.
-FRASES_TELA = ("a photo of a computer screen showing a picture", "a photo of a phone screen showing a picture",
-               "a printed photo on paper", "a drawing or cartoon", "a toy model")
 FRASES_NENHUM = ("a photo of a person", "a selfie", "a photo of a room interior", "a photo of food on a plate",
                  "a photo of a building", "a photo of an empty sky", "a photo of a document with text")
 
@@ -96,12 +115,3 @@ def dia_de(momento: datetime | None) -> date:
 def tema_do_dia(dia: date | None = None) -> Tema:
     dia = dia or agora().date()
     return TEMAS[dia.toordinal() % len(TEMAS)]
-
-
-def item_do_achado(tema: Tema, achado: str):
-    """Achado do jogo -> Item do catálogo, para a página "Onde encontrar" (None se não se compra/adota)."""
-    from src.categorias import Item, tipo_da_categoria
-
-    if not tema.categoria or not achado:
-        return None
-    return Item(achado, achado, tema.categoria, tipo_da_categoria(tema.categoria))

@@ -34,6 +34,17 @@ APELIDOS = {"vw": "volkswagen", "volks": "volkswagen", "chevy": "chevrolet", "gm
 
 COLUNAS_PONTOS = ["pontos", "base", "novidade", "raridade", "do_dia", "aceita", "motivo"]
 
+# Achado genérico (só "carro", "pássaro"...): vale só a base, e até LIMITE_GENERICO_DIA vezes por tema
+# por dia (sem o limite de "já achou hoje", que recusava o 2º carro de verdade sem modelo).
+LIMITE_GENERICO_DIA = 3
+GENERICOS = {"carro", "passaro", "planta", "cachorro", "gato", "cachorro ou gato", "peca de computador",
+             "ave", "flor", "arvore"}
+
+
+def eh_generico(tema_id: str, chave: str) -> bool:
+    """O achado é só o nome do tema/categoria, sem modelo, espécie ou raça (chave já normalizada)."""
+    return chave == normalizar(POR_ID[tema_id].generico) or chave in GENERICOS
+
 # Segundo juiz (CLIP) ao lado do Gemma: só barra quando discorda com clareza, porque sozinho ele erra
 # bastante (pássaro pequeno na foto, carro de longe). Ajustar depois de ver os dados da turma.
 # O CLIP é muito "confiante" (escala ~100 nas similaridades): uma diferença pequena de parecença vira
@@ -41,7 +52,7 @@ COLUNAS_PONTOS = ["pontos", "base", "novidade", "raridade", "do_dia", "aceita", 
 # (1 = o preferido dele), não a chance. Com 7 grupos (5 temas, tela, nenhum), ficar fora dos 2 primeiros
 # é discordar com clareza.
 VETO_RANK = 2     # o CLIP barra se o tema do Gemma ficar além desta posição
-VETO_TELA = 0.5   # chance mínima de "tela/impressão/desenho" (e ser o 1º palpite) para o CLIP barrar
+VETO_TELA = 0.5   # só para capturas antigas, sem clip_foto_real: chance mínima de "tela" para barrar
 VETO_TEMA = 0.10  # só para capturas antigas, sem a posição gravada
 
 
@@ -60,12 +71,18 @@ def posicao(probs: dict[str, float], grupo: str) -> int:
 
 def veto_clip(tema: str | None, juiz: str | None, clip_tema: str | None,
               clip_prob_tema: float | None, clip_prob_tela: float | None,
-              clip_rank_tema: int | None = None) -> str | None:
-    """Motivo para o CLIP barrar a foto que o Gemma aceitou, ou None. Só vale com os dois juízes."""
+              clip_rank_tema: int | None = None, clip_foto_real: bool | None = None) -> str | None:
+    """Motivo para o CLIP barrar a foto que o Gemma aceitou, ou None. Só vale com os dois juízes.
+
+    Tela: barra se "tela/impressão" foi o 1º palpite do CLIP (clip_foto_real falso), mesmo que o
+    Gemma tenha dito que é real. Não vale para peças de computador (monitor ligado é peça).
+    """
     if _valor(juiz) != "gemma+clip" or not tema:
         return None
     tela, prob_tema, rank = _valor(clip_prob_tela), _valor(clip_prob_tema), _valor(clip_rank_tema)
-    if tela is not None and tela >= VETO_TELA and tema != "pecas":  # monitor ligado é peça, não trapaça
+    clip_real = _valor(clip_foto_real)
+    viu_tela = (not bool(clip_real)) if clip_real is not None else (tela is not None and tela >= VETO_TELA)
+    if viu_tela and tema != "pecas":
         return "o CLIP viu uma tela ou impressão"
     discorda = int(rank) > VETO_RANK if rank is not None else (prob_tema is not None and prob_tema < VETO_TEMA)
     if discorda:
@@ -113,6 +130,7 @@ def calcular_pontos(capturas: pd.DataFrame) -> pd.DataFrame:
     df = capturas.sort_values("criado_em", kind="stable").reset_index(drop=True).copy()
     vistos_usuario: set[tuple[str, str, str]] = set()
     vistos_no_dia: set[tuple[str, str, str, date]] = set()
+    genericos_dia: dict[tuple[str, str, date], int] = {}
     contagem: dict[tuple[str, str], int] = {}
     # Foto repetida: compara só com fotos do mesmo achado (rápido e não pega fotos parecidas de
     # coisas diferentes, como dois pássaros contra o céu); foto reaproveitada recebe o mesmo achado do juiz.
@@ -126,6 +144,7 @@ def calcular_pontos(capturas: pd.DataFrame) -> pd.DataFrame:
         h = getattr(c, "foto_hash", None)
         h = h if isinstance(h, str) else None
 
+        generico_ = bool(tema) and eh_generico(tema.id, chave)
         real = getattr(c, "foto_real", True)
         motivo = None
         if real is not None and not pd.isna(real) and not bool(real):
@@ -134,20 +153,25 @@ def calcular_pontos(capturas: pd.DataFrame) -> pd.DataFrame:
             motivo = "não é de nenhum tema do jogo"
         elif veto := veto_clip(tema.id, getattr(c, "juiz", None), getattr(c, "clip_tema", None),
                                getattr(c, "clip_prob_tema", None), getattr(c, "clip_prob_tela", None),
-                               getattr(c, "clip_rank_tema", None)):
+                               getattr(c, "clip_rank_tema", None), getattr(c, "clip_foto_real", None)):
             motivo = veto
         elif not chave:
             motivo = "não deu para saber o que é"
         elif repetida(h, hashes.get((tema.id, chave), [])):
             motivo = "foto repetida"
-        elif (c.usuario, tema.id, chave, dia) in vistos_no_dia:
+        elif not generico_ and (c.usuario, tema.id, chave, dia) in vistos_no_dia:
             motivo = "você já achou isso hoje"
+        elif generico_ and genericos_dia.get((c.usuario, tema.id, dia), 0) >= LIMITE_GENERICO_DIA:
+            motivo = (f"limite de {LIMITE_GENERICO_DIA} fotos genéricas de {tema.nome.lower()} hoje: "
+                      "diga o modelo, a espécie ou a raça para ganhar mais")
         if motivo:
             linhas.append({"pontos": 0, "base": 0, "novidade": 0, "raridade": 0, "do_dia": do_dia,
                            "aceita": False, "motivo": motivo})
             continue
 
-        generico = chave == normalizar(tema.generico)
+        generico = generico_
+        if generico:
+            genericos_dia[(c.usuario, tema.id, dia)] = genericos_dia.get((c.usuario, tema.id, dia), 0) + 1
         novo = not generico and (c.usuario, tema.id, chave) not in vistos_usuario
         anteriores = contagem.get((tema.id, chave), 0)
         rar = 0 if generico else round(RARIDADE / (1 + anteriores))
@@ -280,8 +304,7 @@ def avaliar_juizes(pontuadas: pd.DataFrame) -> dict:
 
         aceitas = ambos[ambos["aceita"]]
         if not aceitas.empty:
-            genericos = aceitas.apply(lambda r: normalizar(r["achado"]) == normalizar(POR_ID[r["tema"]].generico),
-                                      axis=1)
+            genericos = aceitas.apply(lambda r: eh_generico(r["tema"], normalizar(r["achado"])), axis=1)
             saida["especificos"] = float(1 - genericos.mean())
 
     contest = df[df["contestada"].map(_valor).notna()]

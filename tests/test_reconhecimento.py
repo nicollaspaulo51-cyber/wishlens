@@ -1,4 +1,5 @@
-"""Teste do CLIP: lento (baixa ~600 MB na 1ª vez). Pulado se torch/transformers não estiverem instalados."""
+"""CLIP real: lento (baixa ~600 MB na 1ª vez). Pulado se torch/transformers não estiverem instalados
+ou se o modelo não puder ser baixado (ex.: sem internet)."""
 
 import sys
 from pathlib import Path
@@ -12,17 +13,18 @@ pytest.importorskip("transformers")
 
 from PIL import Image
 
-from src.reconhecimento import reconhecer
+from src import reconhecimento
 
 
-def test_reconhecer_top3():
-    resultados = reconhecer(Image.new("RGB", (224, 224), "white"), top_k=3)
-    assert len(resultados) == 3
-    confs = [r.confianca for r in resultados]
-    assert confs == sorted(confs, reverse=True) and 0 < sum(confs) <= 1.0001
+@pytest.fixture(scope="module")
+def modelo():
+    try:
+        return reconhecimento._carregar()
+    except OSError as erro:  # sem acesso ao Hugging Face
+        pytest.skip(f"modelo do CLIP indisponível: {erro}")
 
 
-def test_vocabulario_grande_carregado():
-    from src.reconhecimento import _carregar
-    _, _, vet_texto, rotulos = _carregar()
-    assert len(rotulos) == len(vet_texto) > 1000
+def test_julgar_clip_devolve_probabilidades(modelo):
+    j = reconhecimento.julgar_clip(Image.new("RGB", (224, 224), "white"))
+    assert abs(sum(j["probs"].values()) - 1) < 1e-6
+    assert set(j["probs"]) >= {"tela", "nenhum", "carros", "pecas"}

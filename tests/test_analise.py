@@ -72,25 +72,3 @@ def test_sem_supabase_usa_memoria():
     assert banco.configurado() is False          # sem secrets.toml nesta máquina
     assert banco.sessao_atual() is None
     assert "memória" in armazenamento.descricao_backend()
-
-
-def test_feed_recomenda_coisas_novas_e_relacionadas():
-    from src.feed import gerar_feed, vizinhos
-    df = _df()
-    feed = gerar_feed(df, "exemplo:bruno", quantidade=12)
-    ja = set(df[df["usuario"] == "exemplo:bruno"]["item"])
-    assert len(feed) == 12
-    assert not {c.item.nome for c in feed} & ja                       # nada que ele já deseja
-    # os itens que ainda faltam nas 2 categorias favoritas dele vêm primeiro
-    from src.categorias import ITENS
-    restantes = {i.nome for i in ITENS if i.categoria in {"eletrônicos", "brinquedos e games"}} - ja
-    assert restantes and restantes <= {c.item.nome for c in feed[:len(restantes) + 1]}
-    assert any(c.tipo_motivo == "novo" for c in feed)                  # há exploração
-    # os vizinhos de um "tech" são os outros "tech"
-    assert {u for u, _ in vizinhos(df, "exemplo:bruno")[:2]} == {"exemplo:diego", "exemplo:enzo"}
-    # ocultar tira o item; páginas não se repetem
-    oculto = feed[0].item.nome
-    assert oculto not in {c.item.nome for c in gerar_feed(df, "exemplo:bruno", ocultos={oculto}, quantidade=50)}
-    p0 = {c.item.nome for c in gerar_feed(df, "exemplo:bruno", quantidade=8, pagina=0)}
-    p1 = {c.item.nome for c in gerar_feed(df, "exemplo:bruno", quantidade=8, pagina=1)}
-    assert not p0 & p1

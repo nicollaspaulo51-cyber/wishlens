@@ -268,3 +268,22 @@ def test_veto_por_posicao_nao_barra_o_mouse():
     assert rank == 2
     assert jogo.veto_clip("pecas", "gemma+clip", None, probs["pecas"], probs["tela"], rank) is None
     assert "discordaram" in jogo.veto_clip("pecas", "gemma+clip", "plantas", 0.01, 0.0, 5)
+
+
+def test_generico_repetido_vale_ate_3_vezes_por_dia():
+    r = pts(*[cap("ana", "carro", tema="carros", hora=8 + k, h=f"{(k + 1) * 0x1111111111111111:016x}") for k in range(4)])
+    assert list(r["aceita"]) == [True, True, True, False]
+    assert set(r["pontos"][:3]) <= {10, 20} and "limite de 3 fotos genéricas" in r.loc[3, "motivo"]
+    # achados específicos diferentes no mesmo dia valem todos (mouse, teclado)
+    r = pts(cap("ana", "mouse", tema="pecas", hora=8), cap("ana", "teclado", tema="pecas", hora=9))
+    assert list(r["aceita"]) == [True, True] and (r["novidade"] == 10).all()
+
+
+def test_clip_ve_tela_e_barra_mesmo_com_gemma_dizendo_real():
+    base = {"juiz": "gemma+clip", "clip_tema": "passaros", "clip_rank_tema": 1, "clip_prob_tela": 0.3}
+    r = pts({**cap("ana", "periquito", tema="passaros"), **base, "clip_foto_real": False})
+    assert not r.loc[0, "aceita"] and "tela" in r.loc[0, "motivo"]
+    r = pts({**cap("ana", "monitor", tema="pecas"), **base, "clip_tema": "pecas", "clip_foto_real": False})
+    assert r.loc[0, "aceita"]  # monitor ligado é peça
+    r = pts({**cap("ana", "periquito", tema="passaros"), **base, "clip_foto_real": True})
+    assert r.loc[0, "aceita"]

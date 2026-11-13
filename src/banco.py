@@ -60,30 +60,6 @@ class Sessao:
     usuario_id: str
     apelido: str
 
-    # ------------------------------------------------ desejos
-    def salvar_desejo(self, registro: dict) -> None:
-        dados = {**registro, "usuario_id": self.usuario_id,
-                 "criado_em": registro["criado_em"].isoformat()}
-        try:
-            self.cliente.table("desejos").insert(dados).execute()
-        except Exception as erro:
-            # banco criado antes da coluna "marca" (supabase/schema.sql): salva sem ela
-            if "marca" not in str(erro):
-                raise
-            dados.pop("marca", None)
-            self.cliente.table("desejos").insert(dados).execute()
-
-    def desejos_visiveis(self) -> list[dict]:
-        """Os próprios desejos + os de conexões aceitas (a RLS do banco garante isso)."""
-        resp = (self.cliente.table("desejos")
-                .select("id, criado_em, item, categoria, tipo, faixa_preco, confianca, cidade, acao, perfis(apelido)")
-                .order("criado_em", desc=True).limit(5000).execute())
-        linhas = []
-        for r in resp.data or []:
-            apelido = (r.pop("perfis", None) or {}).get("apelido", "?")
-            linhas.append({**r, "usuario": apelido})
-        return linhas
-
     # ------------------------------------------------ capturas do jogo
     def salvar_captura(self, registro: dict) -> None:
         from src.temas import FUSO
@@ -133,21 +109,6 @@ class Sessao:
     def manchas(self) -> list[dict]:
         """Onde a turma achou coisas: por quadrado de ~500 m e tema, sem dizer quem (função no banco)."""
         return self.cliente.rpc("manchas_capturas", {}).execute().data or []
-
-    # ------------------------------------------------ conexões (comparar)
-    def pedir_conexao(self, apelido: str) -> None:
-        alvo = self.cliente.table("perfis").select("id").eq("apelido", apelido).single().execute()
-        self.cliente.table("conexoes").insert(
-            {"solicitante": self.usuario_id, "destinatario": alvo.data["id"]}).execute()
-
-    def aceitar_conexao(self, solicitante_id: str) -> None:
-        (self.cliente.table("conexoes").update({"aceito": True})
-         .eq("solicitante", solicitante_id).eq("destinatario", self.usuario_id).execute())
-
-    def pedidos_pendentes(self) -> list[dict]:
-        resp = (self.cliente.table("conexoes").select("solicitante, perfis!conexoes_solicitante_fkey(apelido)")
-                .eq("destinatario", self.usuario_id).eq("aceito", False).execute())
-        return resp.data or []
 
 
 def sessao_atual() -> Sessao | None:

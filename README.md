@@ -1,6 +1,6 @@
 # 🔍 WishLens
 
-> **Point. Snap. Discover.**: um jogo de fotos do mundo real. Fotografe carros, plantas, pássaros, cachorros e gatos ou peças de computador, ganhe pontos e suba no pódio.
+> **Point. Snap. Discover.**: um jogo de fotos do mundo real. Seu personagem anda no mapa, os lugares onde dá para achar cada tema piscam, e você fotografa carros, plantas, pássaros, cachorros e gatos ou peças de computador para ganhar pontos e subir no pódio.
 
 Projeto final da disciplina **Ciência de Dados I (Turma 12)**, desenvolvido com a metodologia **CRISP-DM**.
 
@@ -9,21 +9,10 @@ Projeto final da disciplina **Ciência de Dados I (Turma 12)**, desenvolvido com
 ## O que é
 | Página | O que faz |
 |---|---|
-| 🎯 **Jogar** (início) | Tema do dia em destaque. A pessoa tira uma foto **com a câmera do app**; a IA diz o tema e o achado (ex.: "Volkswagen Fusca", "bem-te-vi") e se é foto real. Mostra os pontos na hora. |
-| 🗺️ **Explorar** | Mapa com pontos **piscando** onde procurar cada tema (parques, estacionamentos, pet shops… do OpenStreetMap) e onde a turma já achou coisas. O tema do dia pisca mais forte. |
+| 🎯 **Jogar** (início) | Mapa com o **personagem** do WishLens (um explorador com uma lupa) na sua posição, andando com o GPS. Os lugares onde dá para achar cada tema **aparecem, piscam e somem**; os do tema do dia são maiores. Tocar num ponto mostra o que procurar ali e "Como chegar". Embaixo, **📷 Fotografar**: a foto é julgada e vira pontos na hora. |
 | 🏆 **Pódio** | Ranking de hoje, da semana e geral, por tema, e os achados mais raros da semana. |
 | 📚 **Minha Coleção** | Álbum por tema, raridade de cada achado, estilo de jogador (K-Means) e gráficos. |
-| 🔎 **Onde encontrar** | Depois de uma captura: preço, lojas online e lugares próximos (a parte de compras do WishLens original). |
-| ⭐ Meus Desejos · ✨ Descobrir · 👥 Comparar | Páginas da versão anterior (desejos de consumo), mantidas. |
 | 📊 **Avaliação** | CLIP × Gemma: concordância de tema, matriz de confusão, vetos, motivos de recusa e contestações. |
-
-### Dois juízes em toda foto
-O **Gemma** diz o tema, o achado e se é foto real. O **CLIP** da OpenAI (`openai/clip-vit-base-patch32`) julga
-**toda foto** também: ele barra a foto se vir uma tela/impressão (chance ≥ 50%) ou se o tema do Gemma ficar fora
-dos 2 primeiros palpites dele (de 7: os 5 temas, tela e nenhum). Usa a posição, não a chance, porque o CLIP é
-"confiante demais": uma diferença pequena de parecença vira 95% × 5%. O que cada modelo disse fica gravado (`juiz`, `clip_tema`, `clip_rank_tema`, `clip_prob_tema`, `clip_prob_tela`).
-Sem a chave do Gemma, o CLIP julga sozinho. Quando o juiz erra, a pessoa pode **contestar** ("era um mouse!"):
-não ganha pontos, mas a contestação aparece na página Avaliação para melhorar o identificador.
 
 ### Temas e pontos
 Temas (todos valem sempre): 🚗 carros · 🌿 plantas e flores · 🐦 pássaros · 🐶 cachorros e gatos · 🖥️ peças e periféricos de computador (mouse, teclado e monitor contam).
@@ -35,80 +24,79 @@ O **tema do dia** muda à meia-noite (rodízio pela data) e vale **o dobro**.
 | Novo pra você | +10 |
 | Raridade | +20 ÷ (1 + vezes que a turma já achou): o 1º a achar ganha +20, o 2º +10, o 3º +7… |
 | Tema do dia | tudo ×2 |
-| Achado genérico (só "carro", sem o modelo) | só a base |
+| Achado genérico (só "carro", sem o modelo) | só a base, até 3 vezes por tema por dia |
 | Foto de tela/impressão, repetida (hash da imagem), fora dos temas ou mesma coisa no mesmo dia | 0, com o motivo |
 
 Os pontos são **recalculados a partir das capturas** (`src/jogo.py`): gravar um número falso no banco não vale nada.
 
+### Dois juízes em toda foto
+- **Gemma** (juiz principal, com a `GEMINI_API_KEY`): diz o tema, o achado (modelo do carro, espécie, raça, peça) e
+  se é foto real. O prompt lista os sinais de foto de tela (borda do monitor, moiré, reflexo, bordas de janela).
+- **CLIP** da OpenAI (`openai/clip-vit-base-patch32`), em **toda foto**: compara a foto com frases de cada tema e com
+  frases "gêmeas" de tela ("a photo of a computer screen showing a bird"). Ele barra a foto se "tela" for o 1º palpite
+  dele (exceto peças: monitor ligado é peça) ou se o tema do Gemma ficar fora dos 2 primeiros palpites dele.
+  Usa a posição, não a chance, porque o CLIP é "confiante demais": uma diferença pequena de parecença vira 95% × 5%.
+- Sem a chave, o CLIP julga sozinho e o achado é o objeto que mais combinou ("mouse", "teclado", "flor", "carro").
+- O que cada modelo disse fica gravado. Quando o juiz erra, a pessoa pode **contestar** ("era um mouse!"):
+  não ganha pontos, mas a contestação aparece na página Avaliação para melhorar o identificador.
+
 ## CRISP-DM
 | Fase | Pergunta | Onde está |
 |---|---|---|
-| 1. Negócio | Como um jogo de fotos do mundo real faz as pessoas descobrirem coisas novas na cidade? Quais estilos de jogador existem? O que é raro e onde? | este README + `notebooks/01_entendimento.ipynb` |
-| 2. Dados | Quais dados temos, de onde vêm, quais limitações? (`describe()`, distribuições, nulos) | `notebooks/01_entendimento.ipynb` |
-| 3. Preparação | Limpeza, categorias unificadas, vetor de perfil por usuário | `notebooks/02_preparacao.ipynb` |
-| 4. Modelagem | K-Means (perfis de desejo e estilos de jogador por tema) + similaridade do cosseno + raridade pela frequência dos achados | `notebooks/03_modelagem.ipynb`, `src/jogo.py` |
-| 5. Avaliação | Os perfis fazem sentido? CLIP e Gemma concordam (matriz de confusão)? Taxa de fotos recusadas e contestadas? Privacidade (LGPD)? | página 📊 Avaliação, `notebooks/04_avaliacao.ipynb` |
+| 1. Negócio | Como um jogo de fotos do mundo real faz as pessoas descobrirem coisas novas na cidade? Quais estilos de jogador existem? O que é raro e onde? | este README |
+| 2. Dados | Capturas do jogo: tema, achado, hora, bairro, o que cada juiz disse ([dicionário](docs/DICIONARIO_DE_DADOS.md)) | `src/jogo.py`, CSV na página Avaliação |
+| 3. Preparação | Normalização dos achados ("VW Gol" = "Volkswagen Gol"), foto repetida, vetor de perfil por tema | `src/jogo.py` |
+| 4. Modelagem | K-Means (estilos de jogador por tema) + raridade pela frequência dos achados | `src/clustering.py`, `src/jogo.py` |
+| 5. Avaliação | CLIP e Gemma concordam (matriz de confusão)? Taxa de fotos recusadas e contestadas? Privacidade (LGPD)? | página 📊 Avaliação |
 | 6. Produto | Site publicado | `app/` |
+
+Os notebooks `01`–`04` são da **versão anterior** (desejos de consumo, com dados fictícios) e serão refeitos com os
+dados do jogo.
 
 ## Arquitetura
 ```
-Usuário (foto/câmera) → Streamlit → CLIP (reconhecimento, modelo aberto, sempre)
-                              ├─► Gemma via Google AI Studio (opcional: marca, modelo e preço)
-                              ├─► Mercado Livre (preço pelos anúncios, quando a API responde)
-                              ├─► Supabase (banco de desejos + fotos sem GPS + login)
-                              └─► OpenStreetMap / Overpass (lugares próximos)
-Notebooks de análise ◄── CSV anonimizado (data/processed/)
+Celular (GPS + câmera) → Streamlit
+   ├─ mapa do jogo (Leaflet, no navegador): personagem, pontos que piscam, cartão do lugar
+   ├─► OpenStreetMap / Overpass (onde procurar cada tema)
+   ├─► Gemma via Google AI Studio (juiz principal) + CLIP (segundo juiz, no servidor)
+   └─► Supabase (capturas + login; sem a foto, só um hash)
+Página Avaliação ──► CSV anonimizado ──► notebooks
 ```
 
 ## Fontes de dados e licenças
 | Fonte | Uso | Licença |
 |---|---|---|
-| Fotos coletadas pelo app (autor + colegas, com consentimento) | dados de desejo reais | uso no projeto, anonimizados |
-| [Olist – Brazilian E-Commerce](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) | base complementar de consumo | CC BY-NC-SA 4.0 |
-| [OpenStreetMap](https://www.openstreetmap.org/copyright) | lugares próximos | ODbL |
-| [CLIP ViT-B/32](https://huggingface.co/openai/clip-vit-base-patch32) | reconhecimento de imagens | MIT |
-| [Gemma 3](https://ai.google.dev/gemma) (opcional, pela API do Google AI Studio) | marca, modelo e preço estimado | pesos abertos, [Gemma Terms of Use](https://ai.google.dev/gemma/terms) (não é licença OSI) |
-| [API do Mercado Livre](https://developers.mercadolivre.com.br/) | faixa de preço pelos anúncios | termos do Mercado Livre |
-| [LVIS v1](https://www.lvisdataset.org/) (lista de ~1.200 objetos) | vocabulário do reconhecimento (`data/vocabulario.csv`) | CC BY 4.0 |
-| [Open Multilingual Wordnet](https://omwn.org/) / OpenWN-PT | nomes em português do vocabulário | CC BY-SA |
+| Fotos tiradas no jogo (autor + colegas, com consentimento) | capturas (a foto não é guardada) | uso no projeto, anonimizadas |
+| [OpenStreetMap](https://www.openstreetmap.org/copyright) | mapa e lugares de cada tema | ODbL |
+| [Leaflet](https://leafletjs.com/) | mapa no navegador | BSD-2 |
+| [CLIP ViT-B/32](https://huggingface.co/openai/clip-vit-base-patch32) | segundo juiz das fotos | MIT |
+| [Gemma 3](https://ai.google.dev/gemma) (pela API do Google AI Studio) | juiz principal | pesos abertos, [Gemma Terms of Use](https://ai.google.dev/gemma/terms) (não é licença OSI) |
+
+O personagem do mapa é um desenho próprio do WishLens (SVG em `src/mapa_jogo.py`).
 
 ## Privacidade
-- A foto salva é reduzida e **não carrega EXIF/GPS** (`src/fotos.py`).
-- A localização é usada só para buscar lugares próximos; o banco guarda apenas cidade/bairro.
-- O CSV versionado no GitHub é **anonimizado**; fotos brutas nunca entram no repositório (`.gitignore`).
-- A comparação entre duas pessoas exige **aceite das duas**.
-- Com o Gemma ligado, a foto vai para a API do Google **já sem EXIF/GPS** e reduzida (a mesma de `preparar_para_salvar`).
-- No jogo, cada captura guarda o bairro e um **quadrado de ~500 m** (`celula`) para o mapa da turma, nunca a coordenada exata.
-  A foto em si não é guardada, só um hash de 16 caracteres para detectar foto repetida. Os dois saem do CSV anonimizado.
+- A foto **não é guardada**: só um hash de 16 caracteres para detectar foto repetida.
+- Com o Gemma ligado, a foto vai para a API do Google **já sem EXIF/GPS** e reduzida (`src/fotos.py`).
+- O GPS move o personagem no seu navegador; o banco guarda só o bairro e um **quadrado de ~500 m** (`celula`) para o
+  mapa da turma, nunca a coordenada exata. Hash e célula saem do CSV anonimizado.
 - O pódio mostra só o apelido. Os jogadores logados veem tema, achado e hora das capturas dos outros (é o que permite
   o pódio e a raridade), mas **não** o bairro nem a célula: o mapa da turma vem de uma função do banco que só devolve
   totais por quadrado de ~500 m, sem dizer quem nem quando, e só onde houve pelo menos 2 capturas.
 
 ## Status
-
 | Parte | Situação |
 |---|---|
-| Interface (Home, Meus Desejos, Descobrir, Comparar) com tema claro/escuro | ✅ funcionando |
-| Feed "Descobrir" (recomendações por perfil + pessoas parecidas) | ✅ funcionando |
-| Gráficos dos desejos, perfil por K-Means, comparação por cosseno | ✅ funcionando |
-| Notebooks 01–04 do CRISP-DM | ✅ executados, **com dados fictícios** |
-| CSV anonimizado (download no app) | ✅ funcionando |
-| Reconhecimento automático (CLIP) | ✅ ~1.070 rótulos: catálogo curado (com frases de ~40 marcas conhecidas) + 947 do LVIS com categorias revisadas (`data/vocabulario.csv`); "Outra coisa…" aceita texto livre e marca. Acurácia em fotos reais ainda não medida |
-| Marca, modelo e preço com IA (Gemma) | 🧪 opcional: só com `GEMINI_API_KEY` nos Secrets; sem chave, só o CLIP |
-| Preço | 🧪 Mercado Livre (quartis dos anúncios) → estimativa da IA → tabela de referência; a fonte aparece junto do preço |
-| Cartão do lugar no mapa | ✅ endereço, horário, telefone, site, preço de referência e "Como chegar" (Google Maps, Waze, OSM) |
+| Jogo: mapa com personagem, temas, pontos, pódio, coleção, avaliação | ✅ funcionando (testado com IA e mapa simulados) |
+| Juízes (Gemma + CLIP) | 🧪 a testar com a chave real e fotos reais |
 | Banco e login (Supabase) | ⏳ código e SQL prontos, **não testados** com um projeto real: ver [docs/SUPABASE.md](docs/SUPABASE.md) |
-| Localização (GPS da foto → GPS do navegador → endereço via Nominatim) | ✅ funcionando |
-| Lugares próximos (OpenStreetMap / Overpass, mapa com tiles OSM) | ✅ funcionando (servidor `overpass.openstreetmap.fr` primeiro; reserva: outros Overpass e Nominatim) |
+| Notebooks do CRISP-DM | ⏳ da versão anterior; refazer com os dados do jogo |
 | Coleta de dados reais com a turma | ⏳ a fazer |
-| Publicação no Streamlit Cloud | ⏳ a fazer (precisa de conta) |
 
 ## Documentação
-- [Prévia da interface](docs/previa.html): página estática, baixe e abra no navegador (dados fictícios)
-- [Plano do projeto](docs/PLANO.md)
+- [Como testar o jogo](docs/TESTAR_JOGO.md)
 - [Dicionário de dados](docs/DICIONARIO_DE_DADOS.md)
-- [Roteiro do vídeo](docs/ROTEIRO_VIDEO.md)
 - [Configurar o Supabase](docs/SUPABASE.md)
+- [Plano do projeto](docs/PLANO.md) e [roteiro do vídeo](docs/ROTEIRO_VIDEO.md) (da versão anterior)
 
 ## Como rodar
 ```bash
@@ -116,60 +104,43 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 streamlit run app/Home.py
 ```
-Sem o reconhecimento automático (instalação bem mais leve, sem `torch`):
-```bash
-pip install -r requirements-dev.txt
-```
-Testes (sem internet): `python -m pytest tests/` (o teste do CLIP é pulado se `torch` não estiver instalado)
+Sem o CLIP (instalação bem mais leve, sem `torch`): `pip install -r requirements-dev.txt`. Sem nenhum juiz, o jogo
+pede para a pessoa dizer o tema e o que fotografou.
 
-## Vocabulário do reconhecimento
-`data/vocabulario.csv` e `data/vocabulario_clip.npy` são gerados por `scripts/gerar_vocabulario.py`
-(LVIS + nomes em português do Open Multilingual Wordnet; categoria pela hierarquia do WordNet).
-Só é preciso rodar de novo se mudar o modelo ou as regras: `pip install nltk && python scripts/gerar_vocabulario.py`.
-A categoria automática erra (cenoura caía em "brinquedos", gaiola em "veículos"); as correções manuais ficam em
-`scripts/correcoes_vocabulario.py` e valem sem recalcular o CLIP: `python scripts/correcoes_vocabulario.py`.
+Testes (sem internet): `python -m pytest tests/` (o teste do CLIP real é pulado sem `torch` ou sem internet).
 
-## Juiz com IA: Gemma (recomendado para o jogo)
-Sem a chave, o jogo usa o CLIP só para dizer o **tema** e se a foto é de tela; o achado fica genérico ("carro") e vale só a base.
-Com a `GEMINI_API_KEY`, o Gemma diz o modelo do carro, a espécie da planta ou do pássaro, a raça e a peça.
-
-## Marca, modelo e preço com o Gemma (opcional)
+## Gemma (juiz principal)
 1. Crie uma chave gratuita em https://aistudio.google.com/apikey.
 2. No Streamlit Cloud: **Settings → Secrets** e cole `GEMINI_API_KEY = "sua-chave"` (formato em `.streamlit/secrets.toml.example`).
-3. O modelo padrão é `gemma-3-27b-it` (pesos abertos). Se o Google deixar de servir esse modelo, ou para comparar,
-   defina `GEMMA_MODELO` nos Secrets (ex.: `gemma-3-12b-it`, ou `gemini-2.5-flash`, que é fechado).
+3. O modelo padrão é `gemma-3-27b-it` (pesos abertos). Se o Google deixar de servir esse modelo, defina `GEMMA_MODELO`
+   nos Secrets (ex.: `gemma-3-12b-it`, ou `gemini-2.5-flash`, que é fechado).
 
 Sem chave, ou se a API falhar, o app continua só com o CLIP e mostra o motivo em uma linha.
 
 ## Publicar no Streamlit Community Cloud
 1. Entre em https://share.streamlit.io com a conta do GitHub e clique em **Create app**.
-2. Repositório `nicollaspaulo51-cyber/wishlens`, branch `main`, arquivo principal `app/Home.py`.
+2. Repositório `nicollaspaulo51-cyber/wishlens`, a branch desejada, arquivo principal `app/Home.py`.
 3. Em **Advanced settings**, escolha Python 3.12. O `requirements.txt` já instala o torch só-CPU.
-4. (Opcional) Cole as chaves do Supabase e a `GEMINI_API_KEY` em **Secrets** no formato de `.streamlit/secrets.toml.example`.
+4. Cole as chaves do Supabase e a `GEMINI_API_KEY` em **Secrets** no formato de `.streamlit/secrets.toml.example`.
 
 A câmera e o GPS do navegador só funcionam em HTTPS (o Streamlit Cloud já usa) ou em `localhost`.
 
 ## Estrutura
 ```
-app/            site Streamlit (Home + páginas Meus Desejos, Descobrir e Comparar)
-src/            reconhecimento, fotos, localizacao, lugares, links, catálogo, armazenamento/banco,
-                perfil (cosseno), clustering (K-Means), feed de recomendações, exportação, interface
-notebooks/      análise CRISP-DM (01 → 04)
-data/processed/ dados de demonstração (fictícios) e, depois, os anonimizados reais
+app/            Jogar (Home) + páginas Pódio, Minha Coleção e Avaliação
+src/            temas, jogo (pontos e pódio), mapa_jogo (personagem e mapa), visao (Gemma), reconhecimento (CLIP),
+                lugares (OSM), localizacao, fotos, armazenamento/banco, clustering, exportação, interface
+notebooks/      análise CRISP-DM da versão anterior (01 → 04)
+data/processed/ dados de demonstração da versão anterior (fictícios)
 supabase/       estrutura do banco (schema.sql)
-docs/           plano, dicionário de dados, roteiro do vídeo, guia do Supabase
+docs/           roteiro de testes, dicionário de dados, guia do Supabase
 tests/          testes automáticos (rodam no GitHub Actions a cada push)
 ```
 
 ## Roadmap
-- [x] Estrutura, catálogo de itens, fotos sem GPS, links, código do reconhecimento (CLIP) e dos lugares (OSM)
-- [x] Interface: Home, Meus Desejos (gráficos) e Comparar (similaridade do cosseno), tema claro/escuro
-- [x] Clustering de perfis (K-Means) + cartão "Seu perfil"
-- [x] Notebooks 01–04 do CRISP-DM (com dados fictícios)
-- [x] Código do login + banco (Supabase) e exportação anonimizada
-- [ ] Criar o projeto Supabase e testar o login
-- [x] Instalar o CLIP (torch só-CPU) e localização por GPS do navegador / endereço
-- [ ] Medir a acurácia do reconhecimento em fotos reais
-- [ ] Coleta com colegas → refazer os notebooks com `desejos.csv`
-- [ ] Publicar no Streamlit Cloud
-- [ ] Gravar o vídeo ([roteiro](docs/ROTEIRO_VIDEO.md))
+- [x] Jogo: temas, tema do dia, pontos, pódio, coleção
+- [x] Mapa com personagem e pontos que piscam
+- [x] Dois juízes (Gemma + CLIP) e página de Avaliação
+- [ ] Criar o projeto Supabase e jogar com a turma
+- [ ] Refazer os notebooks com os dados do jogo
+- [ ] Publicar a versão final e gravar o vídeo

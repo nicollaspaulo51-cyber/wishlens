@@ -30,7 +30,11 @@
 | `do_dia` | o tema era o tema do dia na data da captura |
 | `pontos` | (base + novidade + raridade) × 2 se `do_dia` |
 
-## `desejos`: um registro por foto (tabela do app / CSV de análise)
+## Versão anterior (desejos de consumo)
+As seções abaixo descrevem os dados da versão anterior do WishLens, ainda usados pelos notebooks 01–04 e pelo CSV
+de demonstração. O app não grava mais desejos; a tabela continua no banco só para não apagar dados.
+
+## `desejos`: um registro por foto (versão anterior)
 
 | Coluna | Tipo | Origem | Exemplo | No CSV anonimizado |
 |---|---|---|---|---|

@@ -23,7 +23,9 @@ drop trigger if exists ao_criar_usuario on auth.users;
 create trigger ao_criar_usuario after insert on auth.users
   for each row execute function public.criar_perfil();
 
--- ---------------------------------------------------------------- desejos
+-- ---------------------------------------------------------------- desejos (VERSÃO ANTERIOR)
+-- O app não usa mais esta tabela nem a de conexões (eram da parte de compras). Ficam aqui só para não
+-- apagar dados de quem já criou o banco; para remover, rode à mão: drop table public.conexoes, public.desejos;
 create table if not exists public.desejos (
   id           uuid primary key default gen_random_uuid(),
   usuario_id   uuid not null default auth.uid() references public.perfis (id) on delete cascade,

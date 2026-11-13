@@ -1,9 +1,8 @@
 # Configurar o Supabase (banco de dados + login)
 
-Sem o Supabase, o WishLens funciona em **modo protótipo**: desejos e capturas do jogo ficam só na sessão do navegador,
+Sem o Supabase, o WishLens funciona em **modo protótipo**: as capturas do jogo ficam só na sessão do navegador,
 então **o pódio mostra só você** (e os dados de exemplo). Para a turma jogar junto, o Supabase é obrigatório.
-Com ele, cada pessoa tem uma conta, os desejos ficam salvos na nuvem e a comparação passa a exigir
-um pedido de conexão aceito, registrado no banco.
+Com ele, cada pessoa tem uma conta, as capturas ficam salvas na nuvem e o pódio passa a juntar a turma.
 
 > ⚠️ O código (`src/banco.py`) e o SQL (`supabase/schema.sql`) foram escritos, mas **ainda não foram testados
 > contra um projeto Supabase real**. Se algo falhar, a mensagem de erro aparece no app.
@@ -16,11 +15,10 @@ um pedido de conexão aceito, registrado no banco.
 2. **Crie as tabelas.** No menu lateral, abra **SQL Editor** → **New query**, cole todo o conteúdo de
    [`supabase/schema.sql`](../supabase/schema.sql) e clique em **Run**. Isso cria:
    - `perfis`: apelido de cada pessoa (criado automaticamente no cadastro);
-   - `desejos`: um registro por foto/desejo;
-   - `conexoes`: pedidos de conexão entre duas pessoas (com aceite);
+   - `desejos` e `conexoes`: da versão anterior (compras), não usadas pelo app;
    - `capturas`: uma linha por foto do jogo (pódio, coleção e mapa);
    - o bucket privado `fotos`;
-   - as regras de segurança (RLS): cada pessoa só vê os próprios desejos e os de conexões aceitas.
+   - as regras de segurança (RLS) das capturas (ver a tabela abaixo).
 3. **(Opcional, para testes)** Em **Authentication → Sign In / Providers → Email**, desligue
    **Confirm email** para não precisar confirmar o e-mail a cada conta de teste.
 4. **Copie as chaves.** Em **Project Settings → API**, copie a **Project URL** e a chave **anon public**.
@@ -47,8 +45,6 @@ Já tinha rodado o `schema.sql` antes? Rode de novo: ele usa `if not exists` e s
 
 | Regra | Onde |
 |---|---|
-| Cada pessoa só lê os próprios desejos e os de conexões **aceitas** | política `desejos_ler` |
-| Só quem recebeu o pedido pode aceitar a conexão | política `conexoes_aceitar` |
 | Fotos ficam numa pasta com o id da pessoa, em bucket privado | política `fotos_proprias` |
 | A localização guardada é só a cidade (nunca coordenadas) | coluna `cidade` + `src/fotos.py` |
 | Capturas: todos os logados leem (pódio), cada um só cria as suas, com a hora de agora; ninguém altera | políticas `capturas_ler` e `capturas_criar` |
