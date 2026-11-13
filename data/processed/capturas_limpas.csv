@@ -1,0 +1,199 @@
+usuario,criado_em,cidade,tema,achado,confianca,foto_real,juiz,clip_tema,clip_foto_real,clip_prob_tema,clip_prob_tela,clip_rank_tema,contestada,aceita,motivo,do_dia,base,novidade,raridade,pontos,hora,dia_semana,data,especifico,concorda,recusa
+u01,2026-10-29 19:00:00,Vitória - ES,passaros,sabiá-laranjeira,0.61,True,gemma+clip,passaros,True,0.831,0.146,1.0,,True,,False,10,10,20,40,19,3,2026-10-29,True,True,
+u01,2026-10-29 20:00:00,Vitória - ES,plantas,espada-de-são-jorge,0.61,True,gemma+clip,plantas,True,0.495,0.001,1.0,,True,,False,10,10,20,40,20,3,2026-10-29,True,True,
+u01,2026-10-30 19:00:00,Vitória - ES,passaros,gavião-carijó,0.94,True,gemma+clip,passaros,True,0.622,0.044,1.0,,True,,False,10,10,20,40,19,4,2026-10-30,True,True,
+u01,2026-10-30 22:00:00,Vitória - ES,passaros,gavião-carijó,0.59,True,gemma+clip,passaros,True,0.894,0.158,1.0,,False,você já achou isso hoje,False,0,0,0,0,22,4,2026-10-30,True,True,você já achou isso hoje
+u01,2026-10-31 16:00:00,Vitória - ES,plantas,bromélia,0.94,True,gemma+clip,plantas,True,0.362,0.16,1.0,,True,,False,10,10,20,40,16,5,2026-10-31,True,True,
+u01,2026-11-02 00:00:00,Vitória - ES,passaros,pombo,0.51,True,gemma+clip,passaros,True,0.77,0.065,1.0,,True,,True,10,10,20,80,0,0,2026-11-02,True,True,
+u01,2026-11-02 15:00:00,Vitória - ES,passaros,garça-branca,0.96,True,gemma+clip,pets,True,0.116,0.108,5.0,,False,os juízes discordaram do tema (Gemma: pássaros; CLIP: cachorros e gatos),True,0,0,0,0,15,0,2026-11-02,True,False,os juízes discordaram do tema
+u01,2026-11-02 21:00:00,Vitória - ES,passaros,sabiá-laranjeira,0.69,True,gemma+clip,passaros,True,0.444,0.025,1.0,,True,,True,10,0,10,40,21,0,2026-11-02,True,True,
+u01,2026-11-03 21:00:00,Vitória - ES,plantas,costela-de-adão,0.96,True,gemma+clip,plantas,True,0.609,0.068,1.0,,True,,False,10,10,10,30,21,1,2026-11-03,True,True,
+u01,2026-11-03 21:00:00,Vitória - ES,plantas,espada-de-são-jorge,0.82,True,gemma+clip,nenhum,True,0.11,0.08,2.0,,True,,False,10,0,10,20,21,1,2026-11-03,True,False,
+u01,2026-11-04 01:00:00,Vitória - ES,passaros,rolinha,0.84,True,gemma+clip,passaros,True,0.635,0.111,1.0,,True,,False,10,10,20,40,1,2,2026-11-04,True,True,
+u01,2026-11-04 01:00:00,Vitória - ES,plantas,pau-brasil,0.89,True,gemma+clip,plantas,True,0.741,0.04,1.0,,True,,False,10,10,20,40,1,2,2026-11-04,True,True,
+u01,2026-11-05 01:00:00,Vitória - ES,passaros,pombo,0.54,True,gemma+clip,passaros,True,0.653,0.012,1.0,,True,,False,10,0,10,20,1,3,2026-11-05,True,True,
+u01,2026-11-05 02:00:00,Vitória - ES,passaros,pombo,0.71,True,gemma+clip,carros,True,0.122,0.123,5.0,,False,os juízes discordaram do tema (Gemma: pássaros; CLIP: carros),False,0,0,0,0,2,3,2026-11-05,True,False,os juízes discordaram do tema
+u01,2026-11-06 19:00:00,Vitória - ES,plantas,hibisco,0.76,True,gemma+clip,plantas,True,0.825,0.056,1.0,,True,,True,10,10,7,54,19,4,2026-11-06,True,True,
+u01,2026-11-06 23:00:00,Vitória - ES,plantas,espada-de-são-jorge,0.56,True,gemma+clip,pecas,True,0.13,0.062,3.0,,False,os juízes discordaram do tema (Gemma: plantas e flores; CLIP: peças e periféricos de computador),True,0,0,0,0,23,4,2026-11-06,True,False,os juízes discordaram do tema
+u01,2026-11-07 02:00:00,Vitória - ES,nenhum,,0.34,True,gemma+clip,plantas,True,,0.01,,plantas,False,não é de nenhum tema do jogo,False,0,0,0,0,2,5,2026-11-07,False,False,não é de nenhum tema do jogo
+u01,2026-11-07 16:00:00,Vitória - ES,passaros,bem-te-vi,0.94,True,gemma+clip,passaros,True,0.383,0.14,1.0,,True,,True,10,10,10,60,16,5,2026-11-07,True,True,
+u01,2026-11-08 18:00:00,Vitória - ES,plantas,espada-de-são-jorge,0.95,True,gemma+clip,plantas,True,0.853,0.152,1.0,,True,,False,10,0,5,15,18,6,2026-11-08,True,True,
+u01,2026-11-08 18:00:00,Vitória - ES,passaros,bem-te-vi,0.83,True,gemma+clip,pets,True,0.232,0.179,3.0,,False,os juízes discordaram do tema (Gemma: pássaros; CLIP: cachorros e gatos),False,0,0,0,0,18,6,2026-11-08,True,False,os juízes discordaram do tema
+u01,2026-11-10 01:00:00,Vitória - ES,plantas,girassol,0.55,True,gemma+clip,plantas,True,0.872,0.123,1.0,,True,,False,10,10,7,27,1,1,2026-11-10,True,True,
+u01,2026-11-11 00:00:00,Vitória - ES,plantas,orquídea,0.83,True,gemma+clip,plantas,True,0.623,0.106,1.0,,True,,True,10,10,20,80,0,2,2026-11-11,True,True,
+u01,2026-11-11 14:00:00,Vitória - ES,plantas,ipê-amarelo,0.86,True,gemma+clip,plantas,True,0.531,0.045,1.0,,True,,True,10,10,7,54,14,2,2026-11-11,True,True,
+u01,2026-11-11 18:00:00,Vitória - ES,plantas,pau-brasil,0.7,True,gemma+clip,plantas,True,0.657,0.158,1.0,,True,,True,10,0,10,40,18,2,2026-11-11,True,True,
+u01,2026-11-12 15:00:00,Vitória - ES,plantas,orquídea,0.74,True,gemma+clip,passaros,True,0.142,0.105,2.0,,True,,False,10,0,10,20,15,3,2026-11-12,True,False,
+u02,2026-10-29 22:00:00,Vitória - ES,pets,cachorro vira-lata caramelo,0.72,True,gemma+clip,pets,True,0.628,0.001,1.0,,True,,True,10,10,20,80,22,3,2026-10-29,True,True,
+u02,2026-11-02 16:00:00,Vitória - ES,pets,cachorro shih-tzu,0.96,True,gemma+clip,pets,True,0.476,0.04,1.0,,True,,False,10,10,7,27,16,0,2026-11-02,True,True,
+u02,2026-11-02 23:00:00,Vitória - ES,plantas,costela-de-adão,0.7,True,gemma+clip,plantas,True,0.551,0.068,1.0,,True,,False,10,10,20,40,23,0,2026-11-02,True,True,
+u02,2026-11-04 00:00:00,Vitória - ES,pets,cachorro golden retriever,0.58,True,gemma+clip,pets,True,0.522,0.061,1.0,,True,,False,10,10,20,40,0,2,2026-11-04,True,True,
+u02,2026-11-04 16:00:00,Vitória - ES,plantas,espada-de-são-jorge,0.52,True,gemma+clip,plantas,True,0.888,0.103,1.0,,True,,False,10,10,7,27,16,2,2026-11-04,True,True,
+u02,2026-11-04 16:00:00,Vitória - ES,pets,cachorro shih-tzu,0.88,True,gemma+clip,plantas,True,0.04,0.008,3.0,,False,os juízes discordaram do tema (Gemma: cachorros e gatos; CLIP: plantas e flores),False,0,0,0,0,16,2,2026-11-04,True,False,os juízes discordaram do tema
+u02,2026-11-06 00:00:00,Vitória - ES,pets,gato vira-lata,0.89,True,gemma+clip,pets,True,0.754,0.162,1.0,,True,,False,10,10,10,30,0,4,2026-11-06,True,True,
+u02,2026-11-06 15:00:00,Vitória - ES,pets,cachorro vira-lata caramelo,0.74,True,gemma+clip,pets,True,0.503,0.16,1.0,,True,,False,10,0,7,17,15,4,2026-11-06,True,True,
+u02,2026-11-06 17:00:00,Vitória - ES,pets,cachorro vira-lata caramelo,0.54,True,gemma+clip,plantas,True,0.171,0.143,5.0,,False,os juízes discordaram do tema (Gemma: cachorros e gatos; CLIP: plantas e flores),False,0,0,0,0,17,4,2026-11-06,True,False,os juízes discordaram do tema
+u02,2026-11-06 20:00:00,Vitória - ES,pets,cachorro poodle,0.96,True,gemma+clip,carros,True,0.039,0.054,3.0,,False,os juízes discordaram do tema (Gemma: cachorros e gatos; CLIP: carros),False,0,0,0,0,20,4,2026-11-06,True,False,os juízes discordaram do tema
+u02,2026-11-08 17:00:00,Vitória - ES,pets,cachorro shih-tzu,0.63,True,gemma+clip,pets,True,0.531,0.197,1.0,,True,,True,10,0,4,28,17,6,2026-11-08,True,True,
+u02,2026-11-09 01:00:00,Vitória - ES,pets,cachorro golden retriever,0.6,True,gemma+clip,pets,True,0.356,0.199,1.0,,True,,False,10,0,7,17,1,0,2026-11-09,True,True,
+u02,2026-11-10 20:00:00,Vitória - ES,plantas,hibisco,0.79,False,gemma+clip,plantas,False,0.38,0.716,1.0,,False,"não é foto real (tela, impressão ou desenho)",False,0,0,0,0,20,1,2026-11-10,True,True,não é foto real
+u02,2026-11-11 14:00:00,Vitória - ES,pets,gato vira-lata,0.62,True,gemma+clip,pets,True,0.761,0.019,1.0,,True,,False,10,0,5,15,14,2,2026-11-11,True,True,
+u03,2026-10-31 14:00:00,Vitória - ES,pecas,mouse,0.94,True,gemma+clip,pecas,True,0.412,0.018,1.0,,True,,False,10,10,10,30,14,5,2026-10-31,True,True,
+u03,2026-10-31 18:00:00,Vitória - ES,pecas,teclado mecânico,0.54,True,gemma+clip,pecas,True,0.631,0.011,1.0,,True,,False,10,10,7,27,18,5,2026-10-31,True,True,
+u03,2026-11-01 00:00:00,Vitória - ES,pecas,teclado mecânico,0.93,True,gemma+clip,pecas,True,0.554,0.101,1.0,,True,,False,10,0,5,15,0,6,2026-11-01,True,True,
+u03,2026-11-03 02:00:00,Vitória - ES,nenhum,,0.59,True,gemma+clip,carros,True,,0.09,,carros,False,não é de nenhum tema do jogo,False,0,0,0,0,2,1,2026-11-03,False,False,não é de nenhum tema do jogo
+u03,2026-11-03 14:00:00,Vitória - ES,carros,Chevrolet Onix,0.52,True,gemma+clip,carros,True,0.753,0.183,1.0,,True,,False,10,10,7,27,14,1,2026-11-03,True,True,
+u03,2026-11-03 16:00:00,Vitória - ES,carros,Volkswagen Gol,0.92,True,gemma+clip,nenhum,True,0.113,0.169,4.0,,False,os juízes discordaram do tema (Gemma: carros; CLIP: nenhum tema),False,0,0,0,0,16,1,2026-11-03,True,False,os juízes discordaram do tema
+u03,2026-11-04 23:00:00,Vitória - ES,pecas,teclado mecânico,0.87,True,gemma+clip,pecas,True,0.811,0.009,1.0,,True,,True,10,0,3,26,23,2,2026-11-04,True,True,
+u03,2026-11-06 00:00:00,Vitória - ES,pecas,cooler de processador,0.61,True,gemma+clip,pecas,True,0.768,0.156,1.0,,True,,False,10,10,10,30,0,4,2026-11-06,True,True,
+u03,2026-11-06 16:00:00,Vitória - ES,carros,Jeep Renegade,0.87,True,gemma+clip,carros,True,0.406,0.079,1.0,,True,,False,10,10,10,30,16,4,2026-11-06,True,True,
+u03,2026-11-06 18:00:00,Vitória - ES,pecas,teclado mecânico,0.84,True,gemma+clip,pecas,True,0.659,0.151,1.0,,True,,False,10,0,3,13,18,4,2026-11-06,True,True,
+u03,2026-11-08 21:00:00,Vitória - ES,pecas,teclado mecânico,0.62,True,gemma+clip,nenhum,True,0.063,0.013,3.0,,False,os juízes discordaram do tema (Gemma: peças e periféricos de computador; CLIP: nenhum tema),False,0,0,0,0,21,6,2026-11-08,True,False,os juízes discordaram do tema
+u03,2026-11-09 15:00:00,Vitória - ES,carros,Hyundai HB20,0.5,False,gemma+clip,carros,False,0.597,0.643,1.0,,False,"não é foto real (tela, impressão ou desenho)",False,0,0,0,0,15,0,2026-11-09,True,True,não é foto real
+u03,2026-11-10 02:00:00,Vitória - ES,nenhum,,0.34,True,gemma+clip,pecas,True,,0.03,,pecas,False,não é de nenhum tema do jogo,False,0,0,0,0,2,1,2026-11-10,False,False,não é de nenhum tema do jogo
+u03,2026-11-11 16:00:00,Vitória - ES,pecas,SSD,0.81,True,gemma+clip,pecas,True,0.76,0.177,1.0,,True,,False,10,10,5,25,16,2,2026-11-11,True,True,
+u03,2026-11-11 19:00:00,Vitória - ES,pecas,processador,0.81,True,gemma+clip,pecas,True,0.564,0.073,1.0,,True,,False,10,10,3,23,19,2,2026-11-11,True,True,
+u03,2026-11-12 16:00:00,Vitória - ES,pecas,mouse,0.88,True,gemma+clip,pecas,True,0.57,0.013,1.0,,True,,False,10,0,3,13,16,3,2026-11-12,True,True,
+u03,2026-11-12 22:00:00,Vitória - ES,carros,Volkswagen Gol,0.67,True,gemma+clip,carros,True,0.493,0.156,1.0,,True,,False,10,10,7,27,22,3,2026-11-12,True,True,
+u04,2026-10-30 00:00:00,Vitória - ES,pecas,cooler de processador,0.72,True,gemma+clip,pecas,True,0.812,0.197,1.0,,True,,True,10,10,20,80,0,4,2026-10-30,True,True,
+u04,2026-10-30 00:00:00,Vitória - ES,pecas,teclado mecânico,0.86,True,gemma+clip,pecas,True,0.366,0.152,1.0,,True,,True,10,10,20,80,0,4,2026-10-30,True,True,
+u04,2026-10-30 18:00:00,Vitória - ES,carros,Hyundai HB20,0.94,True,gemma+clip,carros,True,0.761,0.052,1.0,,True,,False,10,10,20,40,18,4,2026-10-30,True,True,
+u04,2026-11-02 18:00:00,Vitória - ES,carros,Fiat Strada,0.92,True,gemma+clip,carros,True,0.352,0.098,1.0,,True,,False,10,10,7,27,18,0,2026-11-02,True,True,
+u04,2026-11-02 23:00:00,Vitória - ES,pecas,SSD,0.83,True,gemma+clip,pecas,True,0.615,0.097,1.0,,True,,False,10,10,10,30,23,0,2026-11-02,True,True,
+u04,2026-11-04 16:00:00,Vitória - ES,carros,Chevrolet Onix,0.85,True,gemma+clip,carros,True,0.713,0.013,1.0,,True,,False,10,10,5,25,16,2,2026-11-04,True,True,
+u04,2026-11-04 18:00:00,Vitória - ES,carros,Honda Civic,0.71,True,gemma+clip,carros,True,0.507,0.01,1.0,,True,,False,10,10,20,40,18,2,2026-11-04,True,True,
+u04,2026-11-05 20:00:00,Vitória - ES,pecas,mouse,0.81,True,gemma+clip,pecas,True,0.616,0.134,1.0,,True,,False,10,10,5,25,20,3,2026-11-05,True,True,
+u04,2026-11-05 20:00:00,Vitória - ES,carros,Honda Civic,0.85,True,gemma+clip,carros,True,0.369,0.111,1.0,,True,,True,10,0,10,40,20,3,2026-11-05,True,True,
+u04,2026-11-05 21:00:00,Vitória - ES,carros,Toyota Corolla,0.8,True,gemma+clip,carros,True,0.499,0.05,1.0,,True,,True,10,10,7,54,21,3,2026-11-05,True,True,
+u04,2026-11-05 22:00:00,Vitória - ES,pecas,processador,0.82,True,gemma+clip,pecas,True,0.706,0.153,1.0,,True,,False,10,10,10,30,22,3,2026-11-05,True,True,
+u04,2026-11-05 23:00:00,Vitória - ES,carros,Chevrolet Onix,0.85,True,gemma+clip,carros,True,0.486,0.125,1.0,,True,,True,10,0,3,26,23,3,2026-11-05,True,True,
+u04,2026-11-06 00:00:00,Vitória - ES,carros,Fiat Mobi,0.92,True,gemma+clip,carros,True,0.877,0.123,1.0,,True,,False,10,10,7,27,0,4,2026-11-06,True,True,
+u04,2026-11-06 14:00:00,Vitória - ES,pecas,fonte de alimentação,0.73,True,gemma+clip,passaros,True,0.209,0.155,5.0,,False,os juízes discordaram do tema (Gemma: peças e periféricos de computador; CLIP: pássaros),False,0,0,0,0,14,4,2026-11-06,True,False,os juízes discordaram do tema
+u04,2026-11-07 02:00:00,Vitória - ES,nenhum,,0.57,True,gemma+clip,carros,True,,0.03,,carros,False,não é de nenhum tema do jogo,False,0,0,0,0,2,5,2026-11-07,False,False,não é de nenhum tema do jogo
+u04,2026-11-07 22:00:00,Vitória - ES,carros,Toyota Corolla,0.8,True,gemma+clip,carros,True,0.479,0.095,1.0,,True,,False,10,0,5,15,22,5,2026-11-07,True,True,
+u04,2026-11-08 17:00:00,Vitória - ES,pecas,mouse,0.5,True,gemma+clip,passaros,True,0.241,0.129,3.0,,False,os juízes discordaram do tema (Gemma: peças e periféricos de computador; CLIP: pássaros),False,0,0,0,0,17,6,2026-11-08,True,False,os juízes discordaram do tema
+u04,2026-11-08 21:00:00,Vitória - ES,carros,Toyota Corolla,0.67,True,gemma+clip,carros,True,0.377,0.02,1.0,,True,,False,10,0,4,14,21,6,2026-11-08,True,True,
+u04,2026-11-09 02:00:00,Vitória - ES,carros,Fiat Mobi,0.72,True,gemma+clip,carros,True,0.565,0.185,1.0,,True,,False,10,0,5,15,2,0,2026-11-09,True,True,
+u04,2026-11-09 15:00:00,Vitória - ES,pecas,mouse,0.72,True,gemma+clip,plantas,True,0.092,0.017,4.0,,False,os juízes discordaram do tema (Gemma: peças e periféricos de computador; CLIP: plantas e flores),True,0,0,0,0,15,0,2026-11-09,True,False,os juízes discordaram do tema
+u04,2026-11-09 22:00:00,Vitória - ES,carros,Toyota Corolla,0.95,True,gemma+clip,carros,True,0.473,0.083,1.0,,True,,False,10,0,3,13,22,0,2026-11-09,True,True,
+u04,2026-11-10 02:00:00,Vitória - ES,carros,Volkswagen Gol,0.73,False,gemma+clip,carros,False,0.491,0.717,1.0,,False,"não é foto real (tela, impressão ou desenho)",True,0,0,0,0,2,1,2026-11-10,True,True,não é foto real
+u04,2026-11-10 20:00:00,Vitória - ES,carros,Volkswagen Gol,0.65,True,gemma+clip,carros,True,0.867,0.039,1.0,,True,,True,10,10,10,60,20,1,2026-11-10,True,True,
+u04,2026-11-10 20:00:00,Vitória - ES,carros,Volkswagen Fusca,0.52,True,gemma+clip,carros,True,0.844,0.177,1.0,,True,,True,10,10,7,54,20,1,2026-11-10,True,True,
+u04,2026-11-11 21:00:00,Vitória - ES,carros,Fiat Mobi,0.51,True,gemma+clip,carros,True,0.76,0.042,1.0,,True,,False,10,0,2,12,21,2,2026-11-11,True,True,
+u04,2026-11-11 22:00:00,Vitória - ES,pecas,teclado mecânico,0.96,True,gemma+clip,pecas,True,0.613,0.137,1.0,,True,,False,10,0,2,12,22,2,2026-11-11,True,True,
+u04,2026-11-11 22:00:00,Vitória - ES,carros,Chevrolet Onix,0.95,True,gemma+clip,carros,True,0.802,0.164,1.0,,True,,False,10,0,2,12,22,2,2026-11-11,True,True,
+u04,2026-11-11 22:00:00,Vitória - ES,carros,Fiat Strada,0.93,True,gemma+clip,carros,True,0.427,0.038,1.0,,True,,False,10,0,3,13,22,2,2026-11-11,True,True,
+u04,2026-11-12 15:00:00,Vitória - ES,pecas,teclado mecânico,0.5,True,gemma+clip,pecas,True,0.387,0.099,1.0,,True,,False,10,0,2,12,15,3,2026-11-12,True,True,
+u04,2026-11-13 01:00:00,Vitória - ES,carros,Hyundai HB20,0.84,False,gemma+clip,carros,False,0.641,0.659,1.0,,False,"não é foto real (tela, impressão ou desenho)",False,0,0,0,0,1,4,2026-11-13,True,True,não é foto real
+u05,2026-10-30 17:00:00,Vitória - ES,passaros,bem-te-vi,0.83,True,gemma+clip,passaros,True,0.462,0.007,1.0,,True,,False,10,10,20,40,17,4,2026-10-30,True,True,
+u05,2026-10-31 16:00:00,Vitória - ES,passaros,tucano,0.55,True,gemma+clip,passaros,True,0.463,0.064,1.0,,True,,False,10,10,20,40,16,5,2026-10-31,True,True,
+u05,2026-11-02 00:00:00,Vitória - ES,passaros,pardal,0.61,True,gemma+clip,passaros,True,0.875,0.199,1.0,,True,,True,10,10,20,80,0,0,2026-11-02,True,True,
+u05,2026-11-05 14:00:00,Vitória - ES,passaros,pombo,0.8,True,gemma+clip,passaros,True,0.497,0.151,1.0,,True,,False,10,10,7,27,14,3,2026-11-05,True,True,
+u05,2026-11-06 15:00:00,Vitória - ES,plantas,girassol,0.64,True,gemma+clip,plantas,True,0.444,0.196,1.0,,True,,True,10,10,20,80,15,4,2026-11-06,True,True,
+u05,2026-11-07 18:00:00,Vitória - ES,plantas,hibisco,0.89,True,gemma+clip,plantas,True,0.59,0.105,1.0,,True,,False,10,10,5,25,18,5,2026-11-07,True,True,
+u05,2026-11-08 22:00:00,Vitória - ES,plantas,costela-de-adão,0.95,True,gemma+clip,nenhum,True,0.192,0.158,2.0,,True,,False,10,10,7,27,22,6,2026-11-08,True,False,
+u05,2026-11-09 15:00:00,Vitória - ES,passaros,bem-te-vi,0.54,True,gemma+clip,passaros,True,0.783,0.126,1.0,,True,,False,10,0,7,17,15,0,2026-11-09,True,True,
+u05,2026-11-09 20:00:00,Vitória - ES,plantas,ipê-amarelo,0.7,True,gemma+clip,plantas,True,0.409,0.041,1.0,,True,,False,10,10,20,40,20,0,2026-11-09,True,True,
+u05,2026-11-10 17:00:00,Vitória - ES,passaros,tucano,0.66,True,gemma+clip,passaros,True,0.814,0.132,1.0,,True,,False,10,0,10,20,17,1,2026-11-10,True,True,
+u05,2026-11-10 21:00:00,Vitória - ES,plantas,ipê-amarelo,0.8,True,gemma+clip,plantas,True,0.376,0.171,1.0,,True,,False,10,0,10,20,21,1,2026-11-10,True,True,
+u05,2026-11-13 02:00:00,Vitória - ES,plantas,hibisco,0.59,True,gemma+clip,plantas,True,0.808,0.052,1.0,,True,,False,10,0,3,13,2,4,2026-11-13,True,True,
+u05,2026-11-13 02:00:00,Vitória - ES,nenhum,,0.3,True,gemma+clip,passaros,True,,0.04,,passaros,False,não é de nenhum tema do jogo,False,0,0,0,0,2,4,2026-11-13,False,False,não é de nenhum tema do jogo
+u06,2026-10-31 00:00:00,Vitória - ES,pets,cachorro shih-tzu,0.71,True,gemma+clip,pets,True,0.676,0.188,1.0,,True,,False,10,10,20,40,0,5,2026-10-31,True,True,
+u06,2026-10-31 21:00:00,Vitória - ES,pets,gato siamês,0.52,True,gemma+clip,pets,True,0.668,0.183,1.0,,True,,False,10,10,20,40,21,5,2026-10-31,True,True,
+u06,2026-11-01 16:00:00,Vitória - ES,plantas,hibisco,0.7,True,gemma+clip,plantas,True,0.842,0.048,1.0,,True,,True,10,10,20,80,16,6,2026-11-01,True,True,
+u06,2026-11-01 20:00:00,Vitória - ES,pets,gato vira-lata,0.77,True,gemma+clip,pets,True,0.476,0.144,1.0,,True,,False,10,10,20,40,20,6,2026-11-01,True,True,
+u06,2026-11-02 13:00:00,Vitória - ES,pets,cachorro shih-tzu,0.71,True,gemma+clip,pets,True,0.633,0.187,1.0,,True,,False,10,0,10,20,13,0,2026-11-02,True,True,
+u06,2026-11-02 17:00:00,Vitória - ES,pets,gato siamês,0.64,True,gemma+clip,pets,True,0.82,0.037,1.0,,True,,False,10,0,10,20,17,0,2026-11-02,True,True,
+u06,2026-11-03 01:00:00,Vitória - ES,pets,cachorro shih-tzu,0.79,False,gemma+clip,passaros,False,0.206,0.573,4.0,,False,"não é foto real (tela, impressão ou desenho)",True,0,0,0,0,1,1,2026-11-03,True,False,não é foto real
+u06,2026-11-03 02:00:00,Vitória - ES,pets,cachorro poodle,0.7,False,gemma+clip,pets,False,0.544,0.616,1.0,,False,"não é foto real (tela, impressão ou desenho)",True,0,0,0,0,2,1,2026-11-03,True,True,não é foto real
+u06,2026-11-03 02:00:00,Vitória - ES,nenhum,,0.35,True,gemma+clip,plantas,True,,0.01,,plantas,False,não é de nenhum tema do jogo,False,0,0,0,0,2,1,2026-11-03,False,False,não é de nenhum tema do jogo
+u06,2026-11-03 16:00:00,Vitória - ES,pets,cachorro shih-tzu,0.9,True,gemma+clip,pets,True,0.848,0.157,1.0,,True,,True,10,0,5,30,16,1,2026-11-03,True,True,
+u06,2026-11-04 01:00:00,Vitória - ES,plantas,hibisco,0.9,True,gemma+clip,plantas,True,0.552,0.115,1.0,,True,,False,10,0,10,20,1,2,2026-11-04,True,True,
+u06,2026-11-04 22:00:00,Vitória - ES,pets,gato siamês,0.94,True,gemma+clip,pets,True,0.456,0.128,1.0,,True,,False,10,0,7,17,22,2,2026-11-04,True,True,
+u06,2026-11-05 22:00:00,Vitória - ES,pets,cachorro vira-lata caramelo,0.58,True,gemma+clip,pets,True,0.624,0.059,1.0,,True,,False,10,10,10,30,22,3,2026-11-05,True,True,
+u06,2026-11-06 18:00:00,Vitória - ES,plantas,girassol,0.79,True,gemma+clip,plantas,True,0.718,0.197,1.0,,True,,True,10,10,10,60,18,4,2026-11-06,True,True,
+u06,2026-11-07 23:00:00,Vitória - ES,pets,gato siamês,0.54,True,gemma+clip,pets,True,0.655,0.081,1.0,,True,,False,10,0,5,15,23,5,2026-11-07,True,True,
+u06,2026-11-08 15:00:00,Vitória - ES,pets,cachorro golden retriever,0.73,True,gemma+clip,pets,True,0.547,0.131,1.0,,True,,True,10,10,10,60,15,6,2026-11-08,True,True,
+u06,2026-11-08 18:00:00,Vitória - ES,pets,gato vira-lata,0.69,True,gemma+clip,pets,True,0.629,0.195,1.0,,True,,True,10,0,7,34,18,6,2026-11-08,True,True,
+u06,2026-11-09 19:00:00,Vitória - ES,pets,gato siamês,0.96,True,gemma+clip,nenhum,True,0.201,0.168,3.0,,False,os juízes discordaram do tema (Gemma: cachorros e gatos; CLIP: nenhum tema),False,0,0,0,0,19,0,2026-11-09,True,False,os juízes discordaram do tema
+u06,2026-11-10 20:00:00,Vitória - ES,pets,gato siamês,0.72,True,gemma+clip,pets,True,0.419,0.167,1.0,,True,,False,10,0,4,14,20,1,2026-11-10,True,True,
+u06,2026-11-10 21:00:00,Vitória - ES,pets,cachorro poodle,0.69,True,gemma+clip,plantas,True,0.226,0.066,2.0,,True,,False,10,10,20,40,21,1,2026-11-10,True,False,
+u06,2026-11-11 14:00:00,Vitória - ES,pets,cachorro vira-lata caramelo,0.62,True,gemma+clip,pets,True,0.621,0.012,1.0,,True,,False,10,0,5,15,14,2,2026-11-11,True,True,
+u06,2026-11-11 21:00:00,Vitória - ES,plantas,hibisco,0.92,True,gemma+clip,plantas,True,0.368,0.012,1.0,,True,,True,10,0,4,28,21,2,2026-11-11,True,True,
+u06,2026-11-11 23:00:00,Vitória - ES,plantas,espada-de-são-jorge,0.84,True,gemma+clip,plantas,True,0.776,0.143,1.0,,True,,True,10,10,4,48,23,2,2026-11-11,True,True,
+u06,2026-11-12 02:00:00,Vitória - ES,pets,cachorro shih-tzu,0.94,True,gemma+clip,pets,True,0.666,0.108,1.0,,True,,False,10,0,3,13,2,3,2026-11-12,True,True,
+u06,2026-11-12 02:00:00,Vitória - ES,pets,gato vira-lata,0.81,True,gemma+clip,nenhum,True,0.106,0.029,5.0,,False,os juízes discordaram do tema (Gemma: cachorros e gatos; CLIP: nenhum tema),False,0,0,0,0,2,3,2026-11-12,True,False,os juízes discordaram do tema
+u06,2026-11-12 15:00:00,Vitória - ES,plantas,costela-de-adão,0.59,True,gemma+clip,plantas,True,0.853,0.131,1.0,,True,,False,10,10,5,25,15,3,2026-11-12,True,True,
+u06,2026-11-12 22:00:00,Vitória - ES,pets,cachorro golden retriever,0.81,True,gemma+clip,pets,True,0.655,0.182,1.0,,True,,False,10,0,5,15,22,3,2026-11-12,True,True,
+u07,2026-10-29 20:00:00,Vitória - ES,pecas,placa-mãe,0.79,True,gemma+clip,pecas,True,0.843,0.026,1.0,,True,,False,10,10,20,40,20,3,2026-10-29,True,True,
+u07,2026-10-29 20:00:00,Vitória - ES,carros,Jeep Renegade,0.84,True,gemma+clip,plantas,True,0.034,0.005,3.0,,False,os juízes discordaram do tema (Gemma: carros; CLIP: plantas e flores),False,0,0,0,0,20,3,2026-10-29,True,False,os juízes discordaram do tema
+u07,2026-10-29 21:00:00,Vitória - ES,carros,Chevrolet Onix,0.93,True,gemma+clip,carros,True,0.716,0.196,1.0,,True,,False,10,10,20,40,21,3,2026-10-29,True,True,
+u07,2026-10-31 18:00:00,Vitória - ES,carros,Fiat Mobi,0.54,True,gemma+clip,carros,True,0.848,0.168,1.0,,True,,True,10,10,20,80,18,5,2026-10-31,True,True,
+u07,2026-11-01 01:00:00,Vitória - ES,carros,Chevrolet Onix,0.69,True,gemma+clip,carros,True,0.706,0.083,1.0,,True,,False,10,0,10,20,1,6,2026-11-01,True,True,
+u07,2026-11-02 01:00:00,Vitória - ES,carros,Jeep Renegade,0.92,True,gemma+clip,carros,True,0.672,0.113,1.0,,True,,False,10,10,20,40,1,0,2026-11-02,True,True,
+u07,2026-11-05 17:00:00,Vitória - ES,pecas,fonte de alimentação,0.97,True,gemma+clip,pecas,True,0.789,0.053,1.0,,True,,False,10,10,10,30,17,3,2026-11-05,True,True,
+u07,2026-11-07 20:00:00,Vitória - ES,pecas,SSD,0.95,True,gemma+clip,pecas,True,0.521,0.193,1.0,,True,,False,10,10,7,27,20,5,2026-11-07,True,True,
+u07,2026-11-09 00:00:00,Vitória - ES,pecas,SSD,0.57,True,gemma+clip,plantas,True,0.156,0.123,3.0,,False,os juízes discordaram do tema (Gemma: peças e periféricos de computador; CLIP: plantas e flores),True,0,0,0,0,0,0,2026-11-09,True,False,os juízes discordaram do tema
+u07,2026-11-10 01:00:00,Vitória - ES,carros,Fiat Mobi,0.85,True,gemma+clip,carros,True,0.741,0.053,1.0,,True,,True,10,0,3,26,1,1,2026-11-10,True,True,
+u07,2026-11-10 20:00:00,Vitória - ES,carros,Chevrolet Onix,0.68,True,gemma+clip,carros,True,0.773,0.01,1.0,,True,,True,10,0,2,24,20,1,2026-11-10,True,True,
+u07,2026-11-11 21:00:00,Vitória - ES,carros,Hyundai HB20,0.84,True,gemma+clip,carros,True,0.76,0.093,1.0,,True,,False,10,10,2,22,21,2,2026-11-11,True,True,
+u07,2026-11-12 14:00:00,Vitória - ES,pecas,mouse,0.57,True,gemma+clip,pecas,True,0.796,0.193,1.0,,True,,False,10,10,4,24,14,3,2026-11-12,True,True,
+u07,2026-11-13 02:00:00,Vitória - ES,carros,Fiat Strada,0.75,True,gemma+clip,carros,True,0.424,0.073,1.0,,True,,False,10,10,3,23,2,4,2026-11-13,True,True,
+u08,2026-10-29 19:00:00,Vitória - ES,carros,Fiat Strada,0.6,True,gemma+clip,pecas,True,0.025,0.174,2.0,,True,,False,10,10,20,40,19,3,2026-10-29,True,False,
+u08,2026-10-30 17:00:00,Vitória - ES,pecas,placa de vídeo,0.88,True,gemma+clip,pets,True,0.062,0.126,5.0,,False,os juízes discordaram do tema (Gemma: peças e periféricos de computador; CLIP: cachorros e gatos),True,0,0,0,0,17,4,2026-10-30,True,False,os juízes discordaram do tema
+u08,2026-10-31 23:00:00,Vitória - ES,carros,Hyundai HB20,0.57,True,gemma+clip,carros,True,0.557,0.192,1.0,,True,,True,10,10,10,60,23,5,2026-10-31,True,True,
+u08,2026-11-01 13:00:00,Vitória - ES,carros,Toyota Corolla,0.83,True,gemma+clip,carros,True,0.576,0.11,1.0,,True,,False,10,10,20,40,13,6,2026-11-01,True,True,
+u08,2026-11-01 23:00:00,Vitória - ES,pecas,teclado mecânico,0.9,True,gemma+clip,pecas,True,0.455,0.125,1.0,,True,,False,10,10,4,24,23,6,2026-11-01,True,True,
+u08,2026-11-01 23:00:00,Vitória - ES,carros,Toyota Corolla,0.55,True,gemma+clip,carros,True,0.625,0.059,1.0,,False,você já achou isso hoje,False,0,0,0,0,23,6,2026-11-01,True,True,você já achou isso hoje
+u08,2026-11-02 15:00:00,Vitória - ES,carros,Hyundai HB20,0.64,True,gemma+clip,carros,True,0.517,0.168,1.0,,True,,False,10,0,7,17,15,0,2026-11-02,True,True,
+u08,2026-11-02 21:00:00,Vitória - ES,carros,Hyundai HB20,0.55,False,gemma+clip,carros,False,0.46,0.717,1.0,,False,"não é foto real (tela, impressão ou desenho)",False,0,0,0,0,21,0,2026-11-02,True,True,não é foto real
+u08,2026-11-03 19:00:00,Vitória - ES,carros,Hyundai HB20,0.73,True,gemma+clip,carros,True,0.517,0.029,1.0,,True,,False,10,0,5,15,19,1,2026-11-03,True,True,
+u08,2026-11-03 20:00:00,Vitória - ES,pecas,placa-mãe,0.65,True,gemma+clip,pecas,True,0.632,0.022,1.0,,True,,False,10,10,10,30,20,1,2026-11-03,True,True,
+u08,2026-11-04 00:00:00,Vitória - ES,carros,Fiat Mobi,0.55,True,gemma+clip,carros,True,0.508,0.071,1.0,,True,,False,10,10,10,30,0,2,2026-11-04,True,True,
+u08,2026-11-04 21:00:00,Vitória - ES,carros,Chevrolet Onix,0.68,True,gemma+clip,carros,True,0.84,0.061,1.0,,True,,False,10,10,4,24,21,2,2026-11-04,True,True,
+u08,2026-11-04 22:00:00,Vitória - ES,carros,Ford Mustang,0.56,True,gemma+clip,carros,True,0.574,0.058,1.0,,True,,False,10,10,20,40,22,2,2026-11-04,True,True,
+u08,2026-11-04 22:00:00,Vitória - ES,carros,Toyota Corolla,0.67,True,gemma+clip,carros,True,0.817,0.164,1.0,,True,,False,10,0,10,20,22,2,2026-11-04,True,True,
+u08,2026-11-04 23:00:00,Vitória - ES,carros,Volkswagen Fusca,0.97,True,gemma+clip,carros,True,0.894,0.107,1.0,,True,,False,10,10,20,40,23,2,2026-11-04,True,True,
+u08,2026-11-04 23:00:00,Vitória - ES,pecas,placa de vídeo,0.94,True,gemma+clip,pecas,True,0.582,0.08,1.0,,True,,True,10,10,20,80,23,2,2026-11-04,True,True,
+u08,2026-11-05 01:00:00,Vitória - ES,carros,Hyundai HB20,0.89,True,gemma+clip,carros,True,0.384,0.002,1.0,,True,,True,10,0,4,28,1,3,2026-11-05,True,True,
+u08,2026-11-06 13:00:00,Vitória - ES,carros,Fiat Mobi,0.96,True,gemma+clip,nenhum,True,0.081,0.136,3.0,,False,os juízes discordaram do tema (Gemma: carros; CLIP: nenhum tema),False,0,0,0,0,13,4,2026-11-06,True,False,os juízes discordaram do tema
+u08,2026-11-06 16:00:00,Vitória - ES,carros,Volkswagen Gol,0.62,True,gemma+clip,passaros,True,0.092,0.18,4.0,,False,os juízes discordaram do tema (Gemma: carros; CLIP: pássaros),False,0,0,0,0,16,4,2026-11-06,True,False,os juízes discordaram do tema
+u08,2026-11-08 17:00:00,Vitória - ES,carros,Hyundai HB20,0.82,True,gemma+clip,carros,True,0.677,0.07,1.0,,True,,False,10,0,3,13,17,6,2026-11-08,True,True,
+u08,2026-11-08 23:00:00,Vitória - ES,carros,Hyundai HB20,0.78,True,gemma+clip,carros,True,0.634,0.167,1.0,,False,você já achou isso hoje,False,0,0,0,0,23,6,2026-11-08,True,True,você já achou isso hoje
+u08,2026-11-09 20:00:00,Vitória - ES,pecas,teclado mecânico,0.63,True,gemma+clip,pecas,True,0.483,0.026,1.0,,True,,True,10,0,2,24,20,0,2026-11-09,True,True,
+u08,2026-11-09 22:00:00,Vitória - ES,carros,Volkswagen Gol,0.9,True,gemma+clip,carros,True,0.696,0.173,1.0,,True,,False,10,10,20,40,22,0,2026-11-09,True,True,
+u08,2026-11-09 23:00:00,Vitória - ES,carros,Fiat Strada,0.92,True,gemma+clip,carros,True,0.459,0.12,1.0,,True,,False,10,0,4,14,23,0,2026-11-09,True,True,
+u08,2026-11-10 14:00:00,Vitória - ES,carros,Hyundai HB20,0.85,True,gemma+clip,carros,True,0.745,0.029,1.0,,True,,True,10,0,2,24,14,1,2026-11-10,True,True,
+u08,2026-11-11 01:00:00,Vitória - ES,carros,Fiat Mobi,0.75,True,gemma+clip,carros,True,0.386,0.025,1.0,,True,,False,10,0,3,13,1,2,2026-11-11,True,True,
+u08,2026-11-11 21:00:00,Vitória - ES,carros,Fiat Strada,0.65,True,gemma+clip,plantas,True,0.026,0.051,4.0,,False,os juízes discordaram do tema (Gemma: carros; CLIP: plantas e flores),False,0,0,0,0,21,2,2026-11-11,True,False,os juízes discordaram do tema
+u08,2026-11-12 17:00:00,Vitória - ES,carros,Jeep Renegade,0.95,True,gemma+clip,carros,True,0.706,0.024,1.0,,True,,False,10,10,7,27,17,3,2026-11-12,True,True,
+u08,2026-11-12 23:00:00,Vitória - ES,carros,Jeep Renegade,0.78,True,gemma+clip,carros,True,0.824,0.048,1.0,,False,você já achou isso hoje,False,0,0,0,0,23,3,2026-11-12,True,True,você já achou isso hoje
+u08,2026-11-13 02:00:00,Vitória - ES,nenhum,,0.41,True,gemma+clip,carros,True,,0.07,,carros,False,não é de nenhum tema do jogo,False,0,0,0,0,2,4,2026-11-13,False,False,não é de nenhum tema do jogo
+u09,2026-10-29 13:00:00,Vitória - ES,pecas,mouse,0.92,True,gemma+clip,pecas,True,0.886,0.159,1.0,,True,,False,10,10,20,40,13,3,2026-10-29,True,True,
+u09,2026-10-30 00:00:00,Vitória - ES,carros,Fiat Strada,0.8,True,gemma+clip,carros,True,0.566,0.09,1.0,,True,,False,10,10,10,30,0,4,2026-10-30,True,True,
+u09,2026-10-30 16:00:00,Vitória - ES,pecas,teclado mecânico,0.63,True,gemma+clip,pecas,True,0.676,0.122,1.0,,True,,True,10,10,10,60,16,4,2026-10-30,True,True,
+u09,2026-10-31 00:00:00,Vitória - ES,pecas,SSD,0.6,True,gemma+clip,pecas,True,0.796,0.117,1.0,,True,,False,10,10,20,40,0,5,2026-10-31,True,True,
+u09,2026-10-31 15:00:00,Vitória - ES,pecas,SSD,0.62,True,gemma+clip,pecas,True,0.895,0.2,1.0,,False,você já achou isso hoje,False,0,0,0,0,15,5,2026-10-31,True,True,você já achou isso hoje
+u09,2026-11-01 18:00:00,Vitória - ES,pecas,mouse,0.66,True,gemma+clip,pecas,True,0.87,0.018,1.0,,True,,False,10,0,7,17,18,6,2026-11-01,True,True,
+u09,2026-11-01 23:00:00,Vitória - ES,pecas,fonte de alimentação,0.92,True,gemma+clip,pecas,True,0.376,0.157,1.0,,True,,False,10,10,20,40,23,6,2026-11-01,True,True,
+u09,2026-11-03 21:00:00,Vitória - ES,carros,Jeep Renegade,0.82,True,gemma+clip,pecas,True,0.085,0.0,3.0,,False,os juízes discordaram do tema (Gemma: carros; CLIP: peças e periféricos de computador),False,0,0,0,0,21,1,2026-11-03,True,False,os juízes discordaram do tema
+u09,2026-11-04 22:00:00,Vitória - ES,pecas,processador,0.63,True,gemma+clip,pecas,True,0.637,0.046,1.0,,True,,True,10,10,20,80,22,2,2026-11-04,True,True,
+u09,2026-11-05 18:00:00,Vitória - ES,carros,Volkswagen Fusca,0.61,True,gemma+clip,carros,True,0.442,0.062,1.0,,True,,True,10,10,10,60,18,3,2026-11-05,True,True,
+u09,2026-11-05 20:00:00,Vitória - ES,pecas,placa de vídeo,0.59,True,gemma+clip,plantas,True,0.091,0.012,4.0,,False,os juízes discordaram do tema (Gemma: peças e periféricos de computador; CLIP: plantas e flores),False,0,0,0,0,20,3,2026-11-05,True,False,os juízes discordaram do tema
+u09,2026-11-06 02:00:00,Vitória - ES,carros,Fiat Strada,0.82,True,gemma+clip,carros,True,0.767,0.021,1.0,,True,,False,10,0,5,15,2,4,2026-11-06,True,True,
+u09,2026-11-06 23:00:00,Vitória - ES,carros,Hyundai HB20,0.78,True,gemma+clip,carros,True,0.884,0.01,1.0,,True,,False,10,10,3,23,23,4,2026-11-06,True,True,
+u09,2026-11-07 02:00:00,Vitória - ES,nenhum,,0.37,True,gemma+clip,carros,True,,0.04,,carros,False,não é de nenhum tema do jogo,False,0,0,0,0,2,5,2026-11-07,False,False,não é de nenhum tema do jogo
+u09,2026-11-07 18:00:00,Vitória - ES,pecas,processador,0.58,True,gemma+clip,pecas,True,0.66,0.08,1.0,,True,,False,10,0,7,17,18,5,2026-11-07,True,True,
+u09,2026-11-07 23:00:00,Vitória - ES,pecas,processador,0.67,False,gemma+clip,pecas,False,0.815,0.774,1.0,,False,"não é foto real (tela, impressão ou desenho)",False,0,0,0,0,23,5,2026-11-07,True,True,não é foto real
+u09,2026-11-08 13:00:00,Vitória - ES,pecas,processador,0.96,True,gemma+clip,pecas,True,0.533,0.121,1.0,,True,,False,10,0,5,15,13,6,2026-11-08,True,True,
+u09,2026-11-08 16:00:00,Vitória - ES,pecas,teclado mecânico,0.75,True,gemma+clip,pecas,True,0.569,0.104,1.0,,True,,False,10,0,2,12,16,6,2026-11-08,True,True,
+u09,2026-11-08 19:00:00,Vitória - ES,carros,Chevrolet Onix,0.57,True,gemma+clip,carros,True,0.629,0.102,1.0,,True,,False,10,10,3,23,19,6,2026-11-08,True,True,
+u09,2026-11-09 19:00:00,Vitória - ES,carros,Fiat Mobi,0.53,True,gemma+clip,carros,True,0.43,0.174,1.0,,True,,False,10,10,4,24,19,0,2026-11-09,True,True,
+u09,2026-11-10 16:00:00,Vitória - ES,pecas,placa de vídeo,0.52,True,gemma+clip,pecas,True,0.822,0.071,1.0,,True,,False,10,10,10,30,16,1,2026-11-10,True,True,
+u09,2026-11-11 02:00:00,Vitória - ES,pecas,memória RAM,0.62,True,gemma+clip,pecas,True,0.615,0.031,1.0,,True,,False,10,10,20,40,2,2,2026-11-11,True,True,
+u09,2026-11-11 16:00:00,Vitória - ES,pecas,processador,0.95,True,gemma+clip,pecas,True,0.362,0.015,1.0,,True,,False,10,0,4,14,16,2,2026-11-11,True,True,
+u09,2026-11-11 20:00:00,Vitória - ES,pecas,teclado mecânico,0.93,True,gemma+clip,pecas,True,0.852,0.16,1.0,,True,,False,10,0,2,12,20,2,2026-11-11,True,True,
+u09,2026-11-12 01:00:00,Vitória - ES,carros,Ford Mustang,0.65,True,gemma+clip,carros,True,0.763,0.012,1.0,,True,,False,10,10,10,30,1,3,2026-11-12,True,True,
+u09,2026-11-12 19:00:00,Vitória - ES,pecas,mouse,0.54,True,gemma+clip,pecas,True,0.504,0.121,1.0,,True,,False,10,0,3,13,19,3,2026-11-12,True,True,
+u09,2026-11-12 22:00:00,Vitória - ES,carros,Toyota Corolla,0.55,True,gemma+clip,nenhum,True,0.156,0.172,3.0,,False,os juízes discordaram do tema (Gemma: carros; CLIP: nenhum tema),False,0,0,0,0,22,3,2026-11-12,True,False,os juízes discordaram do tema
+u09,2026-11-13 00:00:00,Vitória - ES,pecas,fonte de alimentação,0.78,False,gemma+clip,pecas,False,0.736,0.576,1.0,,False,"não é foto real (tela, impressão ou desenho)",False,0,0,0,0,0,4,2026-11-13,True,True,não é foto real

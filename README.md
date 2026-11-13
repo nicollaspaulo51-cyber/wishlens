@@ -50,8 +50,9 @@ Os pontos são **recalculados a partir das capturas** (`src/jogo.py`): gravar um
 | 5. Avaliação | CLIP e Gemma concordam (matriz de confusão)? Taxa de fotos recusadas e contestadas? Privacidade (LGPD)? | página 📊 Avaliação |
 | 6. Produto | Site publicado | `app/` |
 
-Os notebooks `01`–`04` são da **versão anterior** (desejos de consumo, com dados fictícios) e serão refeitos com os
-dados do jogo.
+Os notebooks `01`–`04` usam os dados do jogo. Enquanto a turma não joga, leem `data/processed/capturas_demo.csv`
+(fictício, `python -m src.exemplo`); com o CSV da página Avaliação salvo como `data/processed/avaliacao_juizes.csv`,
+passam a usar os dados reais sozinhos.
 
 ## Arquitetura
 ```
@@ -89,7 +90,7 @@ O personagem do mapa é um desenho próprio do WishLens (SVG em `src/mapa_jogo.p
 | Jogo: mapa com personagem, temas, pontos, pódio, coleção, avaliação | ✅ funcionando (testado com IA e mapa simulados) |
 | Juízes (Gemma + CLIP) | 🧪 a testar com a chave real e fotos reais |
 | Banco e login (Supabase) | ⏳ código e SQL prontos, **não testados** com um projeto real: ver [docs/SUPABASE.md](docs/SUPABASE.md) |
-| Notebooks do CRISP-DM | ⏳ da versão anterior; refazer com os dados do jogo |
+| Notebooks do CRISP-DM | ✅ refeitos com os dados do jogo e executados, **com dados fictícios**; rodar de novo com o CSV real |
 | Coleta de dados reais com a turma | ⏳ a fazer |
 
 ## Documentação
@@ -130,7 +131,7 @@ A câmera e o GPS do navegador só funcionam em HTTPS (o Streamlit Cloud já usa
 app/            Jogar (Home) + páginas Pódio, Minha Coleção e Avaliação
 src/            temas, jogo (pontos e pódio), mapa_jogo (personagem e mapa), visao (Gemma), reconhecimento (CLIP),
                 lugares (OSM), localizacao, fotos, armazenamento/banco, clustering, exportação, interface
-notebooks/      análise CRISP-DM da versão anterior (01 → 04)
+notebooks/      análise CRISP-DM do jogo (01 → 04)
 data/processed/ dados de demonstração da versão anterior (fictícios)
 supabase/       estrutura do banco (schema.sql)
 docs/           roteiro de testes, dicionário de dados, guia do Supabase
@@ -142,5 +143,6 @@ tests/          testes automáticos (rodam no GitHub Actions a cada push)
 - [x] Mapa com personagem e pontos que piscam
 - [x] Dois juízes (Gemma + CLIP) e página de Avaliação
 - [ ] Criar o projeto Supabase e jogar com a turma
-- [ ] Refazer os notebooks com os dados do jogo
+- [x] Refazer os notebooks com os dados do jogo (fictícios)
+- [ ] Rodar os notebooks com o CSV real da turma
 - [ ] Publicar a versão final e gravar o vídeo

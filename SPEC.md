@@ -1,7 +1,7 @@
 # Spec: WishLens (jogo de fotos do mundo real)
 
 Atualizado em 13/11/2026. A versão anterior (desejos de consumo: onde comprar, preço, lojas) foi removida do app;
-os notebooks 01–04 e o CSV de desejos ficam como "versão anterior" até serem refeitos com os dados do jogo.
+os notebooks 01–04 foram refeitos com os dados do jogo (CSV da página Avaliação; fictício até a turma jogar).
 
 ## Tela principal (`app/Home.py` + `src/mapa_jogo.py`)
 - Barra compacta: tema do dia (×2), pontos e posição de hoje.

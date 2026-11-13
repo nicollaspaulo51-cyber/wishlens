@@ -295,3 +295,16 @@ def test_veto_de_tela_precisa_de_margem_com_dois_juizes():
     assert v("passaros", "gemma+clip", "passaros", 0.35, 0.40, 2, False) is None
     assert "tela" in v("passaros", "gemma+clip", "passaros", 0.10, 0.80, 2, False)
     assert v("passaros", "gemma+clip", "passaros", 0.10, 0.80, 1, True) is None  # CLIP achou real
+
+
+def test_csv_demo_tem_colunas_do_notebook_e_nada_que_identifique(tmp_path):
+    import pandas as pd
+
+    from src.exemplo import salvar_capturas_demo
+    from src.exportar import COLUNAS_CSV, REMOVER
+
+    n = salvar_capturas_demo(tmp_path / "demo.csv")
+    df = pd.read_csv(tmp_path / "demo.csv")
+    assert len(df) == n > 0 and list(df.columns) == COLUNAS_CSV
+    assert not set(REMOVER) & set(df.columns)
+    assert df["usuario"].str.fullmatch(r"u\d{2}").all()

@@ -14,7 +14,7 @@ import plotly.express as px
 import streamlit as st
 
 from src import armazenamento, jogo, ui
-from src.exportar import anonimizar
+from src.exportar import COLUNAS_CSV, anonimizar
 
 ui.configurar("Avaliação", "📊")
 cor = ui.cores()
@@ -81,8 +81,6 @@ else:
                            f"{int(r.vezes)}×") for r in a["contestadas"].itertuples()]), unsafe_allow_html=True)
 
 st.divider()
-colunas = ["usuario", "criado_em", "tema", "achado", "confianca", "foto_real", "juiz", "clip_tema",
-           "clip_foto_real", "clip_prob_tema", "clip_prob_tela", "contestada", "aceita", "motivo", "pontos"]
-csv = anonimizar(pontuadas[[c for c in colunas if c in pontuadas]]).to_csv(index=False).encode("utf-8")
+csv = anonimizar(pontuadas[[c for c in COLUNAS_CSV if c in pontuadas]]).to_csv(index=False).encode("utf-8")
 st.download_button("Baixar CSV anonimizado (para o notebook de avaliação)", csv, "avaliacao_juizes.csv",
                    "text/csv", use_container_width=True)

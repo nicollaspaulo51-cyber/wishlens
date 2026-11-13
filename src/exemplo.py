@@ -143,3 +143,23 @@ def _opiniao_clip(tema: str, real: bool, rng: random.Random) -> dict:
             "clip_foto_real": prob_tela < 0.5, "clip_prob_tema": round(prob_tema, 3),
             "clip_prob_tela": round(prob_tela, 3), "clip_rank_tema": 1 if concorda else rng.choice([2, 3, 3, 4, 5]),
             "contestada": None}
+
+
+def salvar_capturas_demo(caminho) -> int:
+    """Grava o CSV fictício que os notebooks usam enquanto a turma não joga (mesmo formato do CSV da Avaliação)."""
+    import pandas as pd
+
+    from src.exportar import COLUNAS_CSV, anonimizar
+    from src.jogo import calcular_pontos
+
+    pontuadas = calcular_pontos(pd.DataFrame(gerar_capturas()))
+    saida = anonimizar(pontuadas[[c for c in COLUNAS_CSV if c in pontuadas]])
+    saida.to_csv(caminho, index=False)
+    return len(saida)
+
+
+if __name__ == "__main__":  # python -m src.exemplo
+    from pathlib import Path
+
+    destino = Path(__file__).resolve().parents[1] / "data" / "processed" / "capturas_demo.csv"
+    print(salvar_capturas_demo(destino), "capturas fictícias em", destino)
