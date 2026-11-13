@@ -40,7 +40,7 @@ está sendo lida.
 | Pássaro, planta ou cachorro de verdade | Vale, com o nome (espécie/raça) se o Gemma estiver ligado |
 | Mesmo mouse de novo no mesmo dia | 0: "você já achou isso hoje" (mesmo achado específico) |
 | Carros sem o modelo (só "carro") | Valem a base até 3 vezes por dia; a 4ª dá 0 com o motivo |
-| Foto recusada por tema | "O juiz errou? Era…": escolha e **Contestar** (não dá pontos, vai para a Avaliação) |
+| Foto recusada por tema ou por "tela" sem ser | "O juiz errou? Era…": escolha e **Contestar** (não dá pontos, vai para a Avaliação) |
 
 Com o CLIP sozinho (sem a chave), uma foto de tela bem tirada (de perto, sem borda) ainda pode passar. O Gemma é
 o juiz principal para isso.
@@ -65,9 +65,9 @@ Sem o Supabase, cada pessoa só vê ela mesma (e os exemplos) no pódio.
 | **Avaliação** | Concordância CLIP × Gemma, matriz de confusão, vetos, recusas, contestações, CSV |
 
 ## Já verificado aqui
-- `pytest`: 58 testes passando (rede e IA simuladas), incluindo: mouse e teclado viram achados diferentes só com o
-  CLIP; frases gêmeas de tela; "tela" como 1º palpite do CLIP barra a foto mesmo com o Gemma dizendo que é real
-  (menos peças); limite de 3 fotos genéricas por dia; HTML do mapa sem brecha para nome malicioso do OSM; nenhuma
+- `pytest`: 59 testes passando (rede e IA simuladas), incluindo: mouse e teclado viram achados diferentes só com o
+  CLIP; frases gêmeas de tela; o CLIP só derruba o "é real" do Gemma se "tela" for 3× mais provável que o tema
+  (um pássaro de verdade não é barrado por uma vantagem pequena; menos peças); limite de 3 fotos genéricas por dia; HTML do mapa sem brecha para nome malicioso do OSM; nenhuma
   página importa código removido.
 - Mapa renderizado no Chromium com o Leaflet local: personagem aparece, 7 de 8 pontos mudaram de visível para
   invisível (ou o contrário) em 1,7 s, cartão abre ao tocar, tema claro e escuro.
