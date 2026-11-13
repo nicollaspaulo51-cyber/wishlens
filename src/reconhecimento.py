@@ -12,9 +12,28 @@ from __future__ import annotations
 import threading
 from functools import lru_cache
 
-from PIL import Image
+from PIL import Image, ImageFilter, ImageStat
 
 MODELO = "openai/clip-vit-base-patch32"  # pesos abertos (licença MIT)
+
+# Foto borrada + CLIP em dúvida = pedir outra foto (não julga nem salva).
+# shortcut: limites medidos em imagens de teste (nítida ~85, borrão leve ~14); calibrar com fotos reais da turma.
+NITIDEZ_MINIMA = 15    # variância do Laplaciano, em cinza com 512 px de lado
+DUVIDA = 0.5           # maior chance entre os grupos (5 temas, tela, nenhum) abaixo disto = CLIP em dúvida
+
+
+def nitidez(imagem: Image.Image) -> float:
+    """Variância do Laplaciano (bordas): foto borrada tem poucas bordas e dá um número baixo."""
+    cinza = imagem.convert("L")
+    cinza.thumbnail((512, 512))
+    bordas = cinza.filter(ImageFilter.Kernel((3, 3), [0, 1, 0, 1, -4, 1, 0, 1, 0], scale=1, offset=128))
+    largura, altura = bordas.size  # o filtro não passa na moldura de 1 px: ela ficaria com o valor original
+    return ImageStat.Stat(bordas.crop((1, 1, largura - 1, altura - 1))).var[0]
+
+
+def nao_identificou(valor_nitidez: float, maior_chance: float) -> bool:
+    """Borrada e em dúvida ao mesmo tempo. Borrada mas com o CLIP seguro, a foto vale normalmente."""
+    return valor_nitidez < NITIDEZ_MINIMA and maior_chance < DUVIDA
 
 
 def _vetor(saida):
@@ -120,8 +139,12 @@ def julgar_clip(imagem: Image.Image) -> dict:
         probs = (modelo.logit_scale.exp() * vet_img @ vet_texto.T).softmax(dim=-1)[0].tolist()
     grupos = [g for g, _, _ in frases]
     tema, real, conf = decidir_captura(grupos, probs)
-    return {"tema": tema, "achado": achado_do_tema(frases, probs, tema) if tema else "",
-            "foto_real": real, "confianca": conf, "probs": probs_por_grupo(grupos, probs),
+    por_grupo = probs_por_grupo(grupos, probs)
+    valor_nitidez = nitidez(imagem)
+    return {"nitidez": round(valor_nitidez, 1),
+            "nao_identificou": nao_identificou(valor_nitidez, max(por_grupo.values())),
+            "tema": tema, "achado": achado_do_tema(frases, probs, tema) if tema else "",
+            "foto_real": real, "confianca": conf, "probs": por_grupo,
             "vetor": [round(x, 4) for x in vet_img[0].tolist()]}
 
 

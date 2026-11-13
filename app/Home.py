@@ -212,6 +212,10 @@ with area_foto:
             except Exception:
                 pass
             clima_foto = f_clima.result() if f_clima else None
+        if clip and clip["nao_identificou"]:  # não julga nem salva: a pessoa tira outra
+            st.warning("**Não foi possível identificar: a foto ficou borrada.** Toque em *Clear photo* e tire "
+                       "outra, com o celular parado e o objeto em foco.", icon=":material/blur_on:")
+            st.stop()
         if aviso:
             st.caption(f"⚠️ Juiz com IA indisponível agora ({aviso}). Usando só o CLIP.")
         juiz = ("ia+clip" if clip else "ia") if captura else ("clip" if clip else "manual")
