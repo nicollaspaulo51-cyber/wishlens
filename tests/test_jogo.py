@@ -169,7 +169,7 @@ def test_para_brasilia():
 # ---------------------------------------------------------------- segundo juiz (CLIP)
 def test_veto_do_clip():
     v = jogo.veto_clip
-    assert "tela" in v("carros", "gemma+clip", "carros", 0.8, 0.6)
+    assert "tela" in v("carros", "gemma+clip", "carros", 0.15, 0.6)  # tela 4x o tema
     assert "discordaram" in v("carros", "gemma+clip", "plantas", 0.05, 0.1)
     assert "CLIP: plantas" in v("carros", "gemma+clip", "plantas", 0.05, 0.1)
     assert v("carros", "gemma+clip", "plantas", 0.3, 0.1) is None    # discorda pouco: passa
@@ -287,3 +287,11 @@ def test_clip_ve_tela_e_barra_mesmo_com_gemma_dizendo_real():
     assert r.loc[0, "aceita"]  # monitor ligado é peça
     r = pts({**cap("ana", "periquito", tema="passaros"), **base, "clip_foto_real": True})
     assert r.loc[0, "aceita"]
+
+
+def test_veto_de_tela_precisa_de_margem_com_dois_juizes():
+    """Pássaro de verdade com "tela" só um pouco à frente no CLIP: o Gemma (foto real) vence."""
+    v = jogo.veto_clip
+    assert v("passaros", "gemma+clip", "passaros", 0.35, 0.40, 2, False) is None
+    assert "tela" in v("passaros", "gemma+clip", "passaros", 0.10, 0.80, 2, False)
+    assert v("passaros", "gemma+clip", "passaros", 0.10, 0.80, 1, True) is None  # CLIP achou real

@@ -53,6 +53,9 @@ def eh_generico(tema_id: str, chave: str) -> bool:
 # é discordar com clareza.
 VETO_RANK = 2     # o CLIP barra se o tema do Gemma ficar além desta posição
 VETO_TELA = 0.5   # só para capturas antigas, sem clip_foto_real: chance mínima de "tela" para barrar
+# Com os dois juízes, o CLIP só derruba o "é real" do Gemma se "tela" for bem mais provável que o tema
+# (o grupo "tela" tem ~90 frases e sempre leva alguma vantagem pequena). Sozinho, vale o 1º palpite.
+RAZAO_TELA = 3
 VETO_TEMA = 0.10  # só para capturas antigas, sem a posição gravada
 
 
@@ -81,7 +84,12 @@ def veto_clip(tema: str | None, juiz: str | None, clip_tema: str | None,
         return None
     tela, prob_tema, rank = _valor(clip_prob_tela), _valor(clip_prob_tema), _valor(clip_rank_tema)
     clip_real = _valor(clip_foto_real)
-    viu_tela = (not bool(clip_real)) if clip_real is not None else (tela is not None and tela >= VETO_TELA)
+    if tela is not None and prob_tema is not None:
+        viu_tela = tela >= RAZAO_TELA * prob_tema and (clip_real is None or not bool(clip_real))
+    elif clip_real is not None:
+        viu_tela = not bool(clip_real)
+    else:
+        viu_tela = tela is not None and tela >= VETO_TELA
     if viu_tela and tema != "pecas":
         return "o CLIP viu uma tela ou impressão"
     discorda = int(rank) > VETO_RANK if rank is not None else (prob_tema is not None and prob_tema < VETO_TEMA)

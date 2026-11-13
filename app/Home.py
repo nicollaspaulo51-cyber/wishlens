@@ -203,7 +203,7 @@ else:
 # Contestar: o juiz errou o tema? A pessoa diz o que era. Não dá pontos (sem trapaça), mas fica gravado
 # e aparece na página Avaliação para melhorar o identificador.
 motivo = str(resultado.get("motivo") or "")
-if not resultado.get("aceita") and ("nenhum tema" in motivo or "discordaram" in motivo):
+if not resultado.get("aceita") and ("nenhum tema" in motivo or "discordaram" in motivo or "CLIP viu" in motivo):
     if feita["contestada"]:
         st.caption(f"✅ Obrigado! Você disse que era: {POR_ID[feita['contestada']].nome}. "
                    "Isso ajuda a melhorar o identificador.")
