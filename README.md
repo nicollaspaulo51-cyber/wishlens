@@ -29,6 +29,24 @@ O **tema do dia** muda à meia-noite (rodízio pela data) e vale **o dobro**.
 
 Os pontos são **recalculados a partir das capturas** (`src/jogo.py`): gravar um número falso no banco não vale nada.
 
+### Mecânicas de caminhada (bônus fora do ×2)
+| Mecânica | Regra |
+|---|---|
+| Mirante | foto a até 40 m de um lugar do mapa: +5, até 3 por dia. No mapa, o lugar pulsa quando você chega perto |
+| Pista | ao tocar num lugar, o mapa mostra o que a turma já achou em lugares do mesmo tipo (parque, pet shop...) |
+| Lupa | 3 temas diferentes no dia enchem a lupa; o achado seguinte ganha +50% |
+| Desafios do dia | 3 por dia, iguais para todos (sorteados pela data): +15 cada |
+| Corrente | 7 dias seguidos com foto aceita: +20 |
+| Medalhas | 6 medalhas (5 temas + mirantes) em bronze (3), prata (8) e ouro (15) |
+| Álbum com lacunas | o que a turma já achou e você não aparece só com a 1ª letra |
+| Guardião do quadrado | quem tem mais achados diferentes num quadrado de ~500 m na semana (só onde 2+ pessoas jogaram) |
+| Meta da turma | das 12h às 14h, 20 fotos do tema do dia pela turma: cada uma ganha +10 |
+| Clima | com chuva ([Open-Meteo](https://open-meteo.com)), plantas e pássaros dão +5 (fora do tema do dia) |
+| Deslocamento impossível | mais de 3 km a mais de 120 km/h desde a sua foto anterior: a foto vale 0 |
+
+O placar, a meta da turma e o pódio se atualizam sozinhos a cada 30 s; cada bônus e cada medalha nova aparecem como
+aviso logo depois da foto.
+
 ### Dois juízes em toda foto
 - **IA open source** (juiz principal, com a `VISAO_URL`): um modelo de visão com licença OSI, como o Qwen2.5-VL 7B
   ou o Mistral Small (Apache 2.0). Diz o tema, o achado (modelo do carro, espécie, raça, peça) e
@@ -51,7 +69,8 @@ Os pontos são **recalculados a partir das capturas** (`src/jogo.py`): gravar um
 | 5. Avaliação | CLIP e IA concordam (matriz de confusão)? Taxa de fotos recusadas e contestadas? Privacidade (LGPD)? | página 📊 Avaliação |
 | 6. Produto | Site publicado | `app/` |
 
-Os notebooks `01`–`04` usam os dados do jogo. Enquanto a turma não joga, leem `data/processed/capturas_demo.csv`
+Os notebooks `01`–`05` usam os dados do jogo (o `05` analisa as mecânicas: tema × tipo de lugar, clima,
+deslocamento impossível e o peso dos bônus). Enquanto a turma não joga, leem `data/processed/capturas_demo.csv`
 (fictício, `python -m src.exemplo`); com o CSV da página Avaliação salvo como `data/processed/avaliacao_juizes.csv`,
 passam a usar os dados reais sozinhos.
 
@@ -72,6 +91,7 @@ Página Avaliação ──► CSV anonimizado ──► notebooks
 | [OpenStreetMap](https://www.openstreetmap.org/copyright) | mapa e lugares de cada tema | ODbL |
 | [Leaflet](https://leafletjs.com/) | mapa no navegador | BSD-2 |
 | [CLIP ViT-B/32](https://huggingface.co/openai/clip-vit-base-patch32) | segundo juiz das fotos | MIT |
+| [Open-Meteo](https://open-meteo.com) | clima de agora (bônus de chuva) | dados CC-BY 4.0, API sem chave |
 | [Qwen2.5-VL 7B](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct) no [Ollama](https://ollama.com) ou [Mistral Small](https://huggingface.co/mistralai) pela API da Mistral | juiz principal | Apache 2.0 (Ollama: MIT) |
 
 Todo o projeto usa só modelos com licença aprovada pela OSI. O Gemma, usado antes como juiz principal, saiu porque a
@@ -87,6 +107,12 @@ O personagem do mapa é um desenho próprio do WishLens (SVG em `src/mapa_jogo.p
 - O pódio mostra só o apelido. Os jogadores logados veem tema, achado e hora das capturas dos outros (é o que permite
   o pódio e a raridade), mas **não** o bairro nem a célula: o mapa da turma vem de uma função do banco que só devolve
   totais por quadrado de ~500 m, sem dizer quem nem quando, e só onde houve pelo menos 2 capturas.
+- As mecânicas gravam só o que sai da posição, nunca ela: se a foto foi num mirante (sim/não), o tipo de lugar, o clima
+  e os km e minutos desde a sua foto anterior. O guardião mostra o apelido de quem guarda um quadrado, mas só na
+  semana, só onde 2 pessoas ou mais jogaram e sem horário; a página Pódio mostra só quantos quadrados cada um guarda.
+- Para o Open-Meteo vai só a coordenada arredondada (~1 km).
+- Limite conhecido: mirante, clima e deslocamento são calculados no app, como o "foto real" da IA. Quem adulterar o
+  app consegue forjá-los; para um jogo de turma isso é aceitável.
 
 ## Status
 | Parte | Situação |
@@ -140,7 +166,7 @@ A câmera e o GPS do navegador só funcionam em HTTPS (o Streamlit Cloud já usa
 app/            Jogar (Home) + páginas Pódio, Minha Coleção e Avaliação
 src/            temas, jogo (pontos e pódio), mapa_jogo (personagem e mapa), visao (IA open source), reconhecimento (CLIP),
                 lugares (OSM), localizacao, fotos, armazenamento/banco, clustering, exportação, interface
-notebooks/      análise CRISP-DM do jogo (01 → 04)
+notebooks/      análise CRISP-DM do jogo (01 → 05)
 data/processed/ dados de demonstração da versão anterior (fictícios)
 supabase/       estrutura do banco (schema.sql)
 docs/           roteiro de testes, dicionário de dados, guia do Supabase
@@ -151,6 +177,7 @@ tests/          testes automáticos (rodam no GitHub Actions a cada push)
 - [x] Jogo: temas, tema do dia, pontos, pódio, coleção
 - [x] Mapa com personagem e pontos que piscam
 - [x] Dois juízes (IA open source + CLIP) e página de Avaliação
+- [x] Mecânicas de caminhada (mirantes, lupa, desafios, corrente, medalhas, guardiões, meta da turma, clima)
 - [ ] Criar o projeto Supabase e jogar com a turma
 - [x] Refazer os notebooks com os dados do jogo (fictícios)
 - [ ] Rodar os notebooks com o CSV real da turma

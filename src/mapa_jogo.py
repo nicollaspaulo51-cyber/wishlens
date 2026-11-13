@@ -5,8 +5,10 @@ Tudo roda no navegador (Leaflet), dentro de um componente HTML do Streamlit:
   acompanha o GPS (watchPosition), sem recarregar a página;
 - cada lugar onde dá para achar um tema aparece, pisca e some num ritmo próprio; os do tema do dia são
   maiores e aparecem mais;
-- 🟡 = onde a turma já achou coisas (quadrado de ~500 m, sem dizer quem);
-- tocar num ponto abre um cartão com o que procurar ali e "Como chegar".
+- 🟡 = onde a turma já achou coisas (quadrado de ~500 m, sem dizer quem), com o guardião da semana;
+- mirante: o lugar a até 40 m de você para de piscar e pulsa (foto ali vale +5); a distância até o mais perto
+  aparece no topo e muda enquanto você anda;
+- tocar num ponto abre um cartão com o que procurar ali, a pista da turma para aquele tipo de lugar e "Como chegar".
 
 Segurança: os dados vão como JSON e o JavaScript só usa textContent (nunca innerHTML com dados do OSM).
 """
@@ -15,6 +17,8 @@ from __future__ import annotations
 
 import json
 import random
+
+from src.jogo import MIRANTE, MIRANTE_M
 
 LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -70,6 +74,11 @@ PAGINA = """<!doctype html>
     92% { opacity:0; transform:scale(.4) } 100% { opacity:0; transform:scale(.3) }
   }
   @keyframes onda { 0% { transform:scale(.6); opacity:.9 } 100% { transform:scale(1.8); opacity:0 } }
+  /* mirante: você está a até 40 m; para de sumir e pulsa */
+  .wl-ponto.perto { animation: pulso 1s ease-in-out infinite; opacity:1;
+                    box-shadow: 0 0 0 4px #FFC83D, 0 0 22px #FFC83D; }
+  @keyframes pulso { 0%,100% { transform:scale(1) } 50% { transform:scale(1.25) } }
+  .chip.mirante { background:#FFC83D; color:#2A2000; font-weight:700; }
   #hud { position:absolute; top:10px; left:10px; right:10px; z-index:500; display:flex; gap:6px; flex-wrap:wrap;
          pointer-events:none; }
   .chip { background:rgba(20,17,31,.78); color:#fff; padding:5px 10px; border-radius:999px; font-size:12px;
@@ -88,15 +97,15 @@ PAGINA = """<!doctype html>
             color:inherit; cursor:pointer; }
   #cartao a:focus-visible, #fechar:focus-visible { outline:3px solid __TINTA__; outline-offset:2px; }
   @media (prefers-reduced-motion: reduce) {
-    .wl-personagem, .wl-alcance, .wl-ponto, .wl-ponto::after { animation:none !important; opacity:1; }
+    .wl-personagem, .wl-alcance, .wl-ponto, .wl-ponto::after, .wl-ponto.perto { animation:none !important; opacity:1; }
   }
 </style></head>
 <body class="__CLASSE__">
 <div id="mapa"></div>
-<div id="hud"></div>
+<div id="hud" aria-live="polite"></div>
 <div id="cartao" role="dialog"><button id="fechar" aria-label="Fechar">×</button>
   <h4 id="c-titulo"></h4><div class="sub" id="c-sub"></div>
-  <div class="linha" id="c-dist"></div><div class="linha" id="c-end"></div><div class="linha" id="c-hora"></div>
+  <div class="linha" id="c-pista"></div><div class="linha" id="c-dist"></div><div class="linha" id="c-end"></div><div class="linha" id="c-hora"></div>
   <div class="botoes" id="c-botoes"></div></div>
 <script src="__JS__"></script>
 <script>
@@ -124,8 +133,7 @@ const chip = document.createElement("div"); chip.className = "chip";
 chip.append(D.hoje.emoji + " Tema do dia: ");
 const forte = document.createElement("b"); forte.textContent = D.hoje.nome + " ×2"; chip.append(forte);
 hud.append(chip);
-const chip2 = document.createElement("div"); chip2.className = "chip";
-chip2.textContent = D.pontos.length + " lugares para explorar"; hud.append(chip2);
+const chip2 = document.createElement("div"); chip2.className = "chip"; hud.append(chip2);
 
 // Cartão do ponto tocado (só textContent)
 const cartao = document.getElementById("cartao");
@@ -136,6 +144,10 @@ function abrir(p) {
                                                              : t.emoji + " " + p.nome;
   document.getElementById("c-sub").textContent = p.turma ? "Mais raros: " + p.raros.join(", ")
                                                          : "Procure " + t.nome.toLowerCase() + " aqui";
+  const pista = p.turma ? (p.guardiao ? "🛡️ Guardião da semana: " + p.guardiao : "")
+                        : ((D.pistas[p.tipo] || []).length ? "🔎 A turma já achou em lugares assim: "
+                                                             + D.pistas[p.tipo].join(", ") : "");
+  document.getElementById("c-pista").textContent = pista;
   document.getElementById("c-dist").textContent = "📏 " + km(posicao, [p.lat, p.lon]).toFixed(1).replace(".", ",") + " km";
   document.getElementById("c-end").textContent = p.endereco ? "📍 " + p.endereco : "";
   document.getElementById("c-hora").textContent = p.horario ? "🕒 " + p.horario : "";
@@ -163,15 +175,34 @@ function ponto(p, turma) {
   const m = L.marker([p.lat, p.lon], { icon: L.divIcon({ className:"", html: el, iconSize:[tam, tam],
                                                           iconAnchor:[tam/2, tam/2] }) }).addTo(mapa);
   m.on("click", () => abrir(p));
+  if (!turma) lugares.push({ p, el });
 }
+const lugares = [];
 D.pontos.forEach(p => ponto(p, false));
 D.manchas.forEach(p => ponto(p, true));
+
+// Mirante: o lugar mais perto, recalculado a cada passo
+function atualizarPerto() {
+  let melhor = null, dist = Infinity;
+  for (const l of lugares) {
+    const d = km(posicao, [l.p.lat, l.p.lon]);
+    l.el.classList.toggle("perto", d * 1000 <= D.mirante_m);
+    if (d < dist) { dist = d; melhor = l.p; }
+  }
+  chip2.classList.toggle("mirante", !!melhor && dist * 1000 <= D.mirante_m);
+  if (!melhor) chip2.textContent = "Nenhum lugar por perto";
+  else if (dist * 1000 <= D.mirante_m) chip2.textContent = "📍 Mirante: " + melhor.nome + ". Fotografe aqui: +" + D.mirante_bonus;
+  else chip2.textContent = "Mirante mais perto: " + (dist < 1 ? Math.round(dist * 1000) + " m"
+                                                              : dist.toFixed(1).replace(".", ",") + " km");
+}
+atualizarPerto();
 
 // O personagem anda com você (GPS contínuo); sem permissão, fica na posição inicial
 if (D.gps_vivo && navigator.geolocation) {
   navigator.geolocation.watchPosition(pos => {
     posicao = [pos.coords.latitude, pos.coords.longitude];
     eu.setLatLng(posicao); alcance.setLatLng(posicao); mapa.panTo(posicao, { animate:true });
+    atualizarPerto();
   }, () => {}, { enableHighAccuracy:true, maximumAge:5000, timeout:20000 });
 }
 </script></body></html>
@@ -184,12 +215,13 @@ def _json_seguro(dados) -> str:
 
 
 def montar(lat: float, lon: float, pontos: list[dict], manchas: list[dict], hoje, temas, escuro: bool = False,
-           cor: str = "#136B4C", gps_vivo: bool = True, semente: int = 0,
+           cor: str = "#136B4C", gps_vivo: bool = True, semente: int = 0, pistas: dict | None = None,
            leaflet_js: str = LEAFLET_JS, leaflet_css: str = LEAFLET_CSS) -> str:
     """Página HTML do mapa do jogo.
 
     pontos: lugares do OSM (tema, nome, lat, lon, endereco, horario já legível);
-    manchas: descobertas da turma (tema, lat, lon, n, raros).
+    manchas: descobertas da turma (tema, lat, lon, n, raros e, se houver, guardiao);
+    pistas: o que a turma mais achou em cada tipo de lugar (jogo.pistas_por_tipo).
     Duração e atraso do piscar saem de um sorteio com `semente`, para cada ponto ter seu ritmo.
     """
     rng = random.Random(semente)
@@ -199,15 +231,17 @@ def montar(lat: float, lon: float, pontos: list[dict], manchas: list[dict], hoje
         return {"duracao": round(duracao, 2), "atraso": round(-rng.uniform(0, duracao), 2)}
 
     dados = {
-        "lat": lat, "lon": lon, "gps_vivo": gps_vivo,
+        "lat": lat, "lon": lon, "gps_vivo": gps_vivo, "mirante_m": MIRANTE_M, "mirante_bonus": MIRANTE,
+        "pistas": {str(k): [str(x) for x in v] for k, v in (pistas or {}).items()},
         "personagem": PERSONAGEM_SVG.replace("{cor}", cor),
         "hoje": {"id": hoje.id, "nome": hoje.nome, "emoji": hoje.emoji},
         "temas": {t.id: {"nome": t.nome, "emoji": t.emoji, "cor": t.cor} for t in temas},
         "pontos": [{"tema": p["tema"], "nome": str(p.get("nome") or ""), "lat": float(p["lat"]),
-                    "lon": float(p["lon"]), "endereco": p.get("endereco") or "", "horario": p.get("horario") or "",
+                    "lon": float(p["lon"]), "tipo": str(p.get("tipo") or ""), "endereco": p.get("endereco") or "", "horario": p.get("horario") or "",
                     **ritmo(p["tema"] == hoje.id)} for p in pontos],
         "manchas": [{"tema": m["tema"], "lat": float(m["lat"]), "lon": float(m["lon"]), "n": int(m["n"]),
                      "raros": [str(x) for x in (m.get("raros") or [])], "turma": True,
+                     "guardiao": str(m.get("guardiao") or ""),
                      **ritmo(False)} for m in manchas],
     }
     fundo, superficie, tinta = ("#0E1914", "#16251E", "#E4EEE8") if escuro else ("#DDE8DF", "#FFFFFF", "#12241D")

@@ -81,6 +81,39 @@ def _css() -> str:
 .wl-degrau.p2 .wl-bloco {{ height:4.8rem; }}
 .wl-degrau.p3 .wl-bloco {{ height:3.6rem; }}
 .wl-degrau .wl-nome {{ font-weight:700; font-size:.95rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
+/* Painel do dia: lupa, corrente, meta da turma e desafios */
+.wl-dia {{ display:grid; grid-template-columns:auto 1fr; gap:.5rem .8rem; align-items:center; margin:-.2rem 0 .7rem;
+          font-size:.92rem; }}
+.wl-lupa {{ display:flex; gap:3px; }}
+.wl-lupa i {{ width:18px; height:8px; border-radius:4px; background:var(--wl-line); }}
+.wl-lupa i.on {{ background:var(--wl-accent); }}
+.wl-lupa.cheia i {{ background:var(--wl-sol); animation:wl-brilho 1.4s ease-in-out infinite; }}
+@keyframes wl-brilho {{ 50% {{ filter:brightness(1.25); }} }}
+.wl-meta {{ grid-column:1 / -1; border:1px solid var(--wl-line); border-radius:12px; padding:.5rem .7rem;
+           background:var(--wl-surface); }}
+.wl-meta .wl-trilho {{ height:8px; border-radius:4px; background:var(--wl-soft); margin-top:.35rem; overflow:hidden; }}
+.wl-meta .wl-trilho b {{ display:block; height:100%; background:var(--wl-accent); transition:width .8s ease-out; }}
+.wl-desafios-box {{ grid-column:1 / -1; }}
+.wl-desafios-box summary {{ cursor:pointer; min-height:44px; display:flex; align-items:center; gap:.3rem; }}
+.wl-desafios {{ list-style:none; margin:0; padding:0 0 .3rem; display:flex; flex-direction:column; gap:.2rem; }}
+.wl-desafios li {{ display:flex; gap:.5rem; align-items:baseline; }}
+.wl-desafios li.ok {{ color:var(--wl-muted); text-decoration:line-through; }}
+.wl-desafios .wl-marca {{ font-weight:700; color:var(--wl-accent); min-width:2.2rem; }}
+/* Pontos que contam de 0 até o total (sem @property, aparece o número final direto) */
+@property --wl-n {{ syntax:'<integer>'; initial-value:0; inherits:false; }}
+.wl-conta {{ --wl-n:var(--fim); counter-reset:wl var(--wl-n); animation:wl-contar 1.1s cubic-bezier(.2,.8,.2,1); }}
+.wl-conta::before {{ content:"+" counter(wl); }}
+@keyframes wl-contar {{ from {{ --wl-n:0; }} }}
+.wl-badge.wl-bonus {{ background:var(--wl-sol); color:var(--wl-sol-ink); }}
+.wl-sr {{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }}
+.wl-medalhas {{ display:grid; grid-template-columns:repeat(auto-fill, minmax(9.5rem, 1fr)); gap:.5rem; margin-bottom:.8rem; }}
+.wl-medalha {{ border:1px solid var(--wl-line); border-radius:12px; padding:.6rem .7rem; background:var(--wl-surface); }}
+.wl-medalha b {{ display:block; font-family:var(--wl-titulos); }}
+.wl-medalha.bronze {{ border-color:#B87333; }} .wl-medalha.prata {{ border-color:#9AA5AD; }}
+.wl-medalha.ouro {{ border-color:var(--wl-sol); background:color-mix(in srgb, var(--wl-sol) 18%, var(--wl-surface)); }}
+.wl-medalha.nada {{ opacity:.7; }}
+@media (prefers-reduced-motion: reduce) {{ .wl-conta, .wl-lupa.cheia i {{ animation:none; }}
+  .wl-meta .wl-trilho b {{ transition:none; }} }}
 /* o componente que pede o GPS não precisa aparecer (continua funcionando com altura zero) */
 [data-testid="stElementContainer"]:has(iframe[title*="streamlit_js_eval"]) {{ height:0; min-height:0; overflow:hidden; margin:0; }}
 </style>
@@ -171,8 +204,8 @@ def estilizar(fig, altura: int = 320):
     return fig
 
 
-def badge(texto: str) -> str:
-    return f'<span class="wl-badge">{texto}</span>'
+def badge(texto: str, classe: str = "") -> str:
+    return f'<span class="wl-badge {classe}">{texto}</span>'
 
 
 def lista(linhas: list[tuple[str, str]]) -> str:
@@ -186,6 +219,52 @@ def selo_tema_do_dia(tema) -> str:
     return (f'<div class="wl-selo"><span class="wl-emoji" aria-hidden="true">{tema.emoji}</span>'
             f'<div><div class="wl-t">{html.escape(tema.nome)}</div><small>Tema de hoje. Procure em '
             f'{html.escape(tema.onde)}.</small></div><div class="wl-dobro" aria-label="pontos em dobro">×2</div></div>')
+
+
+def painel_do_dia(estado: dict, corrente: int, meta: dict) -> str:
+    """Lupa (3 partes), corrente de dias, meta da turma e os 3 desafios do dia (jogo.estado_do_dia)."""
+    e = html.escape
+    carga = estado["lupa"]
+    partes = "".join(f'<i class="{"on" if k < carga else ""}"></i>' for k in range(3))
+    lupa_txt = "Lupa cheia: o próximo achado vale +50%" if estado["lupa_cheia"] else f"Lupa {carga}/3 temas"
+    lupa = (f'<div class="wl-lupa {"cheia" if estado["lupa_cheia"] else ""}" role="img" aria-label="{e(lupa_txt)}">'
+            f'{partes}</div><div>{e(lupa_txt)}'
+            + (f'. Corrente: <b>{corrente} {"dia" if corrente == 1 else "dias"}</b>' if corrente else "") + '</div>')
+    t = meta["tema"]
+    if meta["cumprida"]:
+        meta_txt = f"Meta da turma cumprida: {meta['feitas']} fotos de {t.nome.lower()}. Cada uma ganhou +10."
+    elif meta["aberta"]:
+        meta_txt = (f"Meta da turma: {meta['feitas']} de {meta['alvo']} fotos de {t.nome.lower()}. "
+                    f"Faltam {meta['faltam_min']} min.")
+    else:
+        meta_txt = (f"Meta da turma, das {meta['comeca']} às {meta['termina']}: {meta['alvo']} fotos de "
+                    f"{t.nome.lower()}. Todos que ajudarem ganham +10 por foto.")
+    largura = min(100, round(100 * meta["feitas"] / meta["alvo"]))
+    meta_html = (f'<div class="wl-meta">{e(meta_txt)}<div class="wl-trilho" role="progressbar" aria-valuemin="0" '
+                 f'aria-valuemax="{meta["alvo"]}" aria-valuenow="{meta["feitas"]}"><b style="width:{largura}%"></b>'
+                 f'</div></div>')
+    itens = ""
+    for d in estado["desafios"]:
+        marca = "✔" if d["ok"] else f'{d["feito"]}/{d["alvo"]}'
+        itens += (f'<li class="{"ok" if d["ok"] else ""}"><span class="wl-marca">{marca}</span>'
+                  f'<span>{e(d["texto"])} (+15)</span></li>')
+    feitos = sum(d["ok"] for d in estado["desafios"])
+    # recolhido: no celular o mapa precisa aparecer sem rolar muito
+    return (f'<div class="wl-dia">{lupa}{meta_html}<details class="wl-desafios-box"><summary>Desafios do dia: '
+            f'<b>{feitos} de {len(estado["desafios"])}</b> feitos</summary>'
+            f'<ul class="wl-desafios">{itens}</ul></details></div>')
+
+
+def medalhas_html(lista_medalhas: list[dict]) -> str:
+    e = html.escape
+    cartoes = []
+    for m in lista_medalhas:
+        nivel = m["nivel"] or "nada"
+        falta = f'faltam {m["proximo"]} para o próximo nível' if m["proximo"] else "nível máximo"
+        cartoes.append(f'<div class="wl-medalha {nivel}"><b>{e(m["nome"])}</b>'
+                       f'<span>{e(m["nivel"] or "ainda sem nível")}</span><br>'
+                       f'<span class="wl-muted" style="font-size:.85rem">{m["valor"]} {e(m["conta"])}, {falta}</span></div>')
+    return f'<div class="wl-medalhas">{"".join(cartoes)}</div>'
 
 
 def linha_juizes(juizes: dict | None, tema_final: str | None) -> str:
@@ -216,6 +295,8 @@ def cartao_pontos(resultado: dict, tema, achado: str, vezes_antes: int, juizes: 
             f'<div class="wl-muted" style="font-size:.9rem;margin-top:.3rem">Vale foto tirada agora, '
             f'de algo real na sua frente, de um dos temas.</div>{rodape}</div>', unsafe_allow_html=True)
         return
+    pontos = int(resultado["pontos"])
+    bonus = [d for d in str(resultado.get("detalhes") or "").split("; ") if d]
     partes = [f"base +{resultado['base']}"]
     if resultado["novidade"]:
         partes.append(f"novo pra você +{resultado['novidade']}")
@@ -230,10 +311,12 @@ def cartao_pontos(resultado: dict, tema, achado: str, vezes_antes: int, juizes: 
     else:
         destaque = "Diga o modelo, a espécie ou a raça para ganhar mais pontos."
     st.markdown(
-        f'<div class="wl-card wl-valeu"><div class="wl-pontos">+{int(resultado["pontos"])} <small>pontos</small></div>'
+        f'<div class="wl-card wl-valeu"><div class="wl-pontos"><span class="wl-conta" style="--fim:{pontos}" '
+        f'aria-hidden="true"></span><span class="wl-sr">+{pontos}</span> <small>pontos</small></div>'
         f'<h3 style="margin:.5rem 0 0;padding:0">{e(achado[:1].upper() + achado[1:])}</h3>'
         f'<div class="wl-muted" style="font-size:.9rem">{tema.emoji} {e(tema.nome)}</div>'
-        f'<div style="margin:.6rem 0 .2rem">{"".join(badge(p) for p in partes)}</div>'
+        f'<div style="margin:.6rem 0 .2rem">{"".join(badge(p) for p in partes)}'
+        f'{"".join(badge(e(b), "wl-bonus") for b in bonus)}</div>'
         f'<div class="wl-muted" style="font-size:.9rem">{destaque}</div>{rodape}</div>', unsafe_allow_html=True)
 
 

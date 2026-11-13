@@ -75,6 +75,13 @@ alter table public.capturas add column if not exists clip_prob_tela real check (
 alter table public.capturas add column if not exists clip_rank_tema smallint check (clip_rank_tema is null or clip_rank_tema between 1 and 20);
 alter table public.capturas add column if not exists contestada text;
 
+-- Contexto da foto para as mecânicas (src/jogo.py). Nada disso é a coordenada: só o que sai dela.
+alter table public.capturas add column if not exists mirante boolean;          -- a até 40 m de um lugar do mapa
+alter table public.capturas add column if not exists tipo_lugar text check (tipo_lugar is null or char_length(tipo_lugar) <= 40);
+alter table public.capturas add column if not exists clima text check (clima is null or clima in ('chuva', 'nublado', 'sol', 'neve'));
+alter table public.capturas add column if not exists km_anterior real check (km_anterior is null or km_anterior >= 0);
+alter table public.capturas add column if not exists min_anterior real check (min_anterior is null or min_anterior >= 0);
+
 -- ---------------------------------------------------------------- conexões (comparar desejos)
 create table if not exists public.conexoes (
   solicitante   uuid not null references public.perfis (id) on delete cascade,
@@ -117,7 +124,8 @@ grant update (contestada) on public.capturas to authenticated;
 -- Sem isso, apelido + hora + lugar formariam um rastro de onde cada pessoa esteve.
 revoke select on public.capturas from anon, authenticated;
 grant select (id, usuario_id, criado_em, tema, achado, confianca, foto_real, foto_hash,
-              juiz, clip_tema, clip_foto_real, clip_prob_tema, clip_prob_tela, clip_rank_tema, contestada)
+              juiz, clip_tema, clip_foto_real, clip_prob_tema, clip_prob_tela, clip_rank_tema, contestada,
+              mirante, tipo_lugar, clima, km_anterior, min_anterior)
   on public.capturas to authenticated;
 
 -- O mapa da turma usa só este resumo: por quadrado de ~500 m e tema, sem quem nem quando,
@@ -133,6 +141,31 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke execute on function public.manchas_capturas() from public, anon;
 grant execute on function public.manchas_capturas() to authenticated;
+
+-- Guardião de cada quadrado na semana (de segunda até hoje): quem tem mais achados diferentes ali.
+-- Mesma regra de src/jogo.py (guardioes). Só quadrados com 2+ jogadores e sem horário: ninguém aparece
+-- sozinho num lugar. (Aqui o achado só vai para minúsculas; o Python também tira acentos e troca apelidos.)
+create or replace function public.guardioes_quadrados()
+returns table (celula text, apelido text, achados bigint)
+language sql stable security definer set search_path = public as $$
+  with semana as (
+    select c.celula, c.usuario_id, c.tema || ':' || lower(c.achado) as chave, c.criado_em
+    from public.capturas c
+    where c.celula is not null and c.foto_real and c.tema <> 'nenhum'
+      and c.criado_em >= (date_trunc('week', now() at time zone 'America/Sao_Paulo') at time zone 'America/Sao_Paulo')
+  ), por as (
+    select s.celula, s.usuario_id, count(distinct s.chave) as achados, min(s.criado_em) as primeiro
+    from semana s group by s.celula, s.usuario_id
+  ), ordem as (
+    select por.*, count(*) over (partition by por.celula) as pessoas,
+           row_number() over (partition by por.celula order by por.achados desc, por.primeiro) as n
+    from por
+  )
+  select o.celula, p.apelido, o.achados from ordem o join public.perfis p on p.id = o.usuario_id
+  where o.pessoas >= 2 and o.n = 1;
+$$;
+revoke execute on function public.guardioes_quadrados() from public, anon;
+grant execute on function public.guardioes_quadrados() to authenticated;
 
 -- perfis: qualquer pessoa logada vê apelidos (para pedir conexão); cada um edita o seu.
 drop policy if exists perfis_ler on public.perfis;

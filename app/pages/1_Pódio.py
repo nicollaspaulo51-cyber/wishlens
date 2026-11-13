@@ -28,21 +28,46 @@ escolha = st.segmented_control("Tema", opcoes_tema, default="todos", selection_m
                                format_func=lambda i: "Todos" if i == "todos" else f"{POR_ID[i].emoji} {POR_ID[i].nome}")
 tema = None if escolha in (None, "todos") else escolha
 
-for aba, periodo in zip(st.tabs(["Hoje", "Semana", "Geral"]), ["hoje", "semana", "geral"]):
-    with aba:
-        ranking = jogo.podio(pontuadas, periodo, tema=tema)
-        if ranking.empty:
-            st.info("Sem pontos neste período ainda.")
-            continue
-        st.markdown(ui.podio_html(ranking, eu), unsafe_allow_html=True)
-        pos = jogo.posicao_de(ranking, eu)
-        if pos:
-            st.markdown(f"Você está em **{pos}º** de {len(ranking)}.")
-        tabela = ranking.assign(
-            jogador=[ui.nome_publico(u) + (" (você)" if u == eu else "") for u in ranking["usuario"]])
-        st.dataframe(tabela[["posicao", "jogador", "pontos", "achados"]], hide_index=True,
-                     use_container_width=True,
-                     column_config={"posicao": st.column_config.NumberColumn("#", width="small")})
+
+
+# Ranking e meta se atualizam sozinhos a cada 30 s (a turma jogando enquanto você olha)
+@st.fragment(run_every="30s")
+def ranking_ao_vivo(tema: str | None):
+    pontuadas = jogo.calcular_pontos(armazenamento.capturas())
+    meta = jogo.meta_da_turma(pontuadas)
+    st.markdown(ui.painel_do_dia(jogo.estado_do_dia(pontuadas, eu), jogo.corrente_atual(pontuadas, eu), meta),
+                unsafe_allow_html=True)
+    for aba, periodo in zip(st.tabs(["Hoje", "Semana", "Geral"]), ["hoje", "semana", "geral"]):
+        with aba:
+            ranking = jogo.podio(pontuadas, periodo, tema=tema)
+            if ranking.empty:
+                st.info("Sem pontos neste período ainda.")
+                continue
+            st.markdown(ui.podio_html(ranking, eu), unsafe_allow_html=True)
+            pos = jogo.posicao_de(ranking, eu)
+            if pos:
+                st.markdown(f"Você está em **{pos}º** de {len(ranking)}.")
+            tabela = ranking.assign(
+                jogador=[ui.nome_publico(u) + (" (você)" if u == eu else "") for u in ranking["usuario"]])
+            st.dataframe(tabela[["posicao", "jogador", "pontos", "achados"]], hide_index=True,
+                         use_container_width=True,
+                         column_config={"posicao": st.column_config.NumberColumn("#", width="small")})
+
+
+ranking_ao_vivo(tema)
+
+# ---------- Guardiões da semana (sem dizer onde: só quantos quadrados cada um guarda) ----------
+st.subheader("Guardiões da semana")
+st.caption("Quem tem mais achados diferentes num quadrado de ~500 m guarda aquele quadrado até domingo. "
+           "Só contam quadrados onde 2 pessoas ou mais jogaram. No mapa, toque numa mancha amarela para ver o guardião.")
+g = armazenamento.guardioes()
+if g.empty:
+    st.caption("Ninguém guarda um quadrado ainda.")
+else:
+    contagem = g["usuario"].value_counts()
+    st.markdown(ui.lista([(html.escape(ui.nome_publico(u)) + (" (você)" if u == eu else ""),
+                           f"{n} {'quadrado' if n == 1 else 'quadrados'}") for u, n in contagem.items()]),
+                unsafe_allow_html=True)
 
 # ---------- Achados mais raros da semana ----------
 st.subheader("Achados mais raros da semana")

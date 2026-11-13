@@ -11,10 +11,11 @@ import pandas as pd
 
 REMOVER = ["id", "foto_url", "foto_path", "lat", "lon", "bairro", "usuario_id", "foto_hash", "celula"]
 
-# Colunas do CSV do jogo (página Avaliação e data/processed/capturas_demo.csv), lidas pelos notebooks 01–04
+# Colunas do CSV do jogo (página Avaliação e data/processed/capturas_demo.csv), lidas pelos notebooks 01–05
 COLUNAS_CSV = ["usuario", "criado_em", "cidade", "tema", "achado", "confianca", "foto_real", "juiz", "clip_tema",
                "clip_foto_real", "clip_prob_tema", "clip_prob_tela", "clip_rank_tema", "contestada",
-               "aceita", "motivo", "do_dia", "base", "novidade", "raridade", "pontos"]
+               "mirante", "tipo_lugar", "clima", "km_anterior", "min_anterior",
+               "aceita", "motivo", "do_dia", "base", "novidade", "raridade", "extra", "lupa", "meta", "pontos"]
 
 
 def anonimizar(df: pd.DataFrame) -> pd.DataFrame:

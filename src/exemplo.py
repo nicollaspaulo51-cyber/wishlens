@@ -92,6 +92,21 @@ JOGADORES_EXEMPLO = {
     "exemplo:eu": "carros",
 }
 CENTRO_EXEMPLO = (-20.2905, -40.2930)  # Vitória - ES
+# Tipo de lugar do OSM onde cada tema costuma aparecer (para o mirante e a pista do mapa)
+TIPOS_EXEMPLO = {"carros": ["parking", "fuel", "car"], "plantas": ["park", "garden", "garden_centre"],
+                 "passaros": ["park", "wood", "water"], "pets": ["pet", "veterinary", "park"],
+                 "pecas": ["computer", "electronics"]}
+CLIMAS_EXEMPLO = ["sol", "sol", "nublado", "nublado", "chuva"]
+
+
+def _contexto(tema: str, rng: random.Random) -> dict:
+    """Contexto fictício da foto: mirante (~30%), clima e o deslocamento desde a foto anterior (~2% impossível)."""
+    mirante = rng.random() < 0.3
+    impossivel = rng.random() < 0.02
+    return {"mirante": mirante, "tipo_lugar": rng.choice(TIPOS_EXEMPLO[tema]) if mirante else None,
+            "clima": rng.choice(CLIMAS_EXEMPLO),
+            "km_anterior": round(rng.uniform(8, 40), 2) if impossivel else round(rng.uniform(0, 2.5), 2),
+            "min_anterior": round(rng.uniform(1, 6), 1) if impossivel else round(rng.uniform(5, 240), 1)}
 
 
 def gerar_capturas(semente: int = 7, dias: int = 14, centro: tuple[float, float] = CENTRO_EXEMPLO) -> list[dict]:
@@ -99,6 +114,7 @@ def gerar_capturas(semente: int = 7, dias: int = 14, centro: tuple[float, float]
     from src.jogo import agora_naive, celula
 
     rng = random.Random(semente)
+    rng_contexto = random.Random(semente + 1)  # separado: não muda as capturas que já existiam
     fim = agora_naive()
     registros = []
     for usuario, estilo in JOGADORES_EXEMPLO.items():
@@ -115,7 +131,7 @@ def gerar_capturas(semente: int = 7, dias: int = 14, centro: tuple[float, float]
                 "achado": achado, "confianca": round(rng.uniform(0.5, 0.97), 2),
                 "foto_real": real, "foto_hash": f"{rng.getrandbits(64):016x}",
                 "cidade": "Vitória - ES", "celula": celula(lat, lon),
-                **_opiniao_clip(tema, real, rng),
+                **_opiniao_clip(tema, real, rng), **_contexto(tema, rng_contexto),
             })
         # Algumas fotos que o juiz recusou e a pessoa contestou (ex.: mouse que virou "nenhum")
         for _ in range(rng.randint(0, 2)):

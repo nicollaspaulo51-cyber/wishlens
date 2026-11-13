@@ -45,3 +45,12 @@ def test_tema_escuro():
     claro = mapa_jogo.montar(0, 0, [], [], TEMAS[0], TEMAS)
     escuro = mapa_jogo.montar(0, 0, [], [], TEMAS[0], TEMAS, escuro=True)
     assert '<body class="escuro">' in escuro and '<body class="">' in claro
+
+
+def test_mirante_pista_e_guardiao_vao_para_o_mapa():
+    pontos = [{"tema": "passaros", "nome": "Parque", "lat": -20.29, "lon": -40.29, "tipo": "park"}]
+    manchas = [{"tema": "pets", "lat": -20.3, "lon": -40.3, "n": 4, "raros": [], "guardiao": "bia"}]
+    html = mapa_jogo.montar(-20.29, -40.29, pontos, manchas, TEMAS[0], TEMAS, pistas={"park": ["sabiá"]})
+    d = _dados(html)
+    assert d["mirante_m"] == 40 and d["pontos"][0]["tipo"] == "park" and d["pistas"] == {"park": ["sabiá"]}
+    assert d["manchas"][0]["guardiao"] == "bia" and "atualizarPerto()" in html

@@ -42,11 +42,17 @@ if estilo:
         f'colocou você ao comparar o que você fotografa com {pontuadas["usuario"].nunique()} jogadores.</span></div>',
         unsafe_allow_html=True)
 
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Pontos", int(aceitas["pontos"].sum()))
 c2.metric("Achados diferentes", aceitas["achado"].map(jogo.normalizar).nunique())
-c3.metric("Fotos", len(minhas))
-c4.metric("Recusadas", f'{(~minhas["aceita"]).mean():.0%}')
+c3.metric("Dias seguidos", jogo.corrente_atual(pontuadas, quem),
+          help=f"Jogue {jogo.CORRENTE_DIAS} dias seguidos para ganhar +{jogo.CORRENTE}.")
+c4.metric("Fotos", len(minhas))
+c5.metric("Recusadas", f'{(~minhas["aceita"]).mean():.0%}')
+
+# ---------- Medalhas ----------
+st.subheader("Medalhas")
+st.markdown(ui.medalhas_html(jogo.medalhas(pontuadas, quem)), unsafe_allow_html=True)
 
 # ---------- Álbum por tema ----------
 st.subheader("Álbum")
@@ -55,16 +61,22 @@ contagem_turma = (pontuadas[pontuadas["aceita"]].assign(chave=lambda d: d["achad
 for tema in TEMAS:
     meus = aceitas[aceitas["tema"] == tema.id]
     unicos = meus.assign(chave=meus["achado"].map(jogo.normalizar)).drop_duplicates("chave")
+    faltam = jogo.lacunas(pontuadas, quem, tema.id)
     with st.expander(f"{tema.emoji} {tema.nome} ({len(unicos)})", expanded=len(unicos) > 0):
         if unicos.empty:
             st.caption(f"Nada ainda. Procure em {tema.onde}.")
-            continue
-        linhas = []
-        for r in unicos.itertuples():
-            vezes = int(contagem_turma.get((tema.id, r.chave), 1))
-            raridade = "raro" if vezes <= 1 else ("incomum" if vezes <= 3 else "comum")
-            linhas.append((html.escape(r.achado), f"{raridade}, {vezes}× na turma"))
-        st.markdown(ui.lista(linhas), unsafe_allow_html=True)
+        else:
+            linhas = []
+            for r in unicos.itertuples():
+                vezes = int(contagem_turma.get((tema.id, r.chave), 1))
+                raridade = "raro" if vezes <= 1 else ("incomum" if vezes <= 3 else "comum")
+                linhas.append((html.escape(r.achado), f"{raridade}, {vezes}× na turma"))
+            st.markdown(ui.lista(linhas), unsafe_allow_html=True)
+        if faltam:
+            # Lacunas: o que a turma já achou e você não, só com a 1ª letra
+            st.markdown("**Ainda falta na sua coleção**")
+            st.markdown(ui.lista([(f"🔒 {html.escape(dica)}", f"{n}× na turma") for dica, n in faltam]),
+                        unsafe_allow_html=True)
 
 # ---------- Gráficos ----------
 st.subheader("Quando e o quê")

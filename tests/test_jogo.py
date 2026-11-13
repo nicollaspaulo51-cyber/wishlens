@@ -56,7 +56,7 @@ def test_pontos_base_novidade_raridade():
     r = pts(cap("ana", "Fiat Mobi", hora=8), cap("bia", "fiat mobi", hora=9), cap("caio", "Fiat Mobi", hora=10),
             cap("ana", "Fiat Mobi", hora=11, dia=DIA + timedelta(days=0)))
     assert list(r["raridade"][:3]) == [20, 10, 7]  # quem acha primeiro ganha mais
-    assert list(r["pontos"][:3]) == [40, 30, 27]   # base 10 + novidade 10 + raridade
+    assert list((r["pontos"] - r["extra"])[:3]) == [40, 30, 27]   # base 10 + novidade 10 + raridade (sem extras)
     assert r.loc[3, "motivo"] == "você já achou isso hoje" and r.loc[3, "pontos"] == 0
 
 
@@ -70,7 +70,7 @@ def test_dia_seguinte_mesmo_achado_vale_sem_novidade():
 
 def test_tema_do_dia_dobra():
     r = pts(cap("ana", "bem-te-vi", tema=DO_DIA))
-    assert bool(r.loc[0, "do_dia"]) and r.loc[0, "pontos"] == 80
+    assert bool(r.loc[0, "do_dia"]) and r.loc[0, "pontos"] - r.loc[0, "extra"] == 80
 
 
 def test_recusas_com_motivo():
@@ -308,3 +308,84 @@ def test_csv_demo_tem_colunas_do_notebook_e_nada_que_identifique(tmp_path):
     assert len(df) == n > 0 and list(df.columns) == COLUNAS_CSV
     assert not set(REMOVER) & set(df.columns)
     assert df["usuario"].str.fullmatch(r"u\d{2}").all()
+
+
+# ---------------------------------------------------------------- mecânicas de caminhada
+def test_deslocamento_impossivel_sem_falso_positivo_na_borda_do_quadrado():
+    assert not jogo.deslocamento_impossivel(0.6, 0.2)       # borda de célula: perto, mesmo em segundos
+    assert not jogo.deslocamento_impossivel(10, 30)          # 20 km/h: de bicicleta
+    assert jogo.deslocamento_impossivel(15, 3)               # 300 km/h
+    assert jogo.deslocamento_impossivel(4, 0.2)              # menos de 1 min conta como 1 min: 240 km/h
+    assert not jogo.deslocamento_impossivel(None, None)
+    r = pts({**cap("ana", "Fiat Mobi"), "km_anterior": 20.0, "min_anterior": 4.0})
+    assert not r.loc[0, "aceita"] and r.loc[0, "motivo"].startswith("deslocamento impossível")
+
+
+def test_mirante_vale_ate_3_por_dia():
+    achados = ["Fiat Mobi", "Fiat Uno", "Fiat Palio", "Fiat Toro"]
+    r = pts(*[{**cap("ana", a, hora=8 + k), "mirante": True} for k, a in enumerate(achados)])
+    assert [("mirante +5" in d) for d in r["detalhes"]] == [True, True, True, False]
+
+
+def test_chuva_da_bonus_so_fora_do_tema_do_dia():
+    tema_chuva = next(t for t in jogo.TEMAS_CHUVA if t != DO_DIA)
+    r = pts({**cap("ana", "ipê-amarelo", tema=tema_chuva), "clima": "chuva"},
+            {**cap("bia", "sabiá", tema=DO_DIA, hora=11), "clima": "chuva"})
+    assert "chuva +5" in r.loc[0, "detalhes"]
+    assert "chuva" not in r.loc[1, "detalhes"] or DO_DIA not in jogo.TEMAS_CHUVA
+
+
+def test_lupa_enche_com_3_temas_e_o_proximo_ganha_50_por_cento():
+    temas = [t.id for t in TEMAS if t.id != DO_DIA][:4]
+    r = pts(*[cap("ana", f"achado {k}", tema=t, hora=8 + k) for k, t in enumerate(temas)])
+    assert list(r["lupa"]) == [0, 0, 0, round((r.loc[3, "pontos"] - r.loc[3, "extra"]) * jogo.LUPA_BONUS)]
+    assert jogo.estado_do_dia(r, "ana", DIA)["lupa"] == 0  # usou e esvaziou
+
+
+def test_corrente_de_7_dias_da_bonus_uma_vez():
+    r = pts(*[cap("ana", f"achado {k}", dia=DIA + timedelta(days=k)) for k in range(8)])
+    com = ["corrente de 7 dias" in d for d in r["detalhes"]]
+    assert com == [False] * 6 + [True, False]
+    assert jogo.corrente_atual(r, "ana", DIA + timedelta(days=7)) == 8
+    assert jogo.corrente_atual(r, "ana", DIA + timedelta(days=9)) == 0
+
+
+def test_desafios_sao_os_mesmos_no_dia_e_dao_bonus_uma_vez():
+    assert jogo.desafios_do_dia(DIA) == jogo.desafios_do_dia(DIA) and len(jogo.desafios_do_dia(DIA)) == 3
+    r = pts(*[cap("ana", f"achado {k}", tema=t.id, hora=8 + k) for k, t in enumerate(TEMAS)])
+    textos = [d.texto.lower() for d in jogo.desafios_do_dia(DIA)]
+    for t in textos:  # cada desafio cumprido aparece no máximo uma vez
+        assert sum(t in d for d in r["detalhes"]) <= 1
+
+
+def test_meta_da_turma_da_bonus_a_todos_quando_bate():
+    fotos = [cap(f"p{k}", f"achado {k}", tema=DO_DIA, hora=12) for k in range(jogo.META_FOTOS)]
+    r = pts(*fotos)
+    assert (r["meta"] == jogo.META).all()
+    r = pts(*fotos[:-1])
+    assert (r["meta"] == 0).all()
+    m = jogo.meta_da_turma(r, datetime(DIA.year, DIA.month, DIA.day, 13, 30))
+    assert m["aberta"] and not m["cumprida"] and m["feitas"] == jogo.META_FOTOS - 1 and m["faltam_min"] == 30
+
+
+def test_medalhas_lacunas_e_pistas():
+    r = pts(*[cap("ana", n, tema="passaros", hora=8 + k) for k, n in enumerate(["sabiá", "bem-te-vi", "tucano"])],
+            cap("bia", "garça", tema="passaros", hora=12), {**cap("bia", "beija-flor", tema="passaros", hora=13),
+                                                            "mirante": True, "tipo_lugar": "park"})
+    olho = next(m for m in jogo.medalhas(r, "ana") if m["id"] == "passaros")
+    assert olho["nivel"] == "bronze" and olho["valor"] == 3 and olho["proximo"] == 5
+    assert dict(jogo.lacunas(r, "ana", "passaros")) == {"G…": 1, "B…": 1}
+    assert jogo.pistas_por_tipo(r) == {"park": ["beija-flor"]}
+
+
+def test_guardiao_so_com_2_pessoas_e_empate_para_quem_chegou_antes():
+    base = {"foto_real": True, "celula": "-20.290,-40.295"}
+    sozinho = pd.DataFrame([{**cap("ana", "sabiá", tema="passaros"), **base}])
+    assert jogo.guardioes(sozinho, DIA).empty
+    df = pd.DataFrame([{**cap("ana", "sabiá", tema="passaros", hora=8), **base},
+                       {**cap("bia", "tucano", tema="passaros", hora=9), **base},
+                       {**cap("bia", "sabiá", tema="passaros", hora=10), **base},
+                       {**cap("caio", "garça", tema="passaros", hora=7), **base},
+                       {**cap("caio", "pombo", tema="passaros", hora=11), **base}])
+    g = jogo.guardioes(df, DIA)
+    assert g.loc[0, "usuario"] == "caio" and g.loc[0, "achados"] == 2  # empate com bia: caio chegou antes

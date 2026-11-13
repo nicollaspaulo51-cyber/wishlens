@@ -19,8 +19,10 @@ COLUNAS_CAPTURA = ["id", "usuario", "criado_em", "tema", "achado", "confianca", 
                    "foto_hash", "cidade", "celula",
                    # o que cada juiz disse (avaliação CLIP x IA) e a contestação da pessoa
                    "juiz", "clip_tema", "clip_foto_real", "clip_prob_tema", "clip_prob_tela", "clip_rank_tema",
-                   "contestada"]
-COLUNAS_JUIZES = COLUNAS_CAPTURA[10:]
+                   "contestada",
+                   # contexto da foto para as mecânicas (src/jogo.py), sem a localização exata
+                   "mirante", "tipo_lugar", "clima", "km_anterior", "min_anterior"]
+COLUNAS_JUIZES = COLUNAS_CAPTURA[10:]  # opcionais em salvar_captura: juízes + contexto
 
 
 # ---------------------------------------------------------------- backend
@@ -63,7 +65,8 @@ def salvar_captura(tema: str | None, achado: str, confianca: float | None, foto_
                    foto_hash: str | None, cidade: str | None, celula: str | None, **juizes) -> str:
     """Guarda a captura crua e devolve o id; os pontos são sempre recalculados a partir delas (src/jogo.py).
 
-    `juizes`: juiz, clip_tema, clip_foto_real, clip_prob_tema, clip_prob_tela, contestada (opcionais).
+    `juizes`: juiz, clip_tema, clip_foto_real, clip_prob_tema, clip_prob_tela, contestada e o contexto
+    (mirante, tipo_lugar, clima, km_anterior, min_anterior), todos opcionais.
     """
     from src.jogo import agora_naive
 
@@ -142,6 +145,21 @@ def manchas() -> pd.DataFrame:
         except Exception:  # banco criado antes da função manchas_capturas: o mapa fica sem as manchas
             pass
     return pd.DataFrame(linhas, columns=colunas)
+
+
+def guardioes() -> pd.DataFrame:
+    """Guardião de cada quadrado de ~500 m nesta semana: celula, usuario, achados (regra em src/jogo.py)."""
+    from src.jogo import guardioes as calcular
+
+    colunas = ["celula", "usuario", "achados"]
+    linhas = calcular(pd.DataFrame(_capturas_memoria(), columns=COLUNAS_CAPTURA)).to_dict("records")
+    b = _banco()
+    if b:
+        try:
+            linhas += [{"celula": r["celula"], "usuario": r["apelido"], "achados": r["achados"]} for r in b.guardioes()]
+        except Exception:  # banco criado antes da função guardioes_quadrados
+            pass
+    return pd.DataFrame(linhas, columns=colunas).drop_duplicates("celula")
 
 
 def remover_capturas_exemplo() -> None:

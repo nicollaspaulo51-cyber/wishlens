@@ -19,9 +19,10 @@ import streamlit as st
 _CHAVE_SESSAO = "_wl_supabase"
 
 
-# Colunas com a opinião de cada juiz (CLIP x IA); bancos antigos não as têm
+# Colunas com a opinião de cada juiz (CLIP x IA) e o contexto das mecânicas; bancos antigos não as têm
 COLUNAS_JUIZES_BANCO = ("juiz", "clip_tema", "clip_foto_real", "clip_prob_tema", "clip_prob_tela",
-                        "clip_rank_tema", "contestada")
+                        "clip_rank_tema", "contestada", "mirante", "tipo_lugar", "clima", "km_anterior",
+                        "min_anterior")
 
 
 def para_brasilia(valor) -> datetime:
@@ -109,6 +110,10 @@ class Sessao:
     def manchas(self) -> list[dict]:
         """Onde a turma achou coisas: por quadrado de ~500 m e tema, sem dizer quem (função no banco)."""
         return self.cliente.rpc("manchas_capturas", {}).execute().data or []
+
+    def guardioes(self) -> list[dict]:
+        """Guardião de cada quadrado na semana (função no banco: só células com 2+ jogadores, sem horário)."""
+        return self.cliente.rpc("guardioes_quadrados", {}).execute().data or []
 
 
 def sessao_atual() -> Sessao | None:

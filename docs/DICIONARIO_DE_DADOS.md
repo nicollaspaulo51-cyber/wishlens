@@ -21,14 +21,22 @@
 | `clip_prob_tela` | 0–1 | chance de tela/impressão/desenho para o CLIP | `0.08` | mantida |
 | `clip_rank_tema` | 1–7 | posição do tema final entre os palpites do CLIP (1 = o preferido dele); > 2 = veto | `1` | mantida |
 | `contestada` | texto | tema que a pessoa disse que era, numa foto recusada | `pecas` | mantida |
+| `mirante` | sim/não | a foto foi a até 40 m de um lugar do mapa (calculado no app; a coordenada não é gravada) | `true` | mantida |
+| `tipo_lugar` | texto | tag do OSM do lugar do mirante (`park`, `pet`, `parking`...); vazio fora de mirante | `park` | mantida |
+| `clima` | texto | Open-Meteo na hora da foto: `chuva`, `nublado`, `sol` ou `neve` | `chuva` | mantida |
+| `km_anterior` | número | km desde a foto anterior da pessoa (nesta sessão do navegador) | `0.8` | mantida |
+| `min_anterior` | número | minutos desde a foto anterior da pessoa | `12.5` | mantida |
 
 ### Colunas calculadas (`src/jogo.calcular_pontos`)
 | Coluna | Como |
 |---|---|
-| `aceita` / `motivo` | recusa se não é foto real, fora dos temas, vetada pelo CLIP, sem achado, foto repetida ou mesma coisa no mesmo dia |
+| `aceita` / `motivo` | recusa se não é foto real, deslocamento impossível (>3 km a >120 km/h), fora dos temas, vetada pelo CLIP, sem achado, foto repetida ou mesma coisa no mesmo dia |
 | `base`, `novidade`, `raridade` | 10; +10 se novo para a pessoa; 20/(1+n anteriores da turma) |
 | `do_dia` | o tema era o tema do dia na data da captura |
-| `pontos` | (base + novidade + raridade) × 2 se `do_dia` |
+| `extra` | bônus fora do ×2: mirante (+5, até 3/dia), chuva (+5), lupa (+50%), desafios (+15 cada), corrente de 7 dias (+20), meta da turma (+10) |
+| `lupa` / `meta` | a parte do `extra` que veio da lupa e da meta da turma |
+| `detalhes` | texto com cada bônus (ex.: `mirante +5; desafio: ... +15`); não vai para o CSV |
+| `pontos` | (base + novidade + raridade) × 2 se `do_dia`, + `extra` |
 
 ## Colunas derivadas na análise (notebook 02 → `capturas_limpas.csv`)
 
