@@ -24,3 +24,21 @@ def test_resumo_mostra_os_tres_numeros():
 def test_abre_sozinho_com_meta_aberta_ou_lupa_cheia():
     assert "<details class=\"wl-hoje\" open>" in _painel(aberta=True)
     assert "<details class=\"wl-hoje\" open>" in _painel(aberta=False, lupa=3)
+
+
+def test_album_mostra_coladas_lacunas_e_total():
+    from src.temas import POR_ID
+
+    html = ui.album_html(POR_ID["pets"], [("<b>golden</b>", 1), ("vira-lata", 5)], [("B…", 3)], 7,
+                         {"nome": "Amigo dos bichos", "nivel": None, "proximo": 1})
+    assert "2 de 7" in html and "&lt;b&gt;golden&lt;/b&gt;" in html and "<b>golden</b>" not in html
+    assert html.count("wl-fig colada") == 2 and html.count("wl-fig vazia") == 1
+    assert "raro, 1× na turma" in html and "comum, 5× na turma" in html
+    assert "E mais 4 que a turma já achou" in html and "faltam 1 para o próximo nível" in html
+
+
+def test_album_vazio_convida_a_procurar():
+    from src.temas import POR_ID
+
+    html = ui.album_html(POR_ID["pets"], [], [], 0)
+    assert "0 de 0" in html and "Nenhuma figurinha ainda" in html and "wl-grade" not in html

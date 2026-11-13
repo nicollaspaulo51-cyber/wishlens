@@ -40,7 +40,8 @@ def _css() -> str:
 <style>
 :root {{ --wl-surface:{c['surface']}; --wl-ink:{c['ink']}; --wl-muted:{c['muted']}; --wl-line:{c['line']};
         --wl-accent:{c['accent']}; --wl-accent-ink:{c['accent_ink']}; --wl-soft:{c['soft']};
-        --wl-sol:{c['sol']}; --wl-sol-ink:{c['sol_ink']}; --wl-titulos:{TITULOS}; }}
+        --wl-sol:{c['sol']}; --wl-sol-ink:{c['sol_ink']}; --wl-titulos:{TITULOS};
+        --wl-fig:{'#F4F8F5' if tema() == 'escuro' else '#FFFFFF'}; }}
 .wl-muted {{ color: var(--wl-muted); }}
 .wl-card {{ padding: 1rem 1.1rem; border-radius: 14px; border: 1px solid var(--wl-line);
            background: var(--wl-surface); margin-bottom: .8rem; }}
@@ -59,8 +60,10 @@ def _css() -> str:
                   padding:.3rem .7rem; font-size:.9rem; white-space:nowrap; }}
 .wl-placar b {{ font-family:var(--wl-titulos); }}
 /* Selo do tema do dia: o único bloco amarelo da tela */
-.wl-selo {{ display:flex; align-items:center; gap:.8rem; padding:.7rem .9rem; border-radius:14px;
-           background:var(--wl-sol); color:var(--wl-sol-ink); margin-bottom:.7rem; }}
+.wl-selo {{ display:flex; align-items:center; gap:.8rem; padding:.6rem .8rem; border-radius:8px;
+           border:3px solid var(--wl-fig); box-shadow:0 0 0 1px var(--wl-line); color:var(--wl-sol-ink);
+           background:linear-gradient(115deg, var(--wl-sol) 0 38%, #FFE596 50%, var(--wl-sol) 62%);
+           margin-bottom:.7rem; }}
 .wl-selo .wl-emoji {{ font-size:2rem; line-height:1; }}
 .wl-selo .wl-t {{ font-family:var(--wl-titulos); font-weight:800; font-size:1.25rem; line-height:1.15; }}
 .wl-selo .wl-dobro {{ margin-left:auto; font-family:var(--wl-titulos); font-weight:800; font-size:1.7rem; line-height:1; }}
@@ -68,7 +71,29 @@ def _css() -> str:
 /* Resultado da foto */
 .wl-pontos {{ font-family:var(--wl-titulos); font-weight:800; font-size:3rem; line-height:1; letter-spacing:-.03em; }}
 .wl-pontos small {{ font-size:1.1rem; letter-spacing:0; }}
-.wl-valeu {{ border-left:8px solid var(--wl-sol); }}
+.wl-valeu {{ border:3px solid var(--wl-fig); border-left:8px solid var(--wl-sol); border-radius:8px;
+            box-shadow:0 0 0 1px var(--wl-line); animation:wl-colar .35s cubic-bezier(.2,.9,.3,1.2); }}
+@keyframes wl-colar {{ from {{ transform:scale(1.08) rotate(-3deg); opacity:0; }} }}
+.wl-resumo {{ display:flex; flex-wrap:wrap; gap:.4rem 1.3rem; margin:.2rem 0 1rem; }}
+.wl-resumo div {{ display:flex; flex-direction:column; font-size:.85rem; color:var(--wl-muted); }}
+.wl-resumo b {{ font-family:var(--wl-titulos); font-size:1.5rem; line-height:1.1; color:var(--wl-ink);
+               font-variant-numeric:tabular-nums; }}
+/* Álbum de figurinhas (Minha Coleção): colada = achado seu; vazia = a turma já achou e você não */
+.wl-album {{ margin:0 0 1.4rem; }}
+.wl-album-topo {{ display:flex; align-items:baseline; flex-wrap:wrap; gap:.2rem .7rem; margin-bottom:.5rem; }}
+.wl-album-topo h3 {{ margin:0; padding:0; font-size:1.15rem; }}
+.wl-album-topo .wl-conta-album {{ font-family:var(--wl-titulos); font-weight:800; font-variant-numeric:tabular-nums; }}
+.wl-grade {{ display:grid; gap:.5rem;
+            grid-template-columns:repeat(auto-fill, minmax(6.3rem, 1fr)); }}
+.wl-fig {{ min-height:6.6rem; padding:.45rem .4rem; border-radius:6px; text-align:center; display:flex;
+          flex-direction:column; align-items:center; justify-content:center; gap:.1rem; overflow-wrap:anywhere; }}
+.wl-fig.colada {{ background:var(--wl-surface); border:3px solid var(--wl-fig); box-shadow:0 0 0 1px var(--wl-line); }}
+.wl-fig.rara {{ background:color-mix(in srgb, var(--wl-sol) 22%, var(--wl-surface)); }}
+.wl-fig.vazia {{ border:2px dashed var(--wl-line); color:var(--wl-muted); }}
+.wl-fig .wl-emoji {{ font-size:1.5rem; line-height:1.1; }}
+.wl-fig b {{ font-size:.86rem; line-height:1.2; }}
+.wl-fig small {{ font-size:.75rem; color:var(--wl-muted); line-height:1.2; }}
+.wl-fig .wl-letra {{ font-family:var(--wl-titulos); font-weight:800; font-size:1.7rem; line-height:1.1; }}
 .wl-recusa .wl-pontos {{ color:var(--wl-muted); }}
 .wl-estilo {{ font-family:var(--wl-titulos); font-weight:800; font-size:1.7rem; line-height:1.15; color:var(--wl-accent); }}
 /* Pódio */
@@ -119,7 +144,7 @@ def _css() -> str:
 .wl-medalha.bronze {{ border-color:#B87333; }} .wl-medalha.prata {{ border-color:#9AA5AD; }}
 .wl-medalha.ouro {{ border-color:var(--wl-sol); background:color-mix(in srgb, var(--wl-sol) 18%, var(--wl-surface)); }}
 .wl-medalha.nada {{ opacity:.7; }}
-@media (prefers-reduced-motion: reduce) {{ .wl-conta, .wl-lupa.cheia i {{ animation:none; }}
+@media (prefers-reduced-motion: reduce) {{ .wl-conta, .wl-lupa.cheia i, .wl-valeu {{ animation:none; }}
   .wl-meta .wl-trilho b {{ transition:none; }} }}
 /* o componente que pede o GPS não precisa aparecer (continua funcionando com altura zero) */
 [data-testid="stElementContainer"]:has(iframe[title*="streamlit_js_eval"]) {{ height:0; min-height:0; overflow:hidden; margin:0; }}
@@ -281,6 +306,44 @@ def painel_do_dia(estado: dict, corrente: int, meta: dict) -> str:
             f'<span>Meta <b>{meta["feitas"]} de {meta["alvo"]}</b></span>'
             f'<span>Desafios <b>{feitos} de {len(estado["desafios"])}</b></span></summary>'
             f'<div class="wl-dia">{lupa}{meta_html}<ul class="wl-desafios">{itens}</ul></div></details>')
+
+
+def resumo_html(itens: list[tuple[str, str]]) -> str:
+    """Faixa de números (valor, rótulo) que quebra de linha no celular em vez de empilhar."""
+    return ('<div class="wl-resumo">'
+            + "".join(f"<div><b>{html.escape(str(v))}</b>{html.escape(r)}</div>" for v, r in itens) + "</div>")
+
+
+def album_html(tema, colados: list[tuple[str, int]], faltam: list[tuple[str, int]], total: int,
+               medalha: dict | None = None) -> str:
+    """Página do álbum de um tema. colados: (achado, vezes na turma); faltam: jogo.lacunas; total: achados
+    diferentes da turma no tema (os seus incluídos)."""
+    e = html.escape
+    figs = []
+    for achado, vezes in colados:
+        raridade = "raro" if vezes <= 1 else ("incomum" if vezes <= 3 else "comum")
+        figs.append(f'<div role="listitem" class="wl-fig colada {"rara" if vezes <= 1 else ""}"><span class="wl-emoji" '
+                    f'aria-hidden="true">{tema.emoji}</span><b>{e(achado)}</b>'
+                    f'<small>{raridade}, {vezes}× na turma</small></div>')
+    for dica, n in faltam:
+        figs.append(f'<div role="listitem" class="wl-fig vazia" aria-label="Falta um achado que começa com {e(dica[:1])}, '
+                    f'{n} vezes na turma"><span class="wl-letra" aria-hidden="true">{e(dica)}</span>'
+                    f'<small aria-hidden="true">{n}× na turma</small></div>')
+    total = max(total, len(colados))
+    topo = (f'<div class="wl-album-topo"><h3>{tema.emoji} {e(tema.nome)}</h3>'
+            f'<span class="wl-conta-album">{len(colados)} de {total}</span>')
+    if medalha:
+        falta = f', faltam {medalha["proximo"]} para o próximo nível' if medalha["proximo"] else ""
+        topo += (f'<span class="wl-muted" style="font-size:.85rem">{e(medalha["nome"])}: '
+                 f'{e(medalha["nivel"] or "sem nível")}{falta}</span>')
+    topo += "</div>"
+    if not figs:
+        return (f'<section class="wl-album">{topo}<div class="wl-muted">Nenhuma figurinha ainda. '
+                f'Procure em {e(tema.onde)}.</div></section>')
+    resto = total - len(colados) - len(faltam)
+    mais = (f'<div class="wl-muted" style="font-size:.85rem;margin-top:.4rem">E mais {resto} que a turma já achou.'
+            f'</div>') if resto > 0 else ""
+    return f'<section class="wl-album">{topo}<div role="list" class="wl-grade">{"".join(figs)}</div>{mais}</section>'
 
 
 def medalhas_html(lista_medalhas: list[dict]) -> str:
