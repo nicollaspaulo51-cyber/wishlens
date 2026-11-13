@@ -35,7 +35,10 @@ e se a foto sai nítida o bastante para ler o modelo de um carro. O jogo depende
 |---|---|
 | Foto de um carro na rua | "Volkswagen Gol", "Fiat Mobi"… e pontos com novidade e raridade |
 | Foto de uma planta, um pássaro, um cachorro e uma peça | Tema certo e o nome (espécie, raça, peça) |
-| Foto **da tela do computador** mostrando um carro | 0 pontos: "não é foto real" |
+| Foto de um **mouse**, de um **teclado** e de um **monitor** | Valem como "Peças e periféricos de computador" (antes o mouse era recusado) |
+| Olhe o rodapé do cartão | "Juízes: Gemma ✔ · CLIP ✔" (o CLIP julga toda foto) |
+| Foto **da tela do computador** mostrando um carro | 0 pontos: "não é foto real" (Gemma) ou "o CLIP viu uma tela" |
+| Foto recusada por tema | Aparece "O juiz errou? Era…": escolha o tema e **Contestar** (não dá pontos, vai para a Avaliação) |
 | Foto de algo fora dos temas (uma caneca) | 0 pontos: "não é de nenhum tema" |
 | Mesma coisa duas vezes no mesmo dia | A 2ª vale 0: "você já achou isso hoje" |
 | Algo do **tema do dia** | Selo "tema do dia ×2" no cartão |
@@ -54,7 +57,14 @@ Depois:
 
 Sem o Supabase, cada pessoa só vê ela mesma (e os exemplos) no pódio.
 
-## 7. Explorar (mapa que pisca)
+## 7. Avaliação dos juízes (página 📊 Avaliação)
+| Faça | Deve acontecer |
+|---|---|
+| Com dados de exemplo, abra **Avaliação** | Concordância CLIP × Gemma (~85%), matriz de confusão, vetos, motivos de recusa, contestações |
+| Depois de jogar com a chave do Gemma | As suas fotos entram na matriz; a contestação que você fez aparece na lista |
+| Botão de baixar | CSV anonimizado com o que cada juiz disse (para o notebook de avaliação) |
+
+## 8. Explorar (mapa que pisca)
 | Faça | Deve acontecer |
 |---|---|
 | Abra **Explorar** e permita o GPS (ou digite o bairro) | Mapa com pontos coloridos **pulsando** por tema |
@@ -64,12 +74,14 @@ Sem o Supabase, cada pessoa só vê ela mesma (e os exemplos) no pódio.
 | Desmarque temas no filtro | Os pontos daquele tema somem |
 
 ## Já verificado aqui
-- `pytest`: 66 testes passando (rede e IA simuladas): pontos, raridade, ×2, recusas, hash de foto repetida,
+- `pytest`: 75 testes passando (rede e IA simuladas): pontos, raridade, ×2, recusas, hash de foto repetida,
   pódio, tema do dia virando à meia-noite de Brasília, juiz do Gemma, busca de pontos por tema, exportação sem hash e célula,
   capturas do Supabase (datas com fuso) misturadas com as da memória.
 - Busca no Supabase em páginas de 1.000 (o limite da API), para o pódio não perder as capturas mais novas.
 - Foto repetida só conta para o mesmo achado: dois pássaros diferentes contra o céu não são barrados.
-- O reconhecimento de reserva (CLIP) rodou de ponta a ponta com pesos aleatórios, sem erro.
+- O CLIP (`julgar_clip` e `capturar`) rodou de ponta a ponta com pesos aleatórios, sem erro.
+- Com os dois juízes simulados: mouse aceito como peça ("Gemma ✔ · CLIP ✔"); foto com tema discordante vetada,
+  contestação gravada; página Avaliação com matriz de confusão, recusas e contestações.
 - App rodando com a IA e o OpenStreetMap simulados, câmera falsa do Chromium:
   foto → +27 pontos; foto de tela → recusada; Pódio, Coleção e "Onde encontrar" navegando pelo menu.
 - Pulso do mapa: conferido renderizando o mapa com o Leaflet local (aqui o CDN do Leaflet é bloqueado).

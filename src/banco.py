@@ -19,6 +19,10 @@ import streamlit as st
 _CHAVE_SESSAO = "_wl_supabase"
 
 
+# Colunas com a opinião de cada juiz (CLIP x Gemma); bancos antigos não as têm
+COLUNAS_JUIZES_BANCO = ("juiz", "clip_tema", "clip_foto_real", "clip_prob_tema", "clip_prob_tela", "contestada")
+
+
 def para_brasilia(valor) -> datetime:
     """Texto ISO do banco (com fuso) -> datetime no horário de Brasília, sem fuso."""
     from src.temas import FUSO
@@ -83,10 +87,17 @@ class Sessao:
     def salvar_captura(self, registro: dict) -> None:
         from src.temas import FUSO
         criado = registro["criado_em"].replace(tzinfo=FUSO)  # horário de Brasília -> com fuso
+        dados = {**registro, "usuario_id": self.usuario_id, "criado_em": criado.isoformat()}
         # returning="minimal": a API não pode devolver a linha, porque bairro e célula não são legíveis
-        self.cliente.table("capturas").insert(
-            {**registro, "usuario_id": self.usuario_id, "criado_em": criado.isoformat()},
-            returning="minimal").execute()
+        try:
+            self.cliente.table("capturas").insert(dados, returning="minimal").execute()
+        except Exception as erro:
+            # banco criado antes das colunas dos juízes (supabase/schema.sql): salva sem elas
+            if not any(c in str(erro) for c in COLUNAS_JUIZES_BANCO):
+                raise
+            for c in COLUNAS_JUIZES_BANCO:
+                dados.pop(c, None)
+            self.cliente.table("capturas").insert(dados, returning="minimal").execute()
 
     def capturas_todas(self) -> list[dict]:
         """Capturas de todos os jogadores (pódio e raridade), sem bairro nem célula (privacidade).
@@ -94,11 +105,17 @@ class Sessao:
         O Supabase devolve no máximo 1.000 linhas por pedido: busca em páginas até acabar.
         criado_em sai no horário de Brasília sem fuso, igual às capturas em memória.
         """
+        colunas = "id, criado_em, tema, achado, confianca, foto_real, foto_hash, " + ", ".join(COLUNAS_JUIZES_BANCO)
         linhas, inicio, pagina = [], 0, 1000
         while True:
-            resp = (self.cliente.table("capturas")
-                    .select("id, criado_em, tema, achado, confianca, foto_real, foto_hash, perfis(apelido)")
-                    .order("criado_em").range(inicio, inicio + pagina - 1).execute())
+            try:
+                resp = (self.cliente.table("capturas").select(f"{colunas}, perfis(apelido)")
+                        .order("criado_em").range(inicio, inicio + pagina - 1).execute())
+            except Exception as erro:
+                if colunas.endswith("foto_hash") or not any(c in str(erro) for c in COLUNAS_JUIZES_BANCO):
+                    raise
+                colunas = "id, criado_em, tema, achado, confianca, foto_real, foto_hash"  # banco antigo
+                continue
             dados = resp.data or []
             for r in dados:
                 apelido = (r.pop("perfis", None) or {}).get("apelido", "?")
@@ -106,6 +123,11 @@ class Sessao:
             if len(dados) < pagina:
                 return linhas
             inicio += pagina
+
+    def contestar(self, id_captura: str, tema: str) -> None:
+        """Só a coluna "contestada" da própria captura pode ser alterada (RLS + grant no schema)."""
+        (self.cliente.table("capturas").update({"contestada": tema}, returning="minimal")
+         .eq("id", id_captura).execute())
 
     def manchas(self) -> list[dict]:
         """Onde a turma achou coisas: por quadrado de ~500 m e tema, sem dizer quem (função no banco)."""

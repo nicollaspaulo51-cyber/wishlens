@@ -164,3 +164,91 @@ def test_para_brasilia():
     from src.banco import para_brasilia
     assert para_brasilia("2026-11-13T02:30:00Z") == datetime(2026, 11, 12, 23, 30)
     assert para_brasilia(datetime(2026, 1, 1, 8)) == datetime(2026, 1, 1, 8)
+
+
+# ---------------------------------------------------------------- segundo juiz (CLIP)
+def test_veto_do_clip():
+    v = jogo.veto_clip
+    assert "tela" in v("carros", "gemma+clip", "carros", 0.8, 0.6)
+    assert "discordaram" in v("carros", "gemma+clip", "plantas", 0.05, 0.1)
+    assert "CLIP: plantas" in v("carros", "gemma+clip", "plantas", 0.05, 0.1)
+    assert v("carros", "gemma+clip", "plantas", 0.3, 0.1) is None    # discorda pouco: passa
+    assert v("pecas", "gemma+clip", "pecas", 0.4, 0.7) is None       # monitor ligado é peça
+    assert v("carros", "clip", "carros", 0.01, 0.9) is None          # só um juiz: sem veto
+    assert v("carros", None, None, None, None) is None
+    assert v("carros", "gemma+clip", None, float("nan"), float("nan")) is None
+
+
+def test_foto_vetada_nao_conta_para_raridade():
+    vetada = {**cap("ana", "Fiat Mobi", hora=8), "juiz": "gemma+clip", "clip_tema": "plantas",
+              "clip_prob_tema": 0.03, "clip_prob_tela": 0.05}
+    ok = {**cap("bia", "Fiat Mobi", hora=9), "juiz": "gemma+clip", "clip_tema": OUTRO,
+          "clip_prob_tema": 0.6, "clip_prob_tela": 0.05}
+    r = pts(vetada, ok)
+    assert not r.loc[0, "aceita"] and "discordaram" in r.loc[0, "motivo"]
+    assert r.loc[1, "raridade"] == 20  # a vetada não contou como "já achado"
+
+
+def test_avaliacao_dos_juizes():
+    base = {"juiz": "gemma+clip", "clip_prob_tela": 0.05}
+    r = pts({**cap("ana", "Gol", tema="carros", hora=8), **base, "clip_tema": "carros", "clip_prob_tema": 0.7},
+            {**cap("bia", "Uno", tema="carros", hora=9), **base, "clip_tema": "plantas", "clip_prob_tema": 0.05},
+            {**cap("caio", "mouse", tema="pecas", hora=10), **base, "clip_tema": "pecas", "clip_prob_tema": 0.5},
+            {**cap("davi", "", tema="nenhum", hora=11), **base, "clip_tema": "pecas", "contestada": "pecas"},
+            {**cap("eva", "carro", tema="carros", hora=12), "juiz": "clip", "clip_tema": "carros"})
+    a = jogo.avaliar_juizes(r)
+    assert a["comparadas"] == 4 and a["concordancia"] == 0.5
+    assert a["matriz"].loc["Carros", "Plantas e flores"] == 1 and a["matriz"].loc["nenhum", "Peças e periféricos de computador"] == 1
+    assert a["vetos"].to_dict() == {"os juízes discordaram do tema": 1}
+    assert a["especificos"] == 1.0
+    assert a["contestadas"].iloc[0]["contestada"] == "Peças e periféricos de computador"
+    assert jogo.avaliar_juizes(pd.DataFrame())["comparadas"] == 0
+
+
+def test_exemplos_tem_opiniao_do_clip_e_discordancias():
+    from src.exemplo import gerar_capturas
+    a = jogo.avaliar_juizes(jogo.calcular_pontos(pd.DataFrame(gerar_capturas())))
+    assert a["comparadas"] > 100 and 0.6 < a["concordancia"] < 0.98
+    assert len(a["vetos"]) and not a["contestadas"].empty
+
+
+def test_contestar_em_memoria(monkeypatch):
+    import streamlit as st
+    from src import armazenamento
+
+    class Sessao(dict):
+        __getattr__ = dict.__getitem__
+        __setattr__ = dict.__setitem__
+
+    monkeypatch.setattr(st, "session_state", Sessao({"capturas": []}))
+    monkeypatch.setattr(armazenamento, "_banco", lambda: None)
+    i = armazenamento.salvar_captura(None, "", 0.5, True, None, None, None, juiz="gemma+clip", clip_tema="pecas")
+    armazenamento.contestar(i, "pecas")
+    df = armazenamento.capturas()
+    assert df.loc[0, "contestada"] == "pecas" and df.loc[0, "juiz"] == "gemma+clip"
+
+
+def test_banco_antigo_salva_sem_colunas_dos_juizes():
+    from src import banco
+
+    chamadas = []
+
+    class Tabela:
+        def insert(self, dados, returning=None):
+            chamadas.append(dict(dados))
+            if "juiz" in dados:
+                raise RuntimeError("Could not find the 'juiz' column of 'capturas'")
+            return self
+
+        def execute(self):
+            return None
+
+    class Cliente:
+        def table(self, nome):
+            return Tabela()
+
+    s = banco.Sessao.__new__(banco.Sessao)
+    s.cliente, s.usuario_id = Cliente(), "u1"
+    s.salvar_captura({"criado_em": datetime(2026, 11, 12, 10), "tema": "carros", "juiz": "gemma+clip",
+                      "clip_tema": "carros"})
+    assert len(chamadas) == 2 and "juiz" not in chamadas[1] and chamadas[1]["tema"] == "carros"

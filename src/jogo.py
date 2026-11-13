@@ -34,6 +34,33 @@ APELIDOS = {"vw": "volkswagen", "volks": "volkswagen", "chevy": "chevrolet", "gm
 
 COLUNAS_PONTOS = ["pontos", "base", "novidade", "raridade", "do_dia", "aceita", "motivo"]
 
+# Segundo juiz (CLIP) ao lado do Gemma: só barra quando discorda com clareza, porque sozinho ele erra
+# bastante (pássaro pequeno na foto, carro de longe). Ajustar depois de ver os dados da turma.
+VETO_TELA = 0.5   # chance mínima de "tela/impressão/desenho" para o CLIP barrar
+VETO_TEMA = 0.10  # abaixo disso de chance para o tema do Gemma, os juízes discordam
+
+
+def _valor(x):
+    """None para vazio/NaN (colunas opcionais do banco)."""
+    if x is None or (isinstance(x, float) and pd.isna(x)) or x is pd.NA:
+        return None
+    return x
+
+
+def veto_clip(tema: str | None, juiz: str | None, clip_tema: str | None,
+              clip_prob_tema: float | None, clip_prob_tela: float | None) -> str | None:
+    """Motivo para o CLIP barrar a foto que o Gemma aceitou, ou None. Só vale com os dois juízes."""
+    if _valor(juiz) != "gemma+clip" or not tema:
+        return None
+    tela, prob_tema = _valor(clip_prob_tela), _valor(clip_prob_tema)
+    if tela is not None and tela >= VETO_TELA and tema != "pecas":  # monitor ligado é peça, não trapaça
+        return "o CLIP viu uma tela ou impressão"
+    if prob_tema is not None and prob_tema < VETO_TEMA:
+        nome = POR_ID[tema].nome.lower()
+        outro = POR_ID[clip_tema].nome.lower() if _valor(clip_tema) in POR_ID else "nenhum tema"
+        return f"os juízes discordaram do tema (Gemma: {nome}; CLIP: {outro})"
+    return None
+
 
 # ---------------------------------------------------------------- achados
 def normalizar(achado: str | None) -> str:
@@ -92,6 +119,9 @@ def calcular_pontos(capturas: pd.DataFrame) -> pd.DataFrame:
             motivo = "não é foto real (tela, impressão ou desenho)"
         elif tema is None:
             motivo = "não é de nenhum tema do jogo"
+        elif veto := veto_clip(tema.id, getattr(c, "juiz", None), getattr(c, "clip_tema", None),
+                               getattr(c, "clip_prob_tema", None), getattr(c, "clip_prob_tela", None)):
+            motivo = veto
         elif not chave:
             motivo = "não deu para saber o que é"
         elif repetida(h, hashes.get((tema.id, chave), [])):
@@ -199,3 +229,51 @@ def estilo_jogador(pontuadas: pd.DataFrame, usuario: str) -> str | None:
     if aceitas.empty:
         return None
     return perfil_do_usuario(aceitas, usuario, coluna="tema", valores=[t.id for t in TEMAS], nomes=NOMES_ESTILO)
+
+
+# ---------------------------------------------------------------- avaliação dos juízes (CRISP-DM, fase 5)
+def avaliar_juizes(pontuadas: pd.DataFrame) -> dict:
+    """Compara CLIP e Gemma nas fotos em que os dois julgaram.
+
+    Devolve: comparadas, concordancia (0-1), matriz (Gemma x CLIP, contagens), por_tema (concordância
+    por tema do Gemma), vetos (por motivo), recusas (por motivo), especificos (fração de achados com
+    modelo/espécie/raça entre as aceitas pelo Gemma) e contestadas (o que as pessoas disseram que era).
+    """
+    vazio = {"comparadas": 0, "concordancia": None, "matriz": pd.DataFrame(), "por_tema": pd.Series(dtype=float),
+             "vetos": pd.Series(dtype=int), "recusas": pd.Series(dtype=int), "especificos": None,
+             "contestadas": pd.DataFrame(columns=["tema_dito", "contestada", "vezes"])}
+    if pontuadas.empty:
+        return vazio
+    df = pontuadas.copy()
+    for col in ("juiz", "clip_tema", "contestada"):
+        if col not in df:
+            df[col] = None
+    nome = lambda t: POR_ID[t].nome if t in POR_ID else "nenhum"  # noqa: E731
+    saida = dict(vazio)
+    saida["recusas"] = df.loc[~df["aceita"], "motivo"].value_counts()
+
+    ambos = df[df["juiz"] == "gemma+clip"].copy()
+    if not ambos.empty:
+        ambos["gemma"] = ambos["tema"].map(nome)
+        ambos["clip"] = ambos["clip_tema"].map(lambda t: nome(_valor(t)))
+        ambos["concorda"] = ambos["gemma"] == ambos["clip"]
+        saida["comparadas"] = len(ambos)
+        saida["concordancia"] = float(ambos["concorda"].mean())
+        saida["matriz"] = pd.crosstab(ambos["gemma"], ambos["clip"]).rename_axis(index="Gemma", columns="CLIP")
+        saida["por_tema"] = ambos.groupby("gemma")["concorda"].mean().drop("nenhum", errors="ignore").sort_values()
+        vetadas = ambos[ambos["motivo"].fillna("").str.contains("CLIP|juízes")]
+        saida["vetos"] = vetadas["motivo"].str.replace(r" \(.*\)$", "", regex=True).value_counts()
+
+        aceitas = ambos[ambos["aceita"]]
+        if not aceitas.empty:
+            genericos = aceitas.apply(lambda r: normalizar(r["achado"]) == normalizar(POR_ID[r["tema"]].generico),
+                                      axis=1)
+            saida["especificos"] = float(1 - genericos.mean())
+
+    contest = df[df["contestada"].map(_valor).notna()]
+    if not contest.empty:
+        saida["contestadas"] = (contest.assign(tema_dito=contest["tema"].map(nome),
+                                               contestada=contest["contestada"].map(nome))
+                                .groupby(["tema_dito", "contestada"]).size().rename("vezes").reset_index()
+                                .sort_values("vezes", ascending=False))
+    return saida

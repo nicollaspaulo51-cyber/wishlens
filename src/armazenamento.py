@@ -21,7 +21,10 @@ from src.categorias import Item, faixa_preco
 COLUNAS = ["id", "usuario", "criado_em", "item", "categoria", "tipo",
            "faixa_preco", "confianca", "cidade", "acao", "marca"]
 COLUNAS_CAPTURA = ["id", "usuario", "criado_em", "tema", "achado", "confianca", "foto_real",
-                   "foto_hash", "cidade", "celula"]
+                   "foto_hash", "cidade", "celula",
+                   # o que cada juiz disse (avaliação CLIP x Gemma) e a contestação da pessoa
+                   "juiz", "clip_tema", "clip_foto_real", "clip_prob_tema", "clip_prob_tela", "contestada"]
+COLUNAS_JUIZES = COLUNAS_CAPTURA[10:]
 
 
 # ---------------------------------------------------------------- backend
@@ -112,19 +115,36 @@ def _capturas_memoria() -> list[dict]:
 
 
 def salvar_captura(tema: str | None, achado: str, confianca: float | None, foto_real: bool,
-                   foto_hash: str | None, cidade: str | None, celula: str | None) -> None:
-    """Guarda a captura crua; os pontos são sempre recalculados a partir delas (src/jogo.py)."""
+                   foto_hash: str | None, cidade: str | None, celula: str | None, **juizes) -> str:
+    """Guarda a captura crua e devolve o id; os pontos são sempre recalculados a partir delas (src/jogo.py).
+
+    `juizes`: juiz, clip_tema, clip_foto_real, clip_prob_tema, clip_prob_tela, contestada (opcionais).
+    """
     from src.jogo import agora_naive
 
-    registro = {"criado_em": agora_naive(), "tema": tema or "nenhum", "achado": achado or "",
-                "confianca": confianca, "foto_real": bool(foto_real), "foto_hash": foto_hash,
-                "cidade": cidade, "celula": celula}
+    registro = {"id": str(uuid.uuid4()), "criado_em": agora_naive(), "tema": tema or "nenhum",
+                "achado": achado or "", "confianca": confianca, "foto_real": bool(foto_real),
+                "foto_hash": foto_hash, "cidade": cidade, "celula": celula,
+                **{k: juizes.get(k) for k in COLUNAS_JUIZES}}
     b = _banco()
     if b:
         b.salvar_captura(registro)
         st.session_state.pop("_cache_capturas", None)
     else:
-        _capturas_memoria().append({"id": str(uuid.uuid4()), "usuario": usuario_atual(), **registro})
+        _capturas_memoria().append({"usuario": usuario_atual(), **registro})
+    return registro["id"]
+
+
+def contestar(id_captura: str, tema: str) -> None:
+    """A pessoa diz que a foto recusada era de um tema. Não muda os pontos; serve para avaliar os juízes."""
+    b = _banco()
+    if b:
+        b.contestar(id_captura, tema)
+        st.session_state.pop("_cache_capturas", None)
+        return
+    for c in _capturas_memoria():
+        if c.get("id") == id_captura:
+            c["contestada"] = tema
 
 
 def adicionar_capturas(registros: list[dict]) -> None:

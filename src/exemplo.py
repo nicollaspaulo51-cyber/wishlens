@@ -109,10 +109,35 @@ def gerar_capturas(semente: int = 7, dias: int = 14, centro: tuple[float, float]
             achado = rng.choices(lista, weights=[len(lista) - k for k in range(len(lista))])[0]
             quando = fim - timedelta(days=rng.randint(0, dias), hours=rng.randint(0, 12), minutes=rng.randint(0, 59))
             lat, lon = centro[0] + rng.gauss(0, 0.012), centro[1] + rng.gauss(0, 0.012)
+            real = rng.random() > 0.04
             registros.append({
                 "id": str(uuid.uuid4()), "usuario": usuario, "criado_em": quando, "tema": tema,
                 "achado": achado, "confianca": round(rng.uniform(0.5, 0.97), 2),
-                "foto_real": rng.random() > 0.04, "foto_hash": f"{rng.getrandbits(64):016x}",
+                "foto_real": real, "foto_hash": f"{rng.getrandbits(64):016x}",
                 "cidade": "Vitória - ES", "celula": celula(lat, lon),
+                **_opiniao_clip(tema, real, rng),
+            })
+        # Algumas fotos que o juiz recusou e a pessoa contestou (ex.: mouse que virou "nenhum")
+        for _ in range(rng.randint(0, 2)):
+            tema = rng.choice(list(pesos))
+            registros.append({
+                "id": str(uuid.uuid4()), "usuario": usuario, "criado_em": fim - timedelta(days=rng.randint(0, dias)),
+                "tema": "nenhum", "achado": "", "confianca": round(rng.uniform(0.3, 0.6), 2), "foto_real": True,
+                "foto_hash": f"{rng.getrandbits(64):016x}", "cidade": "Vitória - ES", "celula": None,
+                "juiz": "gemma+clip", "clip_tema": tema, "clip_foto_real": True,
+                "clip_prob_tema": None, "clip_prob_tela": round(rng.uniform(0.0, 0.1), 2), "contestada": tema,
             })
     return registros
+
+
+def _opiniao_clip(tema: str, real: bool, rng: random.Random) -> dict:
+    """CLIP fictício: concorda com o Gemma ~85% das vezes; às vezes discorda com clareza (vira veto)."""
+    from src.temas import TEMAS
+
+    concorda = rng.random() < 0.85
+    clip_tema = tema if concorda else rng.choice([t.id for t in TEMAS if t.id != tema] + ["nenhum"])
+    prob_tema = rng.uniform(0.35, 0.9) if concorda else rng.uniform(0.02, 0.25)
+    prob_tela = rng.uniform(0.55, 0.8) if not real else rng.uniform(0.0, 0.2)
+    return {"juiz": "gemma+clip", "clip_tema": None if clip_tema == "nenhum" else clip_tema,
+            "clip_foto_real": prob_tela < 0.5, "clip_prob_tema": round(prob_tema, 3),
+            "clip_prob_tela": round(prob_tela, 3), "contestada": None}

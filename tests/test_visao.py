@@ -87,4 +87,9 @@ def test_captura_do_jogo():
     with patch("src.visao.requests.post", return_value=_api(texto)) as post:
         r = visao.identificar_captura(b"jpeg", "k")
     assert r.tema == "passaros" and r.foto_real is False
-    assert "TELA" in post.call_args.kwargs["json"]["contents"][0]["parts"][0]["text"]
+    prompt = post.call_args.kwargs["json"]["contents"][0]["parts"][0]["text"]
+    assert "IMAGEM" in prompt
+    for periferico in ("mouse", "teclado", "monitor"):  # periféricos contam como peças
+        assert periferico in prompt
+    r = visao.interpretar_captura({"tema": "pecas", "achado": "mouse", "foto_real": True, "certeza": 0.9})
+    assert (r.tema, r.achado) == ("pecas", "mouse")

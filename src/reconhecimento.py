@@ -214,26 +214,36 @@ def _vetores_captura():
     return vet / vet.norm(dim=-1, keepdim=True), [g for g, _ in frases]
 
 
-def decidir_captura(grupos: list[str], probs: list[float]) -> tuple[str | None, bool, float]:
-    """Soma a chance por grupo -> (tema ou None, foto_real, confiança do tema). Sem torch, para testar."""
-    soma: dict[str, float] = {}
+def probs_por_grupo(grupos: list[str], probs: list[float]) -> dict[str, float]:
+    """Chance de cada grupo = a da sua MELHOR frase, renormalizada (soma 1).
+
+    Somar as frases favorecia o grupo com mais frases; a média afogava a frase certa
+    (um mouse só bate com "a computer mouse", não com as outras 10 frases de peças).
+    """
+    melhor: dict[str, float] = {}
     for g, p in zip(grupos, probs):
-        soma[g] = soma.get(g, 0.0) + p
-    temas = {g: p for g, p in soma.items() if g not in ("tela", "nenhum")}
+        melhor[g] = max(melhor.get(g, 0.0), p)
+    total = sum(melhor.values()) or 1.0
+    return {g: p / total for g, p in melhor.items()}
+
+
+def decidir_captura(grupos: list[str], probs: list[float]) -> tuple[str | None, bool, float]:
+    """Chance por grupo -> (tema ou None, foto_real, confiança do tema). Sem torch, para testar."""
+    por_grupo = probs_por_grupo(grupos, probs)
+    temas = {g: p for g, p in por_grupo.items() if g not in ("tela", "nenhum")}
     melhor = max(temas, key=temas.get)
-    if soma.get("tela", 0) >= max(temas[melhor], soma.get("nenhum", 0)):
+    tela, nenhum = por_grupo.get("tela", 0.0), por_grupo.get("nenhum", 0.0)
+    # Monitor e notebook são do tema de peças: a tela deles ligada não é trapaça
+    if melhor != "pecas" and tela >= max(temas[melhor], nenhum):
         return melhor, False, temas[melhor]
-    if soma.get("nenhum", 0) > temas[melhor]:
-        return None, True, soma["nenhum"]
+    if nenhum > temas[melhor]:
+        return None, True, nenhum
     return melhor, True, temas[melhor]
 
 
-def capturar(imagem: Image.Image):
-    """Reserva do jogo sem Gemma: só o tema e se é foto de tela; o achado fica genérico ("carro")."""
+def julgar_clip(imagem: Image.Image) -> dict:
+    """Opinião do CLIP sobre a foto: tema (ou None), foto_real, confiança e a chance de cada grupo."""
     import torch
-
-    from src.temas import POR_ID
-    from src.visao import Captura
 
     modelo, processador, _, _ = _carregar()
     vet_texto, grupos = _vetores_captura()
@@ -243,4 +253,13 @@ def capturar(imagem: Image.Image):
         vet_img = vet_img / vet_img.norm(dim=-1, keepdim=True)
         probs = (modelo.logit_scale.exp() * vet_img @ vet_texto.T).softmax(dim=-1)[0].tolist()
     tema, real, conf = decidir_captura(grupos, probs)
-    return Captura(tema, POR_ID[tema].generico if tema else "", real, conf)
+    return {"tema": tema, "foto_real": real, "confianca": conf, "probs": probs_por_grupo(grupos, probs)}
+
+
+def capturar(imagem: Image.Image):
+    """Reserva do jogo sem Gemma: só o tema e se é foto de tela; o achado fica genérico ("carro")."""
+    from src.temas import POR_ID
+    from src.visao import Captura
+
+    j = julgar_clip(imagem)
+    return Captura(j["tema"], POR_ID[j["tema"]].generico if j["tema"] else "", j["foto_real"], j["confianca"])

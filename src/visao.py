@@ -134,15 +134,22 @@ def identificar(jpeg: bytes, chave: str, modelo: str = MODELO_PADRAO) -> Identif
 
 # ---------------------------------------------------------------- jogo: captura de um tema
 PROMPT_CAPTURA = """Você é o juiz de um jogo de fotos. A pessoa deve fotografar, na vida real, algo de um destes temas:
-""" + "\n".join(f"- {t.id}: {t.nome} → achado = {t.achado}" for t in TEMAS) + """
+""" + "\n".join(f"- {t.id}: {t.nome}. Conta: {t.conta}. Achado = {t.achado}" for t in TEMAS) + """
 Responda SOMENTE com um objeto JSON, sem texto antes ou depois:
-{"tema": "id do tema (um dos acima) ou \"nenhum\"",
+{"tema": "id do tema (um dos acima) ou \\"nenhum\\"",
  "achado": "o achado no formato pedido para o tema, em português; vazio se tema = nenhum",
  "foto_real": true ou false,
  "certeza": número de 0 a 1}
-foto_real = false se a foto for de uma TELA (monitor, celular, TV), de uma imagem impressa, de um desenho,
-de um brinquedo/miniatura ou de uma embalagem com a figura do objeto. Só é true se o objeto real estiver na frente da câmera.
-Não invente: se não der para ver o modelo, a espécie ou a raça, use o nome genérico (ex.: "carro", "planta", "pássaro")."""
+Regras do tema:
+- Olhe o objeto PRINCIPAL da foto. Se ele se encaixa no "Conta" de algum tema, use esse tema.
+- Na dúvida entre um tema e "nenhum", escolha o tema. Use "nenhum" só se claramente não for de nenhum.
+- Exemplo: um mouse, um teclado ou um monitor em cima da mesa são do tema "pecas".
+Regras de foto_real:
+- false se a foto mostra uma IMAGEM do objeto em outra tela (foto de um carro aberta no celular ou no monitor),
+  uma imagem impressa, um desenho, um brinquedo/miniatura ou a figura numa embalagem.
+- true se o próprio objeto está na frente da câmera. Um monitor, notebook ou celular fotografado como objeto
+  (tema pecas) é foto real, mesmo com a tela ligada.
+Não invente: se não der para ver o modelo, a espécie ou a raça, use o nome genérico (ex.: "carro", "planta", "pássaro", "mouse")."""
 
 
 @dataclass

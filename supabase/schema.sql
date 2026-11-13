@@ -60,6 +60,15 @@ create table if not exists public.capturas (
 );
 create index if not exists capturas_data_idx on public.capturas (criado_em);
 
+-- O que cada juiz disse (avaliação CLIP x Gemma) e a contestação da pessoa. Rodar de novo este arquivo
+-- acrescenta as colunas num banco antigo.
+alter table public.capturas add column if not exists juiz text check (juiz is null or juiz in ('gemma+clip', 'gemma', 'clip', 'manual'));
+alter table public.capturas add column if not exists clip_tema text;
+alter table public.capturas add column if not exists clip_foto_real boolean;
+alter table public.capturas add column if not exists clip_prob_tema real check (clip_prob_tema is null or clip_prob_tema between 0 and 1);
+alter table public.capturas add column if not exists clip_prob_tela real check (clip_prob_tela is null or clip_prob_tela between 0 and 1);
+alter table public.capturas add column if not exists contestada text;
+
 -- ---------------------------------------------------------------- conexões (comparar desejos)
 create table if not exists public.conexoes (
   solicitante   uuid not null references public.perfis (id) on delete cascade,
@@ -85,17 +94,24 @@ alter table public.desejos  enable row level security;
 alter table public.conexoes enable row level security;
 alter table public.capturas enable row level security;
 
--- capturas: todo jogador logado vê todas (pódio e raridade); cada um só cria as suas; ninguém altera.
+-- capturas: todo jogador logado vê todas (pódio e raridade); cada um só cria as suas; a única coisa
+-- que dá para alterar é a contestação ("o juiz errou, era X") na própria captura, que não muda pontos.
 drop policy if exists capturas_ler on public.capturas;
 create policy capturas_ler on public.capturas for select to authenticated using (true);
 drop policy if exists capturas_criar on public.capturas;
 create policy capturas_criar on public.capturas for insert to authenticated
   with check (usuario_id = auth.uid() and criado_em between now() - interval '5 minutes' and now() + interval '1 minute');
+drop policy if exists capturas_contestar on public.capturas;
+create policy capturas_contestar on public.capturas for update to authenticated
+  using (usuario_id = auth.uid()) with check (usuario_id = auth.uid());
+revoke update on public.capturas from anon, authenticated;
+grant update (contestada) on public.capturas to authenticated;
 
 -- Privacidade: bairro e célula (~500 m) de cada captura NÃO são legíveis pela API, nem para outros jogadores.
 -- Sem isso, apelido + hora + lugar formariam um rastro de onde cada pessoa esteve.
 revoke select on public.capturas from anon, authenticated;
-grant select (id, usuario_id, criado_em, tema, achado, confianca, foto_real, foto_hash)
+grant select (id, usuario_id, criado_em, tema, achado, confianca, foto_real, foto_hash,
+              juiz, clip_tema, clip_foto_real, clip_prob_tema, clip_prob_tela, contestada)
   on public.capturas to authenticated;
 
 -- O mapa da turma usa só este resumo: por quadrado de ~500 m e tema, sem quem nem quando,

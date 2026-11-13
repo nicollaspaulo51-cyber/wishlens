@@ -14,11 +14,17 @@
 | `foto_hash` | 16 hex | dHash da foto (detecta repetida) | `a1b2…` | removida |
 | `cidade` | texto | bairro, cidade (GPS do navegador) | `Jardim da Penha, Vitória - ES` | só a cidade |
 | `celula` | texto | quadrado de ~500 m | `-20.290,-40.295` | removida |
+| `juiz` | texto | quem julgou: `gemma+clip`, `gemma`, `clip` ou `manual` | `gemma+clip` | mantida |
+| `clip_tema` | texto | tema mais provável para o CLIP (vazio = nenhum) | `pecas` | mantida |
+| `clip_foto_real` | sim/não | o CLIP achou que não é tela | `true` | mantida |
+| `clip_prob_tema` | 0–1 | chance que o CLIP deu ao tema final | `0.62` | mantida |
+| `clip_prob_tela` | 0–1 | chance de tela/impressão/desenho para o CLIP | `0.08` | mantida |
+| `contestada` | texto | tema que a pessoa disse que era, numa foto recusada | `pecas` | mantida |
 
 ### Colunas calculadas (`src/jogo.calcular_pontos`)
 | Coluna | Como |
 |---|---|
-| `aceita` / `motivo` | recusa se não é foto real, fora dos temas, sem achado, foto repetida ou mesma coisa no mesmo dia |
+| `aceita` / `motivo` | recusa se não é foto real, fora dos temas, vetada pelo CLIP, sem achado, foto repetida ou mesma coisa no mesmo dia |
 | `base`, `novidade`, `raridade` | 10; +10 se novo para a pessoa; 20/(1+n anteriores da turma) |
 | `do_dia` | o tema era o tema do dia na data da captura |
 | `pontos` | (base + novidade + raridade) × 2 se `do_dia` |

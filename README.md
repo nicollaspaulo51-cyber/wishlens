@@ -15,9 +15,17 @@ Projeto final da disciplina **Ciência de Dados I (Turma 12)**, desenvolvido com
 | 📚 **Minha Coleção** | Álbum por tema, raridade de cada achado, estilo de jogador (K-Means) e gráficos. |
 | 🔎 **Onde encontrar** | Depois de uma captura: preço, lojas online e lugares próximos (a parte de compras do WishLens original). |
 | ⭐ Meus Desejos · ✨ Descobrir · 👥 Comparar | Páginas da versão anterior (desejos de consumo), mantidas. |
+| 📊 **Avaliação** | CLIP × Gemma: concordância de tema, matriz de confusão, vetos, motivos de recusa e contestações. |
+
+### Dois juízes em toda foto
+O **Gemma** diz o tema, o achado e se é foto real. O **CLIP** da OpenAI (`openai/clip-vit-base-patch32`) julga
+**toda foto** também: ele barra a foto se vir uma tela/impressão (chance ≥ 50%) ou se der menos de 10% de chance ao
+tema do Gemma. O que cada modelo disse fica gravado (`juiz`, `clip_tema`, `clip_prob_tema`, `clip_prob_tela`).
+Sem a chave do Gemma, o CLIP julga sozinho. Quando o juiz erra, a pessoa pode **contestar** ("era um mouse!"):
+não ganha pontos, mas a contestação aparece na página Avaliação para melhorar o identificador.
 
 ### Temas e pontos
-Temas (todos valem sempre): 🚗 carros · 🌿 plantas e flores · 🐦 pássaros · 🐶 cachorros e gatos · 🖥️ peças de computador.
+Temas (todos valem sempre): 🚗 carros · 🌿 plantas e flores · 🐦 pássaros · 🐶 cachorros e gatos · 🖥️ peças e periféricos de computador (mouse, teclado e monitor contam).
 O **tema do dia** muda à meia-noite (rodízio pela data) e vale **o dobro**.
 
 | Parcela | Pontos |
@@ -38,7 +46,7 @@ Os pontos são **recalculados a partir das capturas** (`src/jogo.py`): gravar um
 | 2. Dados | Quais dados temos, de onde vêm, quais limitações? (`describe()`, distribuições, nulos) | `notebooks/01_entendimento.ipynb` |
 | 3. Preparação | Limpeza, categorias unificadas, vetor de perfil por usuário | `notebooks/02_preparacao.ipynb` |
 | 4. Modelagem | K-Means (perfis de desejo e estilos de jogador por tema) + similaridade do cosseno + raridade pela frequência dos achados | `notebooks/03_modelagem.ipynb`, `src/jogo.py` |
-| 5. Avaliação | Os perfis fazem sentido? Acurácia da IA nos achados? Taxa de fotos recusadas? Privacidade (LGPD)? | `notebooks/04_avaliacao.ipynb` |
+| 5. Avaliação | Os perfis fazem sentido? CLIP e Gemma concordam (matriz de confusão)? Taxa de fotos recusadas e contestadas? Privacidade (LGPD)? | página 📊 Avaliação, `notebooks/04_avaliacao.ipynb` |
 | 6. Produto | Site publicado | `app/` |
 
 ## Arquitetura

@@ -262,15 +262,29 @@ def faixa_tema_do_dia(tema, outros) -> None:
         unsafe_allow_html=True)
 
 
-def cartao_pontos(resultado: dict, tema, achado: str, vezes_antes: int) -> None:
+def linha_juizes(juizes: dict | None, tema_final: str | None) -> str:
+    """'Juízes: Gemma ✔ · CLIP ✔' (o CLIP leva ✖ quando o tema dele é outro)."""
+    if not juizes or juizes.get("juiz") == "manual":
+        return "Juiz: você (reconhecimento automático não instalado)"
+    partes = []
+    if juizes["juiz"] in ("gemma+clip", "gemma"):
+        partes.append("Gemma ✔")
+    if juizes["juiz"] in ("gemma+clip", "clip"):
+        concorda = juizes["juiz"] == "clip" or juizes.get("clip_tema") == tema_final
+        partes.append("CLIP " + ("✔" if concorda else "✖"))
+    return "Juízes: " + " · ".join(partes)
+
+
+def cartao_pontos(resultado: dict, tema, achado: str, vezes_antes: int, juizes: str = "") -> None:
     """Resultado de uma captura: pontos e parcelas, ou o motivo da recusa."""
     e = html.escape
+    rodape = f'<div class="wl-muted" style="font-size:.75rem;margin-top:.4rem">{e(juizes)}</div>' if juizes else ""
     if not resultado.get("aceita"):
         st.markdown(
             f'<div class="wl-card"><div class="wl-pontos" style="color:var(--wl-muted)">0 pontos</div>'
             f'<div style="margin-top:.4rem">❌ {e(str(resultado.get("motivo") or "não valeu"))}</div>'
             f'<div class="wl-muted" style="font-size:.85rem;margin-top:.3rem">Vale só foto tirada agora, '
-            f'de algo real na sua frente, de um dos temas.</div></div>', unsafe_allow_html=True)
+            f'de algo real na sua frente, de um dos temas.</div>{rodape}</div>', unsafe_allow_html=True)
         return
     partes = [f"base +{resultado['base']}"]
     if resultado["novidade"]:
@@ -290,7 +304,7 @@ def cartao_pontos(resultado: dict, tema, achado: str, vezes_antes: int) -> None:
         f'<h3 style="margin:.1rem 0 .4rem">{e(achado[:1].upper() + achado[1:])}</h3>'
         f'<div class="wl-pontos">+{int(resultado["pontos"])} pontos</div>'
         f'<div style="margin:.5rem 0 .2rem">{"".join(badge(p) for p in partes)}</div>'
-        f'<div class="wl-muted" style="font-size:.85rem">{destaque}</div></div>', unsafe_allow_html=True)
+        f'<div class="wl-muted" style="font-size:.85rem">{destaque}</div>{rodape}</div>', unsafe_allow_html=True)
 
 
 def nome_publico(usuario: str) -> str:

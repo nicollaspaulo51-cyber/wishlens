@@ -24,42 +24,60 @@ class Tema:
     tags_osm: tuple[str, ...]  # onde procurar no mapa (filtros do Overpass)
     onde: str                  # texto curto: onde costuma ter
     categoria: str | None      # categoria do catálogo para "Onde encontrar" (None: não se compra)
+    conta: str = ""            # o que conta como este tema (vai no prompt do Gemma)
 
 
 TEMAS: list[Tema] = [
     Tema("carros", "Carros", "🚗", "carro",
          "marca e modelo do carro (ex.: Volkswagen Gol, Fiat Mobi, Toyota Corolla); se não der, só a marca",
-         ("a photo of a car", "a photo of a car parked on the street"),
+         ("a photo of a car", "a photo of a car parked on the street", "a photo of the front of a car",
+          "a photo of the back of a car", "a side view photo of a car", "a photo of a pickup truck",
+          "a photo of an SUV"),
          ('amenity="parking"', 'shop="car"', 'amenity="fuel"'),
-         "estacionamentos, concessionárias e postos", "veículos"),
+         "estacionamentos, concessionárias e postos", "veículos",
+         "carros, caminhonetes e SUVs de verdade (inteiros ou só a frente/traseira). Carro de brinquedo NÃO conta"),
     Tema("plantas", "Plantas e flores", "🌿", "planta",
          "nome popular da planta ou flor em português (ex.: ipê-amarelo, girassol, costela-de-adão)",
-         ("a photo of a plant", "a photo of a flower", "a photo of a tree"),
+         ("a photo of a plant", "a photo of a flower", "a photo of a tree", "a close-up photo of a leaf",
+          "a photo of a potted plant", "a photo of a succulent", "a photo of a cactus", "a photo of a flowering bush"),
          ('leisure~"park|garden"', 'shop="florist"', 'landuse="forest"'),
-         "parques, praças, jardins e floriculturas", "casa e decoração"),
+         "parques, praças, jardins e floriculturas", "casa e decoração",
+         "qualquer planta viva: árvore, flor, folha, arbusto, planta em vaso, suculenta, cacto. Planta de plástico NÃO conta"),
     Tema("passaros", "Pássaros", "🐦", "pássaro",
          "nome popular do pássaro em português (ex.: bem-te-vi, sabiá-laranjeira, pombo, quero-quero)",
-         ("a photo of a bird", "a photo of a bird on a tree branch"),
+         ("a photo of a bird", "a photo of a bird on a tree branch", "a photo of a bird flying",
+          "a photo of a pigeon", "a photo of a small bird on the ground", "a photo of a bird on a wire"),
          ('leisure="park"', 'natural~"wood|water|beach"'),
-         "parques, matas, lagoas e praias", None),
+         "parques, matas, lagoas e praias", None,
+         "qualquer ave viva, mesmo pequena na foto: pombo, pardal, galinha, pato, papagaio de estimação"),
     Tema("pets", "Cachorros e gatos", "🐶", "cachorro ou gato",
          "espécie e raça em português (ex.: cachorro vira-lata caramelo, gato siamês, cachorro shih-tzu)",
-         ("a photo of a dog", "a photo of a cat"),
+         ("a photo of a dog", "a photo of a cat", "a photo of a puppy", "a photo of a kitten",
+          "a photo of a dog lying down", "a photo of a cat sleeping", "a photo of a dog on a leash"),
          ('leisure="dog_park"', 'shop="pet"', 'amenity="veterinary"'),
-         "parcões, pet shops e veterinários", "animais"),
-    Tema("pecas", "Peças de computador", "🖥️", "peça de computador",
-         "nome da peça em português (ex.: placa de vídeo, memória RAM, processador, placa-mãe, SSD, fonte)",
-         ("a photo of a computer part", "a photo of a graphics card", "a photo of a computer motherboard"),
+         "parcões, pet shops e veterinários", "animais",
+         "cachorros e gatos de verdade, de qualquer raça ou vira-lata, filhotes também"),
+    Tema("pecas", "Peças e periféricos de computador", "🖥️", "peça de computador",
+         "nome da peça ou periférico em português (ex.: mouse, teclado, monitor, headset, webcam, pendrive, "
+         "placa de vídeo, memória RAM, processador, placa-mãe, SSD, fonte)",
+         ("a photo of a computer mouse", "a photo of a computer keyboard", "a photo of a computer monitor",
+          "a photo of a gaming headset", "a photo of a webcam", "a photo of a USB flash drive",
+          "a photo of a graphics card", "a photo of RAM memory sticks", "a photo of a computer motherboard",
+          "a photo of a computer power supply", "a photo of a computer part"),
          ('shop~"computer|electronics"', 'craft="electronics_repair"'),
-         "lojas de informática e assistências técnicas", "eletrônicos"),
+         "lojas de informática e assistências técnicas", "eletrônicos",
+         "peças internas E periféricos: mouse, teclado, monitor, headset/fone, webcam, microfone, caixinha de som de PC, "
+         "cabo, pendrive, HD/SSD externo, roteador, gabinete, placa de vídeo, RAM, processador, placa-mãe, cooler, fonte. "
+         "Um monitor ou notebook de verdade conta (a tela dele ligada não é trapaça)"),
 ]
 POR_ID = {t.id: t for t in TEMAS}
 
-# Reserva sem chave: frases de "não vale" (foto de tela/impressão) e de "nenhum tema"
+# Reserva sem chave: frases de "não vale" (foto de tela/impressão) e de "nenhum tema".
+# "nenhum" não pode ter frases genéricas ("um objeto do dia a dia"): elas roubavam o mouse do tema de peças.
 FRASES_TELA = ("a photo of a computer screen showing a picture", "a photo of a phone screen showing a picture",
                "a printed photo on paper", "a drawing or cartoon", "a toy model")
-FRASES_NENHUM = ("a photo of a person", "a photo of a room", "a photo of food", "a photo of a building",
-                 "a photo of an everyday object")
+FRASES_NENHUM = ("a photo of a person", "a selfie", "a photo of a room interior", "a photo of food on a plate",
+                 "a photo of a building", "a photo of an empty sky", "a photo of a document with text")
 
 
 def agora() -> datetime:
