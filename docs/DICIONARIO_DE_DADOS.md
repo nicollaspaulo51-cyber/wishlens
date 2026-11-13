@@ -26,6 +26,8 @@
 | `clima` | texto | Open-Meteo na hora da foto: `chuva`, `nublado`, `sol` ou `neve` | `chuva` | mantida |
 | `km_anterior` | número | km desde a foto anterior da pessoa (nesta sessão do navegador) | `0.8` | mantida |
 | `min_anterior` | número | minutos desde a foto anterior da pessoa | `12.5` | mantida |
+| `mesmo_objeto` | texto | `seu` (você já fotografou este mesmo objeto) ou `turma` (alguém fotografou no mesmo quadrado); vazio se é novo | `turma` | mantida |
+| `clip_vetor` | 512 números | "retrato" da foto pelo CLIP, usado só pela função `objeto_visto` do banco; não é legível pela API nem vai para o CSV | — | fica só no banco |
 
 ### Colunas calculadas (`src/jogo.calcular_pontos`)
 | Coluna | Como |

@@ -9,6 +9,7 @@ com frases gêmeas de cada objeto dos temas) e "nenhum" (pessoa, comida, quarto.
 
 from __future__ import annotations
 
+import threading
 from functools import lru_cache
 
 from PIL import Image
@@ -21,15 +22,33 @@ def _vetor(saida):
     return getattr(saida, "pooler_output", saida)
 
 
+_trava = threading.Lock()
+_aquecimento: threading.Thread | None = None
+
+
 @lru_cache(maxsize=1)
-def _carregar():
-    """Modelo e processador do CLIP, uma vez por processo (~600 MB baixados na 1ª vez)."""
+def _carregar_uma_vez():
     from transformers import CLIPModel, CLIPProcessor
 
     modelo = CLIPModel.from_pretrained(MODELO)
     processador = CLIPProcessor.from_pretrained(MODELO)
     modelo.eval()
     return modelo, processador
+
+
+def _carregar():
+    """Modelo e processador do CLIP, uma vez por processo (~600 MB baixados na 1ª vez, ~12 s para carregar).
+    A trava evita carregar duas vezes quando a foto chega antes de o aquecimento terminar."""
+    with _trava:
+        return _carregar_uma_vez()
+
+
+def aquecer() -> None:
+    """Carrega o CLIP numa thread assim que a tela abre: a 1ª foto não espera o carregamento."""
+    global _aquecimento
+    if _aquecimento is None:
+        _aquecimento = threading.Thread(target=_vetores_captura, daemon=True, name="aquecer-clip")
+        _aquecimento.start()
 
 
 def frases_captura() -> list[tuple[str, str, str]]:
@@ -88,7 +107,8 @@ def achado_do_tema(frases: list[tuple[str, str, str]], probs: list[float], tema:
 
 
 def julgar_clip(imagem: Image.Image) -> dict:
-    """Opinião do CLIP: tema (ou None), achado, foto_real, confiança e a chance de cada grupo."""
+    """Opinião do CLIP: tema (ou None), achado, foto_real, confiança, a chance de cada grupo e o vetor da foto
+    (512 números normalizados: o "retrato" usado para saber se o mesmo objeto já foi fotografado)."""
     import torch
 
     modelo, processador = _carregar()
@@ -101,7 +121,8 @@ def julgar_clip(imagem: Image.Image) -> dict:
     grupos = [g for g, _, _ in frases]
     tema, real, conf = decidir_captura(grupos, probs)
     return {"tema": tema, "achado": achado_do_tema(frases, probs, tema) if tema else "",
-            "foto_real": real, "confianca": conf, "probs": probs_por_grupo(grupos, probs)}
+            "foto_real": real, "confianca": conf, "probs": probs_por_grupo(grupos, probs),
+            "vetor": [round(x, 4) for x in vet_img[0].tolist()]}
 
 
 def capturar(imagem: Image.Image):

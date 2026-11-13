@@ -6,6 +6,8 @@ Rodar localmente:  streamlit run app/Home.py
 import hashlib
 import importlib.util
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -15,6 +17,7 @@ from PIL import Image
 from streamlit_js_eval import get_geolocation
 
 import streamlit.components.v1 as components
+from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
 
 from src import armazenamento, clima, jogo, localizacao, mapa_jogo, ui, visao
 from src.categorias import nome_valido
@@ -29,6 +32,20 @@ bairro_de = st.cache_data(ttl=86400, show_spinner=False)(localizacao.bairro_de)
 geocodificar = st.cache_data(ttl=86400, show_spinner=False)(localizacao.geocodificar)
 pontos_temas = st.cache_data(ttl=3600, show_spinner=False)(buscar_pontos_temas)
 clima_agora = st.cache_data(ttl=1800, show_spinner=False)(clima.agora)
+if MODELO_DISPONIVEL:
+    from src.reconhecimento import aquecer, julgar_clip
+
+    aquecer()  # o CLIP carrega em segundo plano enquanto a pessoa anda: a 1ª foto não espera ~12 s
+
+
+def _em_paralelo(fila: ThreadPoolExecutor, funcao, *args):
+    """Roda numa thread com o contexto do Streamlit (o st.cache_data precisa dele)."""
+    ctx = get_script_run_ctx()
+
+    def rodar():
+        add_script_run_ctx(threading.current_thread(), ctx)
+        return funcao(*args)
+    return fila.submit(rodar)
 
 
 def _segredo(nome: str) -> str | None:
@@ -175,19 +192,26 @@ with area_foto:
         imagem = Image.open(foto)
         jpeg = preparar_para_salvar(imagem)  # sem EXIF/GPS: é o que vai para a IA
         # Dois juízes em toda foto: a IA open source (se houver VISAO_URL) e o CLIP (se instalado).
-        # O que cada um disse fica gravado.
-        captura, aviso, clip = None, None, None
-        if VISAO_URL:
-            try:
-                with st.spinner("O juiz está olhando sua foto..."):
-                    captura = julgar_ia(jpeg, VISAO_MODELO)
-            except visao.ErroVisao as erro:
-                aviso = str(erro)
-        if MODELO_DISPONIVEL:
-            from src.reconhecimento import julgar_clip
-
-            with st.spinner("O segundo juiz (CLIP) está conferindo..."):
+        # O que cada um disse fica gravado. Tudo ao mesmo tempo: a IA, o bairro e o clima esperam a rede
+        # enquanto o CLIP usa o processador.
+        gps = st.session_state.get("gps")
+        captura, aviso, clip, cidade, clima_foto = None, None, None, None, None
+        with st.spinner("Os juízes estão olhando sua foto..."), ThreadPoolExecutor(3) as fila:
+            f_ia = _em_paralelo(fila, julgar_ia, jpeg, VISAO_MODELO) if VISAO_URL else None
+            f_bairro = _em_paralelo(fila, bairro_de, round(gps[0], 3), round(gps[1], 3)) if gps else None
+            f_clima = _em_paralelo(fila, clima_agora, round(gps[0], 2), round(gps[1], 2)) if gps else None
+            if MODELO_DISPONIVEL:
                 clip = julgar_clip(imagem)
+            if f_ia:
+                try:
+                    captura = f_ia.result()
+                except visao.ErroVisao as erro:
+                    aviso = str(erro)
+            try:
+                cidade = f_bairro.result() if f_bairro else None
+            except Exception:
+                pass
+            clima_foto = f_clima.result() if f_clima else None
         if aviso:
             st.caption(f"⚠️ Juiz com IA indisponível agora ({aviso}). Usando só o CLIP.")
         juiz = ("ia+clip" if clip else "ia") if captura else ("clip" if clip else "manual")
@@ -208,20 +232,16 @@ with area_foto:
 
         # Localização aproximada (opcional): bairro + quadrado de ~500 m para o mapa da turma, e o contexto das
         # mecânicas. A coordenada exata não é gravada: só o que sai dela (mirante, tipo de lugar, clima, km).
-        cidade = celula = None
+        celula = None
         contexto = {"mirante": None, "tipo_lugar": None, "clima": None, "km_anterior": None, "min_anterior": None}
-        if gps := st.session_state.get("gps"):
+        if gps:
             lat, lon = gps
             celula = jogo.celula(lat, lon)
-            try:
-                cidade = bairro_de(round(lat, 3), round(lon, 3))
-            except Exception:
-                pass
             lugares = st.session_state.get("_lugares") or []
             perto = min(lugares, key=lambda l: distancia_km(lat, lon, l["lat"], l["lon"]), default=None)
             contexto["mirante"] = bool(perto) and distancia_km(lat, lon, perto["lat"], perto["lon"]) * 1000 <= jogo.MIRANTE_M
             contexto["tipo_lugar"] = perto.get("tipo") if contexto["mirante"] else None
-            contexto["clima"] = clima_agora(round(lat, 2), round(lon, 2))
+            contexto["clima"] = clima_foto
             # shortcut: a foto anterior fica só nesta sessão do navegador; ao recarregar, a conta recomeça.
             # Para valer entre aparelhos, guardar no banco a última célula da pessoa (função security definer).
             if anterior := st.session_state.get("_ultima_foto"):
@@ -231,12 +251,14 @@ with area_foto:
             st.session_state["_ultima_foto"] = (lat, lon, jogo.agora_naive())
         st.session_state["n_foto"] = st.session_state.get("n_foto", 0) + 1
 
+        # Este mesmo objeto já foi fotografado? Compara o vetor do CLIP com as suas fotos e as da turma ali
+        mesmo = armazenamento.objeto_visto(captura.tema, celula, clip["vetor"]) if clip else None
         juizes = {"juiz": juiz, "clip_tema": clip["tema"] if clip else None,
                   "clip_foto_real": clip["foto_real"] if clip else None,
                   "clip_prob_tema": round(clip["probs"].get(captura.tema, 0.0), 4) if clip and captura.tema else None,
                   "clip_prob_tela": round(clip["probs"].get("tela", 0.0), 4) if clip else None,
                   "clip_rank_tema": jogo.posicao(clip["probs"], captura.tema) if clip and captura.tema else None,
-                  **contexto}
+                  "mesmo_objeto": mesmo, **contexto}
         h = jogo.hash_foto(imagem)
         historico = armazenamento.capturas()
         nova = {"usuario": eu, "criado_em": jogo.agora_naive(), "tema": captura.tema or "nenhum",
@@ -245,7 +267,8 @@ with area_foto:
         medalhas_antes = {m["id"]: m["nivel"] for m in jogo.medalhas(jogo.calcular_pontos(historico), eu)}
         vezes = jogo.vezes_achado(jogo.calcular_pontos(historico), captura.tema or "", captura.achado)
         id_captura = armazenamento.salvar_captura(captura.tema, captura.achado, captura.confianca,
-                                                  captura.foto_real, h, cidade, celula, **juizes)
+                                                  captura.foto_real, h, cidade, celula,
+                                                      clip_vetor=clip["vetor"] if clip else None, **juizes)
         feita = {"id": id_foto, "captura": captura, "resultado": resultado, "vezes": vezes,
                  "juizes": juizes, "id_captura": id_captura, "contestada": None}
         st.session_state["ultima_captura"] = feita

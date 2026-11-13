@@ -82,6 +82,12 @@ alter table public.capturas add column if not exists clima text check (clima is 
 alter table public.capturas add column if not exists km_anterior real check (km_anterior is null or km_anterior >= 0);
 alter table public.capturas add column if not exists min_anterior real check (min_anterior is null or min_anterior >= 0);
 
+-- Mesmo objeto (src/jogo.py, objeto_visto): o "retrato" do CLIP de cada foto (512 números, não a foto) e o
+-- resultado da comparação. O vetor não é legível pela API: só a função objeto_visto, abaixo, o usa.
+create extension if not exists vector with schema extensions;
+alter table public.capturas add column if not exists clip_vetor extensions.vector(512);
+alter table public.capturas add column if not exists mesmo_objeto text check (mesmo_objeto is null or mesmo_objeto in ('seu', 'turma'));
+
 -- ---------------------------------------------------------------- conexões (comparar desejos)
 create table if not exists public.conexoes (
   solicitante   uuid not null references public.perfis (id) on delete cascade,
@@ -125,7 +131,7 @@ grant update (contestada) on public.capturas to authenticated;
 revoke select on public.capturas from anon, authenticated;
 grant select (id, usuario_id, criado_em, tema, achado, confianca, foto_real, foto_hash,
               juiz, clip_tema, clip_foto_real, clip_prob_tema, clip_prob_tela, clip_rank_tema, contestada,
-              mirante, tipo_lugar, clima, km_anterior, min_anterior)
+              mirante, tipo_lugar, clima, km_anterior, min_anterior, mesmo_objeto)
   on public.capturas to authenticated;
 
 -- O mapa da turma usa só este resumo: por quadrado de ~500 m e tema, sem quem nem quando,
@@ -166,6 +172,20 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke execute on function public.guardioes_quadrados() from public, anon;
 grant execute on function public.guardioes_quadrados() to authenticated;
+
+-- Este mesmo objeto já foi fotografado? Mesma regra de src/jogo.py (objeto_visto): as suas fotos em qualquer
+-- lugar e as da turma no mesmo quadrado de ~500 m, do mesmo tema, com semelhança do CLIP >= 0,92 (MESMO_OBJETO).
+-- Devolve só 'seu', 'turma' ou nulo: nunca quem, quando nem onde. O limite fica aqui, não vem do app.
+create or replace function public.objeto_visto(p_tema text, p_celula text, p_vetor text)
+returns text language sql stable security definer set search_path = public, extensions as $$
+  select case when bool_or(c.usuario_id = auth.uid()) then 'seu' when count(*) > 0 then 'turma' end
+  from public.capturas c
+  where c.clip_vetor is not null and c.tema = p_tema and c.foto_real
+    and (c.usuario_id = auth.uid() or (p_celula is not null and c.celula = p_celula))
+    and 1 - (c.clip_vetor <=> p_vetor::vector) >= 0.92;
+$$;
+revoke execute on function public.objeto_visto(text, text, text) from public, anon;
+grant execute on function public.objeto_visto(text, text, text) to authenticated;
 
 -- perfis: qualquer pessoa logada vê apelidos (para pedir conexão); cada um edita o seu.
 drop policy if exists perfis_ler on public.perfis;

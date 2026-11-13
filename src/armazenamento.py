@@ -21,7 +21,9 @@ COLUNAS_CAPTURA = ["id", "usuario", "criado_em", "tema", "achado", "confianca", 
                    "juiz", "clip_tema", "clip_foto_real", "clip_prob_tema", "clip_prob_tela", "clip_rank_tema",
                    "contestada",
                    # contexto da foto para as mecânicas (src/jogo.py), sem a localização exata
-                   "mirante", "tipo_lugar", "clima", "km_anterior", "min_anterior"]
+                   "mirante", "tipo_lugar", "clima", "km_anterior", "min_anterior",
+                   # resultado da comparação com o vetor do CLIP: "seu", "turma" ou vazio
+                   "mesmo_objeto"]
 COLUNAS_JUIZES = COLUNAS_CAPTURA[10:]  # opcionais em salvar_captura: juízes + contexto
 
 
@@ -62,7 +64,8 @@ def _capturas_memoria() -> list[dict]:
 
 
 def salvar_captura(tema: str | None, achado: str, confianca: float | None, foto_real: bool,
-                   foto_hash: str | None, cidade: str | None, celula: str | None, **juizes) -> str:
+                   foto_hash: str | None, cidade: str | None, celula: str | None,
+                   clip_vetor: list[float] | None = None, **juizes) -> str:
     """Guarda a captura crua e devolve o id; os pontos são sempre recalculados a partir delas (src/jogo.py).
 
     `juizes`: juiz, clip_tema, clip_foto_real, clip_prob_tema, clip_prob_tela, contestada e o contexto
@@ -72,7 +75,7 @@ def salvar_captura(tema: str | None, achado: str, confianca: float | None, foto_
 
     registro = {"id": str(uuid.uuid4()), "criado_em": agora_naive(), "tema": tema or "nenhum",
                 "achado": achado or "", "confianca": confianca, "foto_real": bool(foto_real),
-                "foto_hash": foto_hash, "cidade": cidade, "celula": celula,
+                "foto_hash": foto_hash, "cidade": cidade, "celula": celula, "clip_vetor": clip_vetor,
                 **{k: juizes.get(k) for k in COLUNAS_JUIZES}}
     b = _banco()
     if b:
@@ -81,6 +84,24 @@ def salvar_captura(tema: str | None, achado: str, confianca: float | None, foto_
     else:
         _capturas_memoria().append({"usuario": usuario_atual(), **registro})
     return registro["id"]
+
+
+def objeto_visto(tema: str | None, celula: str | None, vetor: list[float] | None) -> str | None:
+    """Este mesmo objeto já foi fotografado? 'seu', 'turma' ou None (regra em src/jogo.py, objeto_visto)."""
+    from src.jogo import objeto_visto as comparar
+
+    if not tema or not vetor:
+        return None
+    anteriores = [(c["usuario"], c.get("celula"), c.get("clip_vetor")) for c in _capturas_memoria()
+                  if c.get("tema") == tema and c.get("foto_real")]
+    resultado = comparar(vetor, usuario_atual(), celula, anteriores)
+    b = _banco()
+    if b and resultado != "seu":
+        try:  # o banco compara sem devolver quem, quando nem onde
+            resultado = b.objeto_visto(tema, celula, vetor) or resultado
+        except Exception:  # banco sem a função (schema.sql antigo): segue sem a checagem
+            pass
+    return resultado
 
 
 def contestar(id_captura: str, tema: str) -> None:

@@ -22,7 +22,11 @@ _CHAVE_SESSAO = "_wl_supabase"
 # Colunas com a opinião de cada juiz (CLIP x IA) e o contexto das mecânicas; bancos antigos não as têm
 COLUNAS_JUIZES_BANCO = ("juiz", "clip_tema", "clip_foto_real", "clip_prob_tema", "clip_prob_tela",
                         "clip_rank_tema", "contestada", "mirante", "tipo_lugar", "clima", "km_anterior",
-                        "min_anterior")
+                        "min_anterior", "mesmo_objeto")
+
+
+def _texto_vetor(vetor: list[float]) -> str:
+    return "[" + ",".join(f"{x:.4f}" for x in vetor) + "]"  # formato do pgvector
 
 
 def para_brasilia(valor) -> datetime:
@@ -66,14 +70,16 @@ class Sessao:
         from src.temas import FUSO
         criado = registro["criado_em"].replace(tzinfo=FUSO)  # horário de Brasília -> com fuso
         dados = {**registro, "usuario_id": self.usuario_id, "criado_em": criado.isoformat()}
+        if dados.get("clip_vetor"):
+            dados["clip_vetor"] = _texto_vetor(dados["clip_vetor"])
         # returning="minimal": a API não pode devolver a linha, porque bairro e célula não são legíveis
         try:
             self.cliente.table("capturas").insert(dados, returning="minimal").execute()
         except Exception as erro:
             # banco criado antes das colunas dos juízes (supabase/schema.sql): salva sem elas
-            if not any(c in str(erro) for c in COLUNAS_JUIZES_BANCO):
+            if not any(c in str(erro) for c in (*COLUNAS_JUIZES_BANCO, "clip_vetor")):
                 raise
-            for c in COLUNAS_JUIZES_BANCO:
+            for c in (*COLUNAS_JUIZES_BANCO, "clip_vetor"):
                 dados.pop(c, None)
             self.cliente.table("capturas").insert(dados, returning="minimal").execute()
 
@@ -110,6 +116,12 @@ class Sessao:
     def manchas(self) -> list[dict]:
         """Onde a turma achou coisas: por quadrado de ~500 m e tema, sem dizer quem (função no banco)."""
         return self.cliente.rpc("manchas_capturas", {}).execute().data or []
+
+    def objeto_visto(self, tema: str, celula: str | None, vetor: list[float]) -> str | None:
+        """'seu', 'turma' ou None (função no banco: compara o vetor do CLIP sem devolver quem nem onde)."""
+        resp = self.cliente.rpc("objeto_visto", {"p_tema": tema, "p_celula": celula,
+                                                 "p_vetor": _texto_vetor(vetor)}).execute()
+        return resp.data or None
 
     def guardioes(self) -> list[dict]:
         """Guardião de cada quadrado na semana (função no banco: só células com 2+ jogadores, sem horário)."""

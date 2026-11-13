@@ -8,7 +8,8 @@ Pontos de cada captura (recalculados sempre a partir das capturas, em ordem de d
 - achado genérico (ex.: só "carro", quando a IA não disse o modelo): só a base.
 Extras (coluna "extra", fora do ×2): mirante, chuva, lupa, desafios do dia, corrente de 7 dias e meta da turma
 (ver "mecânicas de caminhada" abaixo).
-Vale 0, com o motivo, se não for foto real, se for foto repetida (do mesmo achado), se não for de nenhum tema
+Vale 0, com o motivo, se não for foto real, se for foto repetida (do mesmo achado) ou do mesmo objeto que a
+pessoa já fotografou (vetor do CLIP), se não for de nenhum tema
 se a pessoa já achou a mesma coisa no mesmo dia ou se "andou" rápido demais desde a foto anterior.
 
 Como os pontos saem das capturas, um número falso gravado no banco não vale nada, e a
@@ -212,6 +213,35 @@ def progresso(est: dict, d: Desafio) -> int:
     return len(v) if isinstance(v, set) else int(v)
 
 
+# ---------------------------------------------------------------- mesmo objeto
+# Semelhança mínima entre os vetores do CLIP de duas fotos para dizer que são o mesmo objeto.
+# shortcut: 0,92 foi escolhido sem fotos reais da turma; calibrar com as capturas (pares iguais x diferentes)
+# e, se o CLIP confundir objetos parecidos da mesma espécie/modelo, trocar o vetor pelo DINOv2 (Apache 2.0).
+MESMO_OBJETO = 0.92
+
+
+def objeto_visto(vetor: list[float] | None, eu: str, celula: str | None,
+                 anteriores: list[tuple[str, str | None, list[float] | None]],
+                 limiar: float = MESMO_OBJETO) -> str | None:
+    """'seu' (você já fotografou este mesmo objeto), 'turma' (alguém fotografou no mesmo quadrado) ou None.
+
+    anteriores: (usuario, celula, vetor) das fotos do mesmo tema. As suas valem em qualquer lugar; as da turma,
+    só no mesmo quadrado de ~500 m (dois carros iguais em bairros diferentes não são o mesmo carro).
+    Mesma regra da função objeto_visto do banco (supabase/schema.sql).
+    """
+    if not vetor:
+        return None
+    turma = False
+    for usuario, cel, outro in anteriores:
+        if not outro or (usuario != eu and (celula is None or cel != celula)):
+            continue
+        if sum(a * b for a, b in zip(vetor, outro)) >= limiar:
+            if usuario == eu:
+                return "seu"
+            turma = True
+    return "turma" if turma else None
+
+
 # ---------------------------------------------------------------- pontos
 def calcular_pontos(capturas: pd.DataFrame) -> pd.DataFrame:
     """Recebe as capturas (usuario, criado_em, tema, achado, foto_real, foto_hash) e devolve
@@ -258,6 +288,8 @@ def calcular_pontos(capturas: pd.DataFrame) -> pd.DataFrame:
             motivo = "não deu para saber o que é"
         elif repetida(h, hashes.get((tema.id, chave), [])):
             motivo = "foto repetida"
+        elif _valor(getattr(c, "mesmo_objeto", None)) == "seu":
+            motivo = "você já fotografou este mesmo objeto"
         elif not generico_ and (c.usuario, tema.id, chave, dia) in vistos_no_dia:
             motivo = "você já achou isso hoje"
         elif generico_ and genericos_dia.get((c.usuario, tema.id, dia), 0) >= LIMITE_GENERICO_DIA:
@@ -273,7 +305,9 @@ def calcular_pontos(capturas: pd.DataFrame) -> pd.DataFrame:
             genericos_dia[(c.usuario, tema.id, dia)] = genericos_dia.get((c.usuario, tema.id, dia), 0) + 1
         novo = not generico and (c.usuario, tema.id, chave) not in vistos_usuario
         anteriores = contagem.get((tema.id, chave), 0)
-        rar = 0 if generico else round(RARIDADE / (1 + anteriores))
+        # objeto que a turma já fotografou ali não é achado novo: vale, mas sem bônus de raridade
+        ja_da_turma = _valor(getattr(c, "mesmo_objeto", None)) == "turma"
+        rar = 0 if generico or ja_da_turma else round(RARIDADE / (1 + anteriores))
         principal = (BASE + (NOVIDADE if novo else 0) + rar) * (MULTIPLICADOR_DO_DIA if do_dia else 1)
         detalhes: list[str] = []
         chave_dia = (c.usuario, dia)

@@ -395,7 +395,9 @@ def cartao_pontos(resultado: dict, tema, achado: str, vezes_antes: int, juizes: 
         partes.append(f"raridade +{resultado['raridade']}")
     if resultado["do_dia"]:
         partes.append("tema do dia ×2")
-    if vezes_antes == 0 and resultado["raridade"]:
+    if resultado.get("mesmo_objeto") == "turma":
+        destaque = "Esse mesmo objeto já foi fotografado por alguém da turma aqui: vale, mas sem bônus de raridade."
+    elif vezes_antes == 0 and resultado["raridade"]:
         destaque = "Você é a primeira pessoa a achar isso."
     elif vezes_antes:
         destaque = f"Já foi achado {vezes_antes}× pela turma."

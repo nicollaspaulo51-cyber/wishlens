@@ -389,3 +389,27 @@ def test_guardiao_so_com_2_pessoas_e_empate_para_quem_chegou_antes():
                        {**cap("caio", "pombo", tema="passaros", hora=11), **base}])
     g = jogo.guardioes(df, DIA)
     assert g.loc[0, "usuario"] == "caio" and g.loc[0, "achados"] == 2  # empate com bia: caio chegou antes
+
+
+# ---------------------------------------------------------------- mesmo objeto (vetor do CLIP)
+V = [1.0, 0.0, 0.0]
+PARECIDO = [0.95, 0.31, 0.0]   # semelhança 0,95
+DIFERENTE = [0.6, 0.8, 0.0]    # semelhança 0,6
+
+
+def test_objeto_visto_suas_fotos_em_qualquer_lugar_e_da_turma_so_no_quadrado():
+    assert jogo.objeto_visto(PARECIDO, "ana", "q1", [("ana", "q9", V)]) == "seu"
+    assert jogo.objeto_visto(PARECIDO, "ana", "q1", [("bia", "q1", V)]) == "turma"
+    assert jogo.objeto_visto(PARECIDO, "ana", "q1", [("bia", "q2", V)]) is None   # outro bairro
+    assert jogo.objeto_visto(PARECIDO, "ana", None, [("bia", None, V)]) is None   # sem GPS: só as suas
+    assert jogo.objeto_visto(DIFERENTE, "ana", "q1", [("ana", "q1", V)]) is None  # outro objeto
+    assert jogo.objeto_visto(PARECIDO, "ana", "q1", [("bia", "q1", V), ("ana", "q5", V)]) == "seu"
+    assert jogo.objeto_visto(None, "ana", "q1", [("ana", "q1", V)]) is None
+
+
+def test_mesmo_objeto_seu_vale_zero_e_da_turma_perde_a_raridade():
+    seu = {**cap("ana", "golden"), "mesmo_objeto": "seu"}
+    turma = {**cap("bia", "vira-lata"), "mesmo_objeto": "turma"}
+    p = jogo.calcular_pontos(pd.DataFrame([seu, turma]))
+    assert not p.iloc[0]["aceita"] and p.iloc[0]["motivo"] == "você já fotografou este mesmo objeto"
+    assert p.iloc[1]["aceita"] and p.iloc[1]["raridade"] == 0 and p.iloc[1]["novidade"] > 0

@@ -42,6 +42,7 @@ Os pontos são **recalculados a partir das capturas** (`src/jogo.py`): gravar um
 | Guardião do quadrado | quem tem mais achados diferentes num quadrado de ~500 m na semana (só onde 2+ pessoas jogaram) |
 | Meta da turma | das 12h às 14h, 20 fotos do tema do dia pela turma: cada uma ganha +10 |
 | Clima | com chuva ([Open-Meteo](https://open-meteo.com)), plantas e pássaros dão +5 (fora do tema do dia) |
+| Mesmo objeto | o CLIP compara o "retrato" da foto com as suas fotos e as da turma no mesmo quadrado: o mesmo objeto de novo vale 0 para você; já fotografado pela turma, vale sem bônus de raridade |
 | Deslocamento impossível | mais de 3 km a mais de 120 km/h desde a sua foto anterior: a foto vale 0 |
 
 O placar, a meta da turma e o pódio se atualizam sozinhos a cada 30 s; cada bônus e cada medalha nova aparecem como
