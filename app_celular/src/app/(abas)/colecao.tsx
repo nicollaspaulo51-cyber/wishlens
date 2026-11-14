@@ -2,17 +2,15 @@
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Apagado, Aviso, Botao, Cartaz, Subtitulo, Titulo } from '../../componentes/ui';
+import { Apagado, Aviso, Cartaz, Subtitulo, Titulo } from '../../componentes/ui';
 import { api, type Medalha } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
-import { useSessao } from '../../lib/sessao';
 import { useDados } from '../../lib/useDados';
 
 const COR_NIVEL = { bronze: '#B87333', prata: '#9AA4AD', ouro: '#FFC83D' } as const;
 
 export default function Colecao() {
   const c = useCores();
-  const { sair } = useSessao();
   const col = useDados(api.colecao);
   const d = col.dados;
 
@@ -20,7 +18,7 @@ export default function Colecao() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.fundo }}>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={col.carregando} onRefresh={col.recarregar} tintColor={c.destaque} />}>
-        <Titulo>Minha coleção</Titulo>
+        <Titulo>Álbum</Titulo>
         {col.erro && !d ? <Aviso texto={col.erro} aoTentar={col.recarregar} /> : null}
         {d ? (
           <>
@@ -40,7 +38,7 @@ export default function Colecao() {
               </Cartaz>
             ) : null}
 
-            <Subtitulo>Álbum</Subtitulo>
+            <Subtitulo>Figurinhas</Subtitulo>
             {d.album.map((p) => (
               <View key={p.tema.id} style={{ gap: 8, marginBottom: 12 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -84,7 +82,6 @@ export default function Colecao() {
             ))}
           </>
         ) : null}
-        <Botao titulo="Sair da conta" tipo="secundario" aoTocar={sair} estilo={{ marginTop: 24 }} />
       </ScrollView>
     </SafeAreaView>
   );

@@ -10,7 +10,7 @@ export function Mapa({ dados, temas, mostrar }: PropsMapa) {
   const c = useCores();
   const lugares = (dados?.lugares ?? []).filter((l) => mostrar.includes(l.tema)).slice(0, 30);
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.suave }} contentContainerStyle={{ padding: 12, gap: 6 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: c.suave }} contentContainerStyle={{ padding: 12, paddingTop: 230, gap: 6 }}>
       <Text style={{ color: c.apagado, fontSize: 13 }}>O mapa aparece no celular. Aqui, os lugares mais perto:</Text>
       {lugares.map((l) => (
         <View key={l.mapa} style={{ flexDirection: 'row', gap: 8 }}>

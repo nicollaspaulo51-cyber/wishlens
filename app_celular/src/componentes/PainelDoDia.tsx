@@ -9,7 +9,7 @@ import { useCores } from '../lib/cores';
 export function PainelDoDia({ estado }: { estado: Estado }) {
   const c = useCores();
   const { dia, meta, corrente } = estado;
-  const [aberto, setAberto] = useState(dia.lupa_cheia || meta.aberta);
+  const [aberto, setAberto] = useState(dia.lupa_cheia); // fica por cima do mapa: só abre sozinho com a lupa cheia
   const feitos = dia.desafios.filter((d) => d.ok).length;
   const tema = estado.tema_do_dia.nome.toLowerCase();
   const metaTxt = meta.cumprida

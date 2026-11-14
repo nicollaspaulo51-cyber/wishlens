@@ -1,25 +1,14 @@
 import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
 
-import { useCores } from '../../lib/cores';
-
-const icone = (emoji: string) => ({ focused }: { focused: boolean }) => (
-  <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.55 }}>{emoji}</Text>
-);
+import { BarraAbas } from '../../componentes/BarraAbas';
 
 export default function Abas() {
-  const c = useCores();
   return (
-    <Tabs screenOptions={{
-      headerShown: false,
-      tabBarActiveTintColor: c.destaque,
-      tabBarInactiveTintColor: c.apagado,
-      tabBarStyle: { backgroundColor: c.superficie, borderTopColor: c.linha },
-      tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
-    }}>
-      <Tabs.Screen name="index" options={{ title: 'Jogar', tabBarIcon: icone('🧭') }} />
-      <Tabs.Screen name="podio" options={{ title: 'Pódio', tabBarIcon: icone('🏆') }} />
-      <Tabs.Screen name="colecao" options={{ title: 'Coleção', tabBarIcon: icone('📒') }} />
+    <Tabs tabBar={(props) => <BarraAbas {...props} />} screenOptions={{ headerShown: false }}>
+      <Tabs.Screen name="index" options={{ title: 'Mapa' }} />
+      <Tabs.Screen name="podio" options={{ title: 'Pódio' }} />
+      <Tabs.Screen name="colecao" options={{ title: 'Álbum' }} />
+      <Tabs.Screen name="conta" options={{ title: 'Conta' }} />
     </Tabs>
   );
 }
