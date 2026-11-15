@@ -147,7 +147,7 @@ def _css() -> str:
   .wl-meta .wl-trilho b {{ transition:none; }} }}
 /* Cara de app: sem o cabeçalho, a barra lateral e o rodapé do Streamlit; as abas ficam presas embaixo */
 header[data-testid="stHeader"], [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"],
-[data-testid="stDecoration"], footer {{ display:none !important; }}
+[data-testid="stDecoration"], footer, [data-testid="InputInstructions"] {{ display:none !important; }}
 [data-testid="stMainBlockContainer"] {{ padding:1rem 1rem calc(7rem + env(safe-area-inset-bottom)) !important; }}
 .st-key-wl_abas {{ position:fixed; left:0; right:0; bottom:0; z-index:1000; background:var(--wl-surface);
   border-radius:22px 22px 0 0; box-shadow:0 -4px 18px rgba(18,36,29,.14);
