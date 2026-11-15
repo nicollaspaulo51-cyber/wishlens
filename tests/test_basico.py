@@ -60,7 +60,7 @@ def test_todos_os_modulos_e_paginas_carregam():
         if arquivo.stem != "__init__":
             importlib.import_module(f"src.{arquivo.stem}")
     paginas = [RAIZ / "app" / "Home.py", *sorted((RAIZ / "app" / "pages").glob("*.py"))]
-    assert [p.name for p in paginas] == ["Home.py", "1_Pódio.py", "2_Minha_Coleção.py", "3_Avaliação.py"]
+    assert [p.name for p in paginas] == ["Home.py", "1_Pódio.py", "2_Minha_Coleção.py", "3_Avaliação.py", "4_Conta.py"]
     for pagina in paginas:
         arvore = ast.parse(pagina.read_text(encoding="utf-8"))
         for no in ast.walk(arvore):

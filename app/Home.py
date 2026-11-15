@@ -159,9 +159,7 @@ with area_foto:
     if ui.precisa_entrar():
         ui.entrar_na_pagina()
         st.stop()
-    if st.button("Fotografar", icon=":material/photo_camera:", type="primary", use_container_width=True):
-        st.session_state["camera_aberta"] = True
-    foto = None
+    foto = None  # a câmera abre pelo botão amarelo da barra de baixo (ui.barra_abas)
     if st.session_state.get("camera_aberta"):
         # GPS de novo a cada foto: o do início da página fica velho enquanto você anda
         _gps_foto = get_geolocation(component_key=f"gps_foto_{st.session_state.get('n_foto', 0)}")
@@ -170,17 +168,6 @@ with area_foto:
         foto = st.camera_input("Fotografe algo de um dos temas",
                                help="Só vale foto tirada agora pela câmera, de algo real na sua frente.")
     if not foto:
-        with st.expander("Como pontuar"):
-            st.markdown("""
-- Toda foto aceita vale **10 pontos**.
-- **+10** se é a primeira vez que você acha aquilo.
-- **Até +20** pela raridade: quem acha primeiro ganha mais.
-- No tema de hoje, tudo vale **o dobro**.
-- **Mirante** (a até 40 m de um lugar do mapa): +5, até 3 por dia.
-- **Lupa**: 3 temas diferentes no dia a enchem, e o achado seguinte ganha +50%.
-- **Desafios do dia**: +15 cada. **7 dias seguidos**: +20. **Com chuva**, plantas e pássaros: +5.
-- **Meta da turma** (12h às 14h): se a turma fizer 20 fotos do tema do dia, cada uma ganha +10.
-- Vale 0: foto repetida, de tela, fora dos temas ou tirada longe demais da anterior (mais de 3 km a mais de 120 km/h).""")
         st.stop()
 
     # Cada foto é julgada e salva uma vez só (o Streamlit roda a página de novo a cada clique)
@@ -320,4 +307,4 @@ with area_foto:
 
     if st.button("Ver pódio", icon=":material/trophy:", use_container_width=True):
         st.switch_page("pages/1_Pódio.py")
-    st.caption("Tire outra foto acima para continuar jogando.")
+    st.caption("Toque em Clear photo, acima, para tirar outra.")

@@ -12,7 +12,7 @@ import streamlit as st
 from src import armazenamento, jogo, ui
 from src.temas import POR_ID, TEMAS
 
-ui.configurar("Minha Coleção", "📚")
+ui.configurar("Álbum", "📚")
 cor = ui.cores()
 
 st.title("Minha coleção")

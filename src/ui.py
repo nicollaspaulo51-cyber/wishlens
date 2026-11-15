@@ -54,7 +54,7 @@ def _css() -> str:
 .wl-list li:last-child {{ border-bottom:0; }}
 .wl-list li span:last-child {{ text-align:right; }}
 /* Barra do jogo: marca à esquerda, placar à direita */
-.wl-barra {{ display:flex; justify-content:space-between; align-items:center; gap:.6rem; margin:-1.5rem 0 .6rem; }}
+.wl-barra {{ display:flex; justify-content:space-between; align-items:center; gap:.6rem; margin:0 0 .6rem; }}
 .wl-brand {{ font-family:var(--wl-titulos); font-weight:800; font-size:1.5rem; line-height:1; letter-spacing:-.02em; }}
 .wl-placar {{ display:flex; gap:.4rem; }}
 .wl-placar span {{ border:1px solid var(--wl-line); background:var(--wl-surface); border-radius:999px;
@@ -126,8 +126,6 @@ def _css() -> str:
 .wl-hoje summary span {{ display:inline-flex; align-items:center; gap:.4rem; white-space:nowrap; }}
 .wl-hoje .wl-dia {{ margin:.2rem 0 0; }}
 .wl-desafios {{ grid-column:1 / -1; }}
-/* menos espaço vazio acima do título no celular */
-@media (max-width:640px) {{ [data-testid="stMainBlockContainer"] {{ padding-top:3.75rem; }} }}
 .wl-desafios {{ list-style:none; margin:0; padding:0 0 .3rem; display:flex; flex-direction:column; gap:.2rem; }}
 .wl-desafios li {{ display:flex; gap:.5rem; align-items:baseline; }}
 .wl-desafios li.ok {{ color:var(--wl-muted); text-decoration:line-through; }}
@@ -147,33 +145,81 @@ def _css() -> str:
 .wl-medalha.nada {{ opacity:.7; }}
 @media (prefers-reduced-motion: reduce) {{ .wl-conta, .wl-lupa.cheia i, .wl-valeu {{ animation:none; }}
   .wl-meta .wl-trilho b {{ transition:none; }} }}
+/* Cara de app: sem o cabeçalho, a barra lateral e o rodapé do Streamlit; as abas ficam presas embaixo */
+header[data-testid="stHeader"], [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"],
+[data-testid="stDecoration"], footer {{ display:none !important; }}
+[data-testid="stMainBlockContainer"] {{ padding:1rem 1rem calc(7rem + env(safe-area-inset-bottom)) !important; }}
+.st-key-wl_abas {{ position:fixed; left:0; right:0; bottom:0; z-index:1000; background:var(--wl-surface);
+  border-radius:22px 22px 0 0; box-shadow:0 -4px 18px rgba(18,36,29,.14);
+  padding:.25rem .5rem calc(.35rem + env(safe-area-inset-bottom)); max-width:560px; margin:0 auto; }}
+/* elementos de altura zero (este CSS, o GPS, o lugar da barra) não deixam o espaço entre blocos no topo */
+[data-testid="stElementContainer"]:has(style), [data-testid="stMainBlockContainer"] div:has(> .st-key-wl_abas)
+  {{ margin-bottom:-1rem; }}
+.st-key-wl_abas {{ flex-wrap:nowrap !important; }}
+[class*="st-key-wl_aba_"] {{ flex:1 1 0 !important; width:auto !important; min-width:0; align-items:center; }}
+.st-key-wl_abas [data-testid="stPageLink"] a {{ flex-direction:column; gap:0; padding:.3rem .6rem; min-height:52px;
+  justify-content:center; background:none !important; border-radius:14px; }}
+.st-key-wl_abas [data-testid="stPageLink"] a span {{ font-size:1.5rem; color:var(--wl-muted); }}
+.st-key-wl_abas [data-testid="stPageLink"] a p {{ font-size:.72rem; color:var(--wl-muted); font-weight:500; }}
+.st-key-wl_aba_on [data-testid="stPageLink"] a {{ background:var(--wl-soft) !important; }}
+.st-key-wl_aba_on [data-testid="stPageLink"] a span,
+.st-key-wl_aba_on [data-testid="stPageLink"] a p {{ color:var(--wl-accent); font-weight:700; }}
+.st-key-wl_camera {{ flex:0 0 auto; width:auto !important; }}
+.st-key-wl_camera button {{ width:66px; height:66px; min-height:66px; border-radius:50%; margin-top:-30px; padding:0;
+  background:var(--wl-sol) !important; color:var(--wl-sol-ink) !important; border:5px solid var(--wl-surface) !important;
+  box-shadow:0 4px 10px rgba(0,0,0,.25); }}
+.st-key-wl_camera button span {{ font-size:1.9rem; margin:0; }}
+.st-key-wl_camera button p {{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }}
+.st-key-wl_camera button:active {{ transform:scale(.94); }}
 /* o componente que pede o GPS não precisa aparecer (continua funcionando com altura zero) */
-[data-testid="stElementContainer"]:has(iframe[title*="streamlit_js_eval"]) {{ height:0; min-height:0; overflow:hidden; margin:0; }}
+[data-testid="stElementContainer"]:has(iframe[title*="streamlit_js_eval"]) {{ height:0; min-height:0; overflow:hidden;
+  margin:0 0 -1rem; }}
 </style>
 """
 
 
+ABAS = [("Home.py", "Jogar", ":material/map:"), ("pages/1_Pódio.py", "Pódio", ":material/trophy:"),
+        ("pages/2_Minha_Coleção.py", "Álbum", ":material/collections_bookmark:"),
+        ("pages/4_Conta.py", "Conta", ":material/account_circle:")]
+
+
 def configurar(titulo: str, icone: str = "🔍") -> None:
-    st.set_page_config(page_title=f"WishLens · {titulo}", page_icon=icone, layout="centered")
+    st.set_page_config(page_title=f"WishLens · {titulo}", page_icon=icone, layout="centered",
+                       initial_sidebar_state="collapsed")
     st.markdown(_css(), unsafe_allow_html=True)
-    barra_lateral()
+    barra_abas(titulo)
 
 
-def barra_lateral() -> None:
-    with st.sidebar:
-        st.markdown('<div class="wl-brand">WishLens</div><div class="wl-muted" style="font-size:.85rem">'
-                    'Aponte. Fotografe. Descubra.</div>', unsafe_allow_html=True)
+def barra_abas(titulo: str) -> None:
+    """Barra de baixo, como num app: duas abas, a câmera no meio e mais duas. O CSS a prende no rodapé."""
+    with st.container(key="wl_abas", horizontal=True, horizontal_alignment="distribute", vertical_alignment="center",
+                      gap=None):
+        def aba(i: int) -> None:
+            pagina, nome, icone = ABAS[i]
+            # o page_link não marca a página atual de um jeito que o CSS alcance: a chave do container marca
+            with st.container(key=f"wl_aba_{'on' if nome == titulo else i}"):
+                st.page_link(pagina, label=nome, icon=icone)
 
-        if armazenamento.supabase_configurado():
-            _conta()
-        else:
-            # Guardado fora do widget: o Streamlit apaga o estado de widgets ao trocar de página.
-            st.session_state.setdefault("usuario", "eu")
-            st.session_state["_campo_usuario"] = st.session_state["usuario"]
-            st.text_input("Seu nome de usuário", key="_campo_usuario",
-                          on_change=lambda: st.session_state.update(usuario=st.session_state["_campo_usuario"].strip() or "eu"))
-        st.divider()
-        st.caption(f"Armazenamento: {armazenamento.descricao_backend()}")
+        aba(0)
+        aba(1)
+        if st.button("Fotografar", icon=":material/photo_camera:", key="wl_camera",
+                     on_click=lambda: st.session_state.update(camera_aberta=True)) and titulo != "Jogar":
+            st.switch_page("Home.py")
+        aba(2)
+        aba(3)
+
+
+def conta_e_usuario() -> None:
+    """Página Conta: login (com Supabase) ou o nome de usuário (sem banco)."""
+    if armazenamento.supabase_configurado():
+        _conta()
+    else:
+        # Guardado fora do widget: o Streamlit apaga o estado de widgets ao trocar de página.
+        st.session_state.setdefault("usuario", "eu")
+        st.session_state["_campo_usuario"] = st.session_state["usuario"]
+        st.text_input("Seu nome de usuário", key="_campo_usuario",
+                      on_change=lambda: st.session_state.update(usuario=st.session_state["_campo_usuario"].strip() or "eu"))
+    st.caption(f"Armazenamento: {armazenamento.descricao_backend()}")
 
 
 def demonstracao() -> None:

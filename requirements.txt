@@ -1,6 +1,6 @@
 # torch só-CPU (menor; cabe no Streamlit Community Cloud)
 --find-links https://download.pytorch.org/whl/cpu/torch/
-streamlit>=1.40
+streamlit>=1.50  # containers horizontais da barra de abas
 pandas>=2.2
 seaborn>=0.13
 scikit-learn>=1.5

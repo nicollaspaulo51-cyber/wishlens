@@ -23,3 +23,8 @@ secondaryBackgroundColor = "#16251E"
 textColor = "#E4EEE8"
 linkColor = "#7FDDB4"
 borderColor = "#2C4136"
+
+# Navegação pelas abas de baixo (src/ui.py, barra_abas): sem a lista de páginas na barra lateral
+[client]
+showSidebarNavigation = false
+toolbarMode = "minimal"
