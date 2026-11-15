@@ -1,6 +1,11 @@
-// Mapa nativo com as ruas do OpenStreetMap: você, os lugares de cada tema e as manchas da turma.
-import { Platform, Text, View } from 'react-native';
-import MapView, { Callout, Circle, Marker, UrlTile } from 'react-native-maps';
+// Mapa nativo do celular (Google no Android, Apple no iPhone): você, os lugares de cada tema e as manchas da turma.
+// Os blocos do tile.openstreetmap.org bloqueiam apps sem identificação ("Access blocked"), por isso o mapa do sistema.
+// shortcut: no Expo Go o Google Maps já vem com chave; num APK próprio, pôr a chave em app.json (android.config.googleMaps).
+import { Text, View, useColorScheme } from 'react-native';
+import MapView, { Callout, Circle, Marker } from 'react-native-maps';
+
+// Esconde lojas e empresas do mapa base: sobram as ruas, os parques e os marcadores do jogo
+const ESTILO_LIMPO = [{ featureType: 'poi.business', stylers: [{ visibility: 'off' }] }];
 
 import type { Mapa as DadosMapa, Tema } from '../lib/api';
 import { useCores } from '../lib/cores';
@@ -14,6 +19,7 @@ export type PropsMapa = {
 
 export function Mapa({ posicao, dados, temas, mostrar }: PropsMapa) {
   const c = useCores();
+  const escuro = useColorScheme() === 'dark';
   const lugares = (dados?.lugares ?? []).filter((l) => mostrar.includes(l.tema));
   const manchas = (dados?.manchas ?? []).filter((m) => mostrar.includes(m.tema));
   return (
@@ -22,12 +28,13 @@ export function Mapa({ posicao, dados, temas, mostrar }: PropsMapa) {
         style={{ flex: 1 }}
         initialRegion={{ latitude: posicao.lat, longitude: posicao.lon, latitudeDelta: 0.02, longitudeDelta: 0.02 }}
         showsUserLocation
-        showsMyLocationButton
-        // No Android a base do Google sai e ficam só as ruas do OpenStreetMap
-        mapType={Platform.OS === 'android' ? 'none' : 'standard'}
+        showsMyLocationButton={false}
+        showsPointsOfInterests={false}
+        customMapStyle={ESTILO_LIMPO}
+        userInterfaceStyle={escuro ? 'dark' : 'light'}
+        toolbarEnabled={false}
         accessibilityLabel={`Mapa com ${lugares.length} lugares para procurar perto de você`}
       >
-        <UrlTile urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} shouldReplaceMapContent zIndex={-1} />
         {manchas.map((m) => (
           <Circle key={`${m.celula}-${m.tema}`} center={{ latitude: m.lat, longitude: m.lon }} radius={250}
             fillColor={m.guardiao ? 'rgba(255,200,61,0.30)' : 'rgba(19,107,76,0.18)'} strokeColor={m.guardiao ? c.sol : c.destaque} strokeWidth={1} />
@@ -43,9 +50,6 @@ export function Mapa({ posicao, dados, temas, mostrar }: PropsMapa) {
             title={`${temas[l.tema]?.emoji ?? ''} ${l.nome}`} description={`${l.distancia_km.toFixed(1)} km · procure ${temas[l.tema]?.nome.toLowerCase() ?? ''}`} />
         ))}
       </MapView>
-      <Text style={{ position: 'absolute', right: 6, bottom: 4, fontSize: 10, color: '#333', backgroundColor: 'rgba(255,255,255,0.8)', paddingHorizontal: 4 }}>
-        © OpenStreetMap
-      </Text>
     </View>
   );
 }

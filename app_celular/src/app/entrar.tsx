@@ -79,7 +79,7 @@ export default function Entrar() {
               </>
             ) : (
               <>
-                <Text style={{ fontFamily: FONTE_TITULO, fontSize: 22, color: c.tinta }}>Como a turma te chama?</Text>
+                <Text style={{ fontFamily: FONTE_TITULO, fontSize: 22, color: c.tinta }}>Qual é o seu apelido?</Text>
                 <Apagado>Modo de teste: sem conta, só um apelido. Os pontos ficam no servidor até ele reiniciar.</Apagado>
               </>
             )}
