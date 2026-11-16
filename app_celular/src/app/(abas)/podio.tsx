@@ -40,10 +40,10 @@ export default function Podio() {
         {ranking.length ? <Degraus ranking={ranking} chave={`${modo}-${periodo}-${tema}`} /> : null}
         {eu ? <Text style={{ color: c.tinta, fontSize: 16 }}>Você está em <Text style={{ fontWeight: '700' }}>{eu.posicao}º</Text> de {ranking.length}.</Text> : null}
         {ranking.length > 3 ? (
-          <Cartaz estilo={{ paddingVertical: 4 }}>
+          <Cartaz estilo={{ padding: 0, overflow: 'hidden' }}>
             {ranking.slice(3).map((r, i) => (
-              <Surge key={r.apelido} ordem={i + 3}><View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12,
-                borderBottomWidth: 1, borderBottomColor: c.linha, backgroundColor: r.voce ? c.suave : 'transparent' }}>
+              <Surge key={r.apelido} ordem={i + 3}><View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12,
+                borderBottomWidth: i < ranking.length - 4 ? 1 : 0, borderBottomColor: c.linha, backgroundColor: r.voce ? c.suave : 'transparent' }}>
                 <Text style={{ width: 32, color: c.apagado, fontWeight: '700' }}>{r.posicao}º</Text>
                 <Text style={{ flex: 1, color: c.tinta, fontSize: 16 }}>{r.apelido}{r.voce ? ' (você)' : ''}</Text>
                 <Text style={{ color: c.tinta, fontWeight: '700' }}>{r.pontos} pts</Text>

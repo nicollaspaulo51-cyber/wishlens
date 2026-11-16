@@ -27,6 +27,7 @@ export default function Amigos() {
   const ranking = placar.dados?.ranking ?? [];
   const eu = ranking.find((r) => r.voce);
   const acima = eu && eu.posicao > 1 ? ranking[eu.posicao - 2] : null;
+  const falta = eu && acima ? acima.pontos - eu.pontos + 1 : 0;
 
   async function fazer(acao: () => Promise<unknown>) {
     setOcupado(true);
@@ -95,19 +96,19 @@ export default function Amigos() {
         {ranking.length > 1 && ranking[0].pontos > 0 ? <Degraus ranking={ranking} chave={`amigos-${modo}-${periodo}`} /> : null}
         {eu && ranking.length > 1 ? (
           <Text style={{ color: c.tinta, fontSize: 16 }}>
-            {acima
-              ? <>Faltam <Text style={{ fontWeight: '700' }}>{acima.pontos - eu.pontos + 1} pts</Text> para passar {acima.apelido}.</>
-              : eu.pontos > 0 ? 'Você lidera entre seus amigos.' : 'Ninguém pontuou ainda. Tire a primeira foto!'}
+            {ranking[0].pontos === 0 ? 'Ninguém pontuou ainda. Tire a primeira foto!'
+              : acima ? <>Faltam <Text style={{ fontWeight: '700' }}>{falta} {falta === 1 ? 'ponto' : 'pontos'}</Text> para passar {acima.apelido}.</>
+              : 'Você lidera entre seus amigos.'}
           </Text>
         ) : null}
         {ranking.length > 1 ? (
-          <Cartaz estilo={{ paddingVertical: 4 }}>
-            {ranking.map((r) => (
+          <Cartaz estilo={{ padding: 0, overflow: 'hidden' }}>
+            {ranking.map((r, i) => (
               <Pressable key={r.apelido} disabled={r.voce} accessibilityRole={r.voce ? undefined : 'button'}
                 accessibilityLabel={`${r.posicao}º, ${r.apelido}${r.voce ? ' (você)' : ''}, ${r.pontos} pontos, ${r.achados} achados${r.voce ? '' : '. Abrir a conversa'}`}
                 onPress={() => router.push({ pathname: '/conversa/[apelido]', params: { apelido: r.apelido } })}
-                style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4, gap: 12,
-                  borderBottomWidth: 1, borderBottomColor: c.linha, backgroundColor: r.voce || pressed ? c.suave : 'transparent' })}>
+                style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12,
+                  borderBottomWidth: i < ranking.length - 1 ? 1 : 0, borderBottomColor: c.linha, backgroundColor: r.voce || pressed ? c.suave : 'transparent' })}>
                 <Text style={{ width: 32, color: c.apagado, fontWeight: '700' }}>{r.posicao}º</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: c.tinta, fontSize: 16 }}>{r.apelido}{r.voce ? ' (você)' : ''}</Text>
