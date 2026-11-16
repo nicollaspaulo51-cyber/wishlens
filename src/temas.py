@@ -148,7 +148,15 @@ FRASES_NENHUM = ("a photo of a person", "a selfie", "a photo of a room interior"
                  # celular não é periférico (e a tela dele mostrando um teclado não é um teclado)
                  "a photo of a smartphone", "a person holding a smartphone",
                  # o verso do celular (lentes da câmera, capinha) virava "fone de ouvido" pelo formato do estojo
-                 "the back of a smartphone with camera lenses", "a mobile phone in a phone case")
+                 "the back of a smartphone with camera lenses", "a mobile phone in a phone case",
+                 # O CLIP só escolhe entre as frases que tem: sem estes objetos comuns, qualquer coisa fora dos temas
+                 # caía no objeto de tema mais parecido (uma garrafa virava "peça de computador"). Nada aqui pode
+                 # ser objeto de tema (TV e notebook ficam de fora: parecem monitor).
+                 *(f"a photo of {o}" for o in (
+                     "a water bottle", "a cup or mug", "a chair", "a table", "a backpack", "a shoe", "clothes",
+                     "a set of keys", "a wallet", "a pen", "a book", "a TV remote control", "eyeglasses",
+                     "a wristwatch", "a power bank", "a door", "a bed", "a sofa", "a lamp", "an electric fan",
+                     "a cardboard box", "a bicycle", "a motorcycle", "a plastic bag", "a toothbrush", "a bowl")))
 
 
 def agora() -> datetime:
