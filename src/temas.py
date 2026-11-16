@@ -146,7 +146,9 @@ FRASES_TELA = (("a photo of a computer screen showing a picture", "a photo of a 
 FRASES_NENHUM = ("a photo of a person", "a selfie", "a photo of a room interior", "a photo of food on a plate",
                  "a photo of a building", "a photo of an empty sky", "a photo of a document with text",
                  # celular não é periférico (e a tela dele mostrando um teclado não é um teclado)
-                 "a photo of a smartphone", "a person holding a smartphone")
+                 "a photo of a smartphone", "a person holding a smartphone",
+                 # o verso do celular (lentes da câmera, capinha) virava "fone de ouvido" pelo formato do estojo
+                 "the back of a smartphone with camera lenses", "a mobile phone in a phone case")
 
 
 def agora() -> datetime:
