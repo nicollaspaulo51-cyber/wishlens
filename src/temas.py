@@ -89,8 +89,10 @@ TEMAS: list[Tema] = [
           ("a graphics card", "placa de vídeo"), ("RAM memory sticks", "memória RAM"),
           ("a computer motherboard", "placa-mãe"), ("a computer power supply", "fonte"),
           ("a computer part", "peça de computador")),
-         ('shop~"computer|electronics"', 'craft="electronics_repair"'),
-         "lojas de informática e assistências técnicas",
+         # lojas de informática são raras no OpenStreetMap fora do centro: celular, lan house, TI e shopping também têm
+         ('shop~"computer|electronics|mobile_phone"', 'craft="electronics_repair"', 'amenity="internet_cafe"',
+          'office="it"', 'shop="mall"'),
+         "lojas de informática e de celular, assistências técnicas, lan houses e shoppings",
          "peças internas E periféricos: mouse, teclado, monitor, headset/fone, webcam, microfone, caixinha de som de PC, "
          "cabo, pendrive, HD/SSD externo, roteador, gabinete, placa de vídeo, RAM, processador, placa-mãe, cooler, fonte. "
          "Um monitor ou notebook de verdade conta (a tela dele ligada não é trapaça)",

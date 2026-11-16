@@ -128,8 +128,10 @@ def _casa(filtro: str, tags: dict) -> bool:
 def buscar_pontos_temas(temas, lat: float, lon: float, raio_m: int = 2000, por_tema: int = 15) -> list[dict]:
     """Onde procurar cada tema (uma consulta só no Overpass). Lança RuntimeError se o Overpass estiver fora."""
     filtros = sorted({f for t in temas for f in t.tags_osm})
-    partes = "".join(f"nwr[{_ancorado(f)}](around:{raio_m},{lat},{lon});" for f in filtros)
-    dados = _overpass(f"[out:json][timeout:25];({partes});out center 300;")
+    # Um limite por filtro, não um total: com "out 300" no fim, estacionamentos e parques enchiam a lista
+    # e as lojas de informática (peças) nunca chegavam ao mapa
+    partes = "".join(f"nwr[{_ancorado(f)}](around:{raio_m},{lat},{lon});out center {por_tema * 2};" for f in filtros)
+    dados = _overpass(f"[out:json][timeout:25];{partes}")
     if dados is None:
         raise RuntimeError("OpenStreetMap (Overpass) fora do ar")
     pontos: dict[str, list[dict]] = {t.id: [] for t in temas}

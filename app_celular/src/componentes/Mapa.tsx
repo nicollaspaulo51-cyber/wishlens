@@ -54,8 +54,10 @@ export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar }: Props
   );
 });
 
-const PISCAM = 15; // só os mais perto piscam: cada piscada é uma mensagem para o mapa nativo
-const PASSO_MS = 350;
+const PISCAM = 12; // só os mais perto piscam: cada passo é uma mensagem para o mapa nativo
+// Passos curtos numa onda lenta (2,4 a 3,3 s por piscada): cada passo muda pouco a opacidade, e o olho vê
+// um brilho que respira em vez de saltos. O marcador nativo não aceita animação do Animated.
+const PASSO_MS = 110;
 
 // Os lugares piscam, cada um no seu ritmo. Muda só a opacidade do marcador; o resto do mapa não redesenha.
 function Lugares({ lugares, temas, cor }: { lugares: Lugar[]; temas: Record<string, Tema>; cor: string }) {
@@ -79,7 +81,10 @@ function Lugares({ lugares, temas, cor }: { lugares: Lugar[]; temas: Record<stri
     <>
       {pertoPrimeiro.map((l, i) => {
         const t = temas[l.tema];
-        const brilho = parado || i >= PISCAM ? 0.9 : 0.3 + 0.7 * Math.abs(Math.sin(tempo * (0.3 + (i % 4) * 0.08) + i * 1.7));
+        const segundos = (tempo * PASSO_MS) / 1000;
+        const periodo = 2.4 + (i % 4) * 0.3;
+        const onda = 0.5 + 0.5 * Math.sin((2 * Math.PI * segundos) / periodo + i * 1.7);
+        const brilho = parado || i >= PISCAM ? 0.95 : Math.round((0.4 + 0.6 * onda) * 50) / 50;
         return (
           <Marker key={l.mapa} coordinate={{ latitude: l.lat, longitude: l.lon }} anchor={{ x: 0.5, y: 0.5 }}
             opacity={brilho} tracksViewChanges={desenhando}
