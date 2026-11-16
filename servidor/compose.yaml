@@ -5,7 +5,9 @@ services:
   juiz:
     build: ./space
     restart: unless-stopped
-    env_file: { path: .env, required: false }  # SUPABASE_URL e SUPABASE_KEY; sem eles o jogo fica em memória
+    environment:  # vêm do servidor/.env (o compose lê sozinho); sem eles o jogo fica em memória
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_KEY: ${SUPABASE_KEY:-}
     ports: ["7860:7860"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860/saude')"]
