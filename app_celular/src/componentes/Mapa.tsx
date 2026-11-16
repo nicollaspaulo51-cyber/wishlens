@@ -3,7 +3,7 @@
 // shortcut: no Expo Go o Google Maps já vem com chave; num APK próprio, pôr a chave em app.json (android.config.googleMaps).
 import { memo, useEffect, useState } from 'react';
 import { Text, View, useColorScheme } from 'react-native';
-import MapView, { Callout, Circle, Marker } from 'react-native-maps';
+import MapView, { Callout, Circle, Marker, type Region } from 'react-native-maps';
 
 // Esconde lojas e empresas do mapa base: sobram as ruas, os parques e os marcadores do jogo
 const ESTILO_LIMPO = [{ featureType: 'poi.business', stylers: [{ visibility: 'off' }] }];
@@ -25,11 +25,14 @@ export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar }: Props
   const escuro = useColorScheme() === 'dark';
   const lugares = (dados?.lugares ?? []).filter((l) => mostrar.includes(l.tema));
   const manchas = (dados?.manchas ?? []).filter((m) => mostrar.includes(m.tema));
+  // A parte do mapa na tela: só os lugares dela piscam (atualiza quando você para de arrastar)
+  const [regiao, setRegiao] = useState<Region>(() => ({ latitude: posicao.lat, longitude: posicao.lon, latitudeDelta: 0.02, longitudeDelta: 0.02 }));
   return (
     <View style={{ flex: 1 }}>
       <MapView
         style={{ flex: 1 }}
-        initialRegion={{ latitude: posicao.lat, longitude: posicao.lon, latitudeDelta: 0.02, longitudeDelta: 0.02 }}
+        initialRegion={regiao}
+        onRegionChangeComplete={setRegiao}
         showsUserLocation
         showsMyLocationButton={false}
         showsPointsOfInterests={false}
@@ -48,19 +51,21 @@ export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar }: Props
             <Callout><Text>Guardião da semana: {m.guardiao}</Text></Callout>
           </Marker>
         ))}
-        <Lugares lugares={lugares} temas={temas} cor={c.destaque} />
+        <Lugares lugares={lugares} temas={temas} cor={c.destaque} regiao={regiao} />
       </MapView>
     </View>
   );
 });
 
-const PISCAM = 12; // só os mais perto piscam: cada passo é uma mensagem para o mapa nativo
+// Piscam todos os lugares na tela, até este limite (os mais perto de você): cada passo é uma mensagem
+// para o mapa nativo, e fora da tela ninguém vê a piscada
+const PISCAM = 30;
 // Passos curtos numa onda lenta (2,4 a 3,3 s por piscada): cada passo muda pouco a opacidade, e o olho vê
 // um brilho que respira em vez de saltos. O marcador nativo não aceita animação do Animated.
-const PASSO_MS = 110;
+const PASSO_MS = 130;
 
 // Os lugares piscam, cada um no seu ritmo. Muda só a opacidade do marcador; o resto do mapa não redesenha.
-function Lugares({ lugares, temas, cor }: { lugares: Lugar[]; temas: Record<string, Tema>; cor: string }) {
+function Lugares({ lugares, temas, cor, regiao }: { lugares: Lugar[]; temas: Record<string, Tema>; cor: string; regiao: Region }) {
   const parado = useMovimentoReduzido();
   const [tempo, setTempo] = useState(0);
   useEffect(() => {
@@ -77,6 +82,9 @@ function Lugares({ lugares, temas, cor }: { lugares: Lugar[]; temas: Record<stri
     return () => clearTimeout(t);
   }, [chave]);
   const pertoPrimeiro = [...lugares].sort((a, b) => a.distancia_km - b.distancia_km);
+  const naTela = (l: Lugar) => Math.abs(l.lat - regiao.latitude) <= regiao.latitudeDelta / 2
+    && Math.abs(l.lon - regiao.longitude) <= regiao.longitudeDelta / 2;
+  const piscam = new Set(pertoPrimeiro.filter(naTela).slice(0, PISCAM).map((l) => l.mapa));
   return (
     <>
       {pertoPrimeiro.map((l, i) => {
@@ -84,7 +92,7 @@ function Lugares({ lugares, temas, cor }: { lugares: Lugar[]; temas: Record<stri
         const segundos = (tempo * PASSO_MS) / 1000;
         const periodo = 2.4 + (i % 4) * 0.3;
         const onda = 0.5 + 0.5 * Math.sin((2 * Math.PI * segundos) / periodo + i * 1.7);
-        const brilho = parado || i >= PISCAM ? 0.95 : Math.round((0.4 + 0.6 * onda) * 50) / 50;
+        const brilho = parado || !piscam.has(l.mapa) ? 0.95 : Math.round((0.4 + 0.6 * onda) * 50) / 50;
         return (
           <Marker key={l.mapa} coordinate={{ latitude: l.lat, longitude: l.lon }} anchor={{ x: 0.5, y: 0.5 }}
             opacity={brilho} tracksViewChanges={desenhando}
