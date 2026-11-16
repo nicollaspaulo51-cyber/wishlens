@@ -16,7 +16,7 @@ services:
     image: caddy:2
     profiles: [https]
     restart: unless-stopped
-    command: caddy reverse-proxy --from ${DOMINIO:?defina DOMINIO no .env} --to juiz:7860
+    command: caddy reverse-proxy --from ${DOMINIO:-localhost} --to juiz:7860
     ports: ["80:80", "443:443"]
     volumes: [caddy:/data]  # o certificado do Let's Encrypt fica guardado entre reinícios
 
