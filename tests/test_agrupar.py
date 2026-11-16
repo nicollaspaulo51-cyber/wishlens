@@ -31,6 +31,7 @@ def test_monitor_ligado_nao_e_tela_de_trapaca():
     g = ["pecas", "carros", "tela", "nenhum"]
     assert decidir_captura(g, [0.4, 0.05, 0.45, 0.1])[:2] == ("pecas", True)
     assert decidir_captura(g, [0.05, 0.4, 0.45, 0.1])[:2] == ("carros", False)
+    assert decidir_captura(g, [0.4, 0.05, 0.45, 0.1], peca="teclado")[:2] == ("pecas", False)  # teclado na tela do celular
 
 
 def test_frases_dos_temas():

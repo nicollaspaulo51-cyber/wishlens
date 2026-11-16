@@ -2,39 +2,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Pressable, ScrollView, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Apagado, Botao } from '../../componentes/ui';
-import { api, cabecalhosAtuais, SERVIDOR, type CartaoAchado, type Mensagem } from '../../lib/api';
+import { api, SERVIDOR, type CartaoAchado, type Mensagem } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
 import { quandoFoi } from '../../lib/quando';
 import { useDados } from '../../lib/useDados';
 
-// A foto só abre para quem está na conversa: vai com os mesmos cabeçalhos das outras chamadas ao juiz.
-// No navegador o <Image> não manda cabeçalhos, então a foto é baixada antes e vira um endereço local.
+// O endereço da foto vem assinado pelo juiz e só chega a quem está na conversa (servidor/chat.py)
 function FotoProtegida({ caminho, estilo, inteira }: { caminho: string; estilo: object; inteira?: boolean }) {
-  const [fonte, setFonte] = useState<{ uri: string; headers?: Record<string, string> } | null>(null);
-  useEffect(() => {
-    let vivo = true;
-    let local: string | null = null;
-    cabecalhosAtuais().then(async (headers) => {
-      if (Platform.OS !== 'web') {
-        if (vivo) setFonte({ uri: SERVIDOR + caminho, headers });
-        return;
-      }
-      const r = await fetch(SERVIDOR + caminho, { headers });
-      if (!r.ok) return;
-      local = URL.createObjectURL(await r.blob());
-      if (vivo) setFonte({ uri: local });
-    }).catch(() => {});
-    return () => {
-      vivo = false;
-      if (local) URL.revokeObjectURL(local);
-    };
-  }, [caminho]);
-  if (!fonte) return <View style={[estilo, { alignItems: 'center', justifyContent: 'center' }]}><ActivityIndicator /></View>;
+  const fonte = { uri: SERVIDOR + caminho };
   return <Image source={fonte} style={estilo} resizeMode={inteira ? 'contain' : 'cover'} accessibilityLabel="Foto enviada no chat" />;
 }
 
@@ -114,7 +94,7 @@ export default function Conversa() {
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView ref={lista} contentContainerStyle={{ padding: 12, gap: 8 }}
           onContentSizeChange={() => lista.current?.scrollToEnd({ animated: false })}>
           <Apagado estilo={{ textAlign: 'center', fontSize: 12 }}>Só vocês dois veem estas mensagens. A localização das fotos é apagada antes de enviar.</Apagado>

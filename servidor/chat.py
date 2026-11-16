@@ -11,6 +11,7 @@ shortcut: trocar de celular perde o acesso ao chat do apelido; com o Supabase o 
 from __future__ import annotations
 
 import hashlib
+import hmac
 import io
 import json
 import os
@@ -37,6 +38,11 @@ router = APIRouter()
 DADOS = Path(os.environ.get("DADOS_DIR", "/home/user/dados"))
 MENSAGENS_POR_MINUTO = 30
 HISTORICO = 100  # mensagens que a conversa mostra (as mais novas)
+
+# Assina o endereço de cada foto: o <Image> do Android não manda os cabeçalhos X-Apelido/X-Chave, então quem
+# pode ver a foto é quem recebeu o endereço assinado (só as duas pessoas da conversa).
+# shortcut: a chave muda quando o juiz reinicia; o app pega endereços novos na próxima busca da conversa.
+SEGREDO_FOTOS = os.urandom(32)
 
 _trava = threading.Lock()
 _enviadas: dict[str, list[float]] = {}
@@ -113,8 +119,12 @@ def _agora() -> str:
 
 def _mensagem(r, mim: str) -> dict:
     return {"id": r["id"], "de": r["de"], "minha": r["de"] == mim, "texto": r["texto"], "sistema": bool(r["sistema"]),
-            "foto": f"/foto/{r['foto']}" if r["foto"] else None,
+            "foto": f"/foto/{r['foto']}?t={_assinatura(r['foto'])}" if r["foto"] else None,
             "cartao": json.loads(r["cartao"]) if r["cartao"] else None, "criado_em": r["criado_em"]}
+
+
+def _assinatura(nome: str) -> str:
+    return hmac.new(SEGREDO_FOTOS, nome.encode(), hashlib.sha256).hexdigest()[:32]
 
 
 def _resumo(r) -> str:
@@ -321,12 +331,11 @@ def denunciar(d: Denuncia, mim: str = Depends(eu)):
 
 
 @router.get("/foto/{nome}")
-def ver_foto(nome: str, mim: str = Depends(eu)):
-    if not nome.isalnum():
+def ver_foto(nome: str, t: str = ""):
+    if not nome.isalnum() or not hmac.compare_digest(t, _assinatura(nome)):
         raise HTTPException(404, "Foto não encontrada.")
     with _db() as db:
-        ok = db.execute("select 1 from mensagens where foto = ? and apagada = 0 and (de = ? or para = ?)",
-                        (nome, mim, mim)).fetchone()
+        ok = db.execute("select 1 from mensagens where foto = ? and apagada = 0", (nome,)).fetchone()
     caminho = DADOS / "fotos" / f"{nome}.jpg"
     if not ok or not caminho.exists():
         raise HTTPException(404, "Foto não encontrada.")

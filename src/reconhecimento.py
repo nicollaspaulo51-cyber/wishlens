@@ -113,17 +113,22 @@ def probs_por_grupo(grupos: list[str], probs: list[float]) -> dict[str, float]:
     return {g: p / total for g, p in melhor.items()}
 
 
-def decidir_captura(grupos: list[str], probs: list[float]) -> tuple[str | None, bool, float]:
+# Peças que são uma tela de verdade: só elas podem ganhar da frase "foto de uma tela"
+PECAS_TELA = frozenset({"monitor"})
+
+
+def decidir_captura(grupos: list[str], probs: list[float], peca: str = "monitor") -> tuple[str | None, bool, float]:
     """Chance por grupo -> (tema ou None, foto_real, confiança do tema). Sem torch, para testar.
 
     foto_real = falso quando "tela" é o 1º palpite (o CLIP é "confiante demais" para usar um limite
-    de chance). Exceção: peças de computador, porque monitor e notebook ligados são peças.
+    de chance). Exceção: o monitor ligado (peca = a peça que mais combinou), que é peça. Um teclado na tela de um
+    celular continua sendo foto de tela.
     """
     por_grupo = probs_por_grupo(grupos, probs)
     temas = {g: p for g, p in por_grupo.items() if g not in ("tela", "nenhum")}
     melhor = max(temas, key=temas.get)
     tela, nenhum = por_grupo.get("tela", 0.0), por_grupo.get("nenhum", 0.0)
-    if melhor != "pecas" and tela >= max(temas[melhor], nenhum):
+    if not (melhor == "pecas" and peca in PECAS_TELA) and tela >= max(temas[melhor], nenhum):
         return melhor, False, temas[melhor]
     if nenhum > temas[melhor]:
         return None, True, nenhum
@@ -156,7 +161,8 @@ def julgar_clip(imagem: Image.Image, modo: str = "livre") -> dict:
         probs = (modelo.logit_scale.exp() * vet_img @ vet_texto.T).softmax(dim=-1)[0].tolist()
     grupos = [g for g, _, _ in frases]
     # para decidir, as outras abas são "nenhum"
-    tema, real, conf = decidir_captura(["nenhum" if g.startswith("outro:") else g for g in grupos], probs)
+    peca = achado_do_tema(frases, probs, "pecas") if "pecas" in grupos else ""
+    tema, real, conf = decidir_captura(["nenhum" if g.startswith("outro:") else g for g in grupos], probs, peca)
     por_grupo = probs_por_grupo(grupos, probs)
     valor_nitidez = nitidez(imagem)
     return {"nitidez": round(valor_nitidez, 1),

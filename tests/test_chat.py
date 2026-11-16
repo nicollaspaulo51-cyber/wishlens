@@ -90,7 +90,8 @@ def test_foto_sem_gps_so_para_os_dois_e_apagar_remove(c):
     caminho = r["foto"]
     foto = c.get(caminho, headers=_h("bia"))
     assert foto.status_code == 200 and not Image.open(io.BytesIO(foto.content)).getexif()
-    assert c.get(caminho, headers=_h("caio")).status_code == 404
+    sem_assinatura = caminho.split("?")[0]
+    assert c.get(sem_assinatura).status_code == 404 and c.get(sem_assinatura + "?t=" + "0" * 32).status_code == 404
     assert c.delete(f"/mensagem/{r['id']}", headers=_h("bia")).status_code == 404  # só quem mandou apaga
     assert c.delete(f"/mensagem/{r['id']}", headers=_h("ana")).status_code == 200
     assert c.get(caminho, headers=_h("bia")).status_code == 404

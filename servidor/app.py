@@ -60,7 +60,15 @@ async def _ciclo(_app):
 
 
 app = FastAPI(title="WishLens: juiz", lifespan=_ciclo)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], expose_headers=["X-Agora"])
+
+
+@app.middleware("http")
+async def _relogio(request, chamar_rota):
+    """A hora do juiz em cada resposta: o app mede "há 3 min" por ela, não pelo relógio do celular ou do PC."""
+    resposta = await chamar_rota(request)
+    resposta.headers["X-Agora"] = str(int(time.time() * 1000))
+    return resposta
 
 
 def _clip(imagem: Image.Image, modo: str = "livre") -> dict:

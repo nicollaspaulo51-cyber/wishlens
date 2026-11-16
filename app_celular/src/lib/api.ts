@@ -3,6 +3,8 @@ import { fetch as fetchExpo } from 'expo/fetch';
 import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
 
+import { acertarRelogio } from './quando';
+
 export const SERVIDOR = (process.env.EXPO_PUBLIC_SERVIDOR_URL ?? 'http://localhost:7860').replace(/\/$/, '');
 
 export type Tema = { id: string; nome: string; emoji: string; cor: string; onde: string };
@@ -65,8 +67,6 @@ export class ErroApi extends Error {
 
 // O provedor de sessão (sessao.tsx) diz quais cabeçalhos mandar: o token do Supabase ou o apelido de teste.
 let cabecalhos: () => Promise<Record<string, string>> = async () => ({});
-// As fotos do chat só abrem com os mesmos cabeçalhos (o <Image> do app manda eles junto)
-export const cabecalhosAtuais = () => cabecalhos();
 export function usarCabecalhos(fonte: typeof cabecalhos) {
   cabecalhos = fonte;
 }
@@ -79,6 +79,8 @@ async function chamar<T>(caminho: string, init: RequestInit = {}, enviar: typeof
     console.warn('falha ao chamar o juiz', caminho, erro);
     throw new ErroApi(0, 'Sem conexão com o servidor do juiz. Confira a internet e tente de novo.');
   }
+  const agoraDoJuiz = resp.headers.get('X-Agora');
+  if (agoraDoJuiz) acertarRelogio(Number(agoraDoJuiz));
   if (!resp.ok) {
     const corpo = await resp.json().catch(() => ({}));
     const detalhe = typeof corpo.detail === 'string' ? corpo.detail : 'O servidor do juiz não respondeu direito.';

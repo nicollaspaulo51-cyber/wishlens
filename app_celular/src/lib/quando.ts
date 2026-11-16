@@ -1,5 +1,11 @@
 // "agora", "há 5 min", "há 2 h", "ontem", "12/11": a hora das mensagens do chat.
-export function quandoFoi(iso: string, agora = Date.now()): string {
+// Diferença entre o relógio do juiz (cabeçalho X-Agora) e o do celular: as mensagens têm a hora do juiz.
+let desvio = 0;
+export function acertarRelogio(agoraDoJuiz: number) {
+  if (Number.isFinite(agoraDoJuiz)) desvio = agoraDoJuiz - Date.now();
+}
+
+export function quandoFoi(iso: string, agora = Date.now() + desvio): string {
   const t = new Date(iso).getTime();
   if (Number.isNaN(t)) return '';
   const min = Math.floor((agora - t) / 60000);
