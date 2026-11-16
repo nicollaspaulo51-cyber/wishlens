@@ -52,7 +52,7 @@ export function Botao({ titulo, aoTocar, tipo = 'primario', desativado, carregan
       style={({ pressed }) => [{
         minHeight: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20,
         backgroundColor: primario ? c.destaque : 'transparent', borderWidth: primario ? 0 : 1.5, borderColor: c.destaque,
-        opacity: desativado ? 0.5 : pressed ? 0.85 : 1,
+        opacity: desativado ? 0.5 : pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }],
       }, estilo]}
     >
       {carregando ? <ActivityIndicator color={primario ? c.destaqueTinta : c.destaque} /> : (

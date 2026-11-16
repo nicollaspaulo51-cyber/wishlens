@@ -2,22 +2,16 @@
 // Os blocos do tile.openstreetmap.org bloqueiam apps sem identificação ("Access blocked"), por isso o mapa do sistema.
 // shortcut: no Expo Go o Google Maps já vem com chave; num APK próprio, pôr a chave em app.json (android.config.googleMaps).
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Text, View, useColorScheme } from 'react-native';
+import { Text, View, useColorScheme } from 'react-native';
 import MapView, { Callout, Circle, Marker } from 'react-native-maps';
 
 // Esconde lojas e empresas do mapa base: sobram as ruas, os parques e os marcadores do jogo
 const ESTILO_LIMPO = [{ featureType: 'poi.business', stylers: [{ visibility: 'off' }] }];
 
-// Os lugares piscam, cada um no seu ritmo. Muda só a opacidade do marcador (barato no nativo);
-// com "reduzir movimento" ligado no celular, ficam parados.
+// Os lugares piscam, cada um no seu ritmo. Muda só a opacidade do marcador (barato no nativo).
 function usePiscar() {
   const [tempo, setTempo] = useState(0);
-  const [parado, setParado] = useState(false);
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setParado);
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setParado);
-    return () => sub.remove();
-  }, []);
+  const parado = useMovimentoReduzido();
   useEffect(() => {
     if (parado) return;
     const id = setInterval(() => setTempo((t) => t + 1), 150);
@@ -28,6 +22,7 @@ function usePiscar() {
 
 import type { Mapa as DadosMapa, Tema } from '../lib/api';
 import { useCores } from '../lib/cores';
+import { useMovimentoReduzido } from '../lib/movimento';
 
 export type PropsMapa = {
   posicao: { lat: number; lon: number };

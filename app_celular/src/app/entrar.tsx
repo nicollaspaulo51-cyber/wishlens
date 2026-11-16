@@ -1,10 +1,11 @@
 // Entrada: a marca em cima, no verde do mapa de trilha, e o formulário numa folha que sobe de baixo.
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
+import { Animated, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Apagado, Botao, Fichas } from '../componentes/ui';
 import { FONTE_TITULO, useCores } from '../lib/cores';
+import { Surge, useLaco } from '../lib/movimento';
 import { useSessao } from '../lib/sessao';
 
 const APELIDO = /^[\p{L}\p{N} ._-]{2,30}$/u;
@@ -12,11 +13,14 @@ const PINHEIRO = '#0F5A40';
 
 // A lupa da marca: um aro amarelo com o cabo, feita só de formas
 function Lupa() {
+  const { v } = useLaco(2600);
+  const giro = v.interpolate({ inputRange: [0, 0.5, 1], outputRange: ['-12deg', '6deg', '-12deg'] });
+  const anda = v.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 14, 0] });
   return (
-    <View style={{ width: 96, height: 96, transform: [{ rotate: '-12deg' }] }} accessibilityElementsHidden>
+    <Animated.View style={{ width: 96, height: 96, transform: [{ translateX: anda }, { rotate: giro }] }} accessibilityElementsHidden>
       <View style={{ width: 70, height: 70, borderRadius: 35, borderWidth: 9, borderColor: '#FFC83D', backgroundColor: 'rgba(255,255,255,0.14)' }} />
       <View style={{ position: 'absolute', left: 58, top: 60, width: 34, height: 11, borderRadius: 6, backgroundColor: '#FFC83D', transform: [{ rotate: '45deg' }] }} />
-    </View>
+    </Animated.View>
   );
 }
 
@@ -59,11 +63,13 @@ export default function Entrar() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" bounces={false}>
           <SafeAreaView edges={['top']} style={{ flex: 1, minHeight: 280, justifyContent: 'center', paddingHorizontal: 28, paddingVertical: 24, gap: 8 }}>
-            <Lupa />
-            <Text accessibilityRole="header" style={{ fontFamily: FONTE_TITULO, fontSize: 52, color: '#FFFFFF', letterSpacing: -1.5, lineHeight: 56 }}>
-              WishLens
-            </Text>
-            <Text style={{ color: '#D6EDE2', fontSize: 19 }}>Aponte. Fotografe. Descubra.</Text>
+            <Surge><Lupa /></Surge>
+            <Surge ordem={2}>
+              <Text accessibilityRole="header" style={{ fontFamily: FONTE_TITULO, fontSize: 52, color: '#FFFFFF', letterSpacing: -1.5, lineHeight: 56 }}>
+                WishLens
+              </Text>
+            </Surge>
+            <Surge ordem={4}><Text style={{ color: '#D6EDE2', fontSize: 19 }}>Aponte. Fotografe. Descubra.</Text></Surge>
           </SafeAreaView>
 
           <SafeAreaView edges={['bottom']} style={{ backgroundColor: c.superficie, borderTopLeftRadius: 30, borderTopRightRadius: 30,

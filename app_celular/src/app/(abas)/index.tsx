@@ -2,7 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Animated, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Mapa } from '../../componentes/Mapa';
@@ -10,9 +10,23 @@ import { PainelDoDia } from '../../componentes/PainelDoDia';
 import { Aviso, Botao } from '../../componentes/ui';
 import { api, type Mapa as DadosMapa, type Tema } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
+import { Brilho, Surge, useContagem, useEntrada } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 
 const KM_PARA_ATUALIZAR = 0.3;
+
+// Os pontos contam até o valor novo e dão um pulo quando mudam
+function Pontos({ valor }: { valor: number }) {
+  const c = useCores();
+  const mostrado = useContagem(valor);
+  const pulo = useEntrada(0, valor);
+  return (
+    <Animated.Text style={{ fontFamily: FONTE_TITULO, fontSize: 20, color: c.tinta,
+      transform: [{ scale: pulo.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.25, 1], extrapolate: 'clamp' }) }] }}>
+      {mostrado}<Text style={{ fontSize: 13, color: c.apagado }}> pts</Text>
+    </Animated.Text>
+  );
+}
 
 function distanciaKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {
   const r = Math.PI / 180;
@@ -94,7 +108,7 @@ export default function Jogar() {
           {e ? (
             <View accessible accessibilityLabel={`${e.pontos_hoje} pontos hoje, ${e.posicao ? `${e.posicao}º lugar` : 'sem posição ainda'}`}
               style={[{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.superficie, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }, sombra]}>
-              <Text style={{ fontFamily: FONTE_TITULO, fontSize: 20, color: c.tinta }}>{e.pontos_hoje}<Text style={{ fontSize: 13, color: c.apagado }}> pts</Text></Text>
+              <Pontos valor={e.pontos_hoje} />
               <View style={{ width: 1, height: 18, backgroundColor: c.linha }} />
               <Ionicons name="trophy" size={15} color={c.destaque} />
               <Text style={{ fontFamily: FONTE_TITULO, fontSize: 18, color: c.tinta }}>{e.posicao ? `${e.posicao}º` : '—'}</Text>
@@ -104,23 +118,28 @@ export default function Jogar() {
         {estado.erro && !e ? <Aviso texto={estado.erro} aoTentar={estado.recarregar} /> : null}
         {e ? (
           <>
-            {/* O tema do dia é a figurinha brilhante: borda branca e um leve giro */}
-            <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.sol, borderRadius: 10, borderWidth: 4,
-              borderColor: '#FFFFFF', paddingHorizontal: 12, paddingVertical: 8, transform: [{ rotate: '-1.2deg' }] }, sombra]}>
-              <Text style={{ fontSize: 30 }} accessibilityElementsHidden>{e.tema_do_dia.emoji}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: c.solTinta, fontSize: 12, fontWeight: '600' }}>Tema de hoje</Text>
-                <Text style={{ color: c.solTinta, fontFamily: FONTE_TITULO, fontSize: 19, lineHeight: 22 }}>{e.tema_do_dia.nome}</Text>
+            {/* O tema do dia é a figurinha holográfica: borda branca, um leve giro e o brilho que passa */}
+            <Surge ordem={1}>
+              <View style={[{ borderRadius: 12, borderWidth: 4, borderColor: '#FFFFFF', transform: [{ rotate: '-1.2deg' }] }, sombra]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.sol, borderRadius: 8,
+                  paddingHorizontal: 12, paddingVertical: 8, overflow: 'hidden' }}>
+                  <Text style={{ fontSize: 30 }} accessibilityElementsHidden>{e.tema_do_dia.emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: c.solTinta, fontSize: 12, fontWeight: '600' }}>Tema de hoje</Text>
+                    <Text style={{ color: c.solTinta, fontFamily: FONTE_TITULO, fontSize: 19, lineHeight: 22 }}>{e.tema_do_dia.nome}</Text>
+                  </View>
+                  <Text accessibilityLabel="vale o dobro" style={{ fontFamily: FONTE_TITULO, fontSize: 26, color: c.solTinta }}>×2</Text>
+                  <Brilho />
+                </View>
               </View>
-              <Text accessibilityLabel="vale o dobro" style={{ fontFamily: FONTE_TITULO, fontSize: 26, color: c.solTinta }}>×2</Text>
-            </View>
-            <View style={sombra}><PainelDoDia estado={e} /></View>
+            </Surge>
+            <Surge ordem={2} estilo={sombra}><PainelDoDia estado={e} /></Surge>
           </>
         ) : null}
         {mudou ? (
-          <View style={[{ alignSelf: 'center', backgroundColor: c.tinta, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8 }, sombra]}>
+          <Surge chave={mudou} estilo={[{ alignSelf: 'center', backgroundColor: c.tinta, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8 }, sombra]}>
             <Text accessibilityLiveRegion="polite" style={{ color: c.fundo, fontWeight: '700' }}>{mudou}</Text>
-          </View>
+          </Surge>
         ) : null}
       </SafeAreaView>
 

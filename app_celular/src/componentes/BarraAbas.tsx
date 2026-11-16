@@ -3,9 +3,10 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, type Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Animated, Pressable, Text, View } from 'react-native';
 
 import { useCores } from '../lib/cores';
+import { useLaco } from '../lib/movimento';
 
 type Props = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 type Icone = ComponentProps<typeof Ionicons>['name'];
@@ -20,6 +21,7 @@ const ICONES: Record<string, [Icone, Icone]> = {
 export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) {
   const c = useCores();
   const meio = Math.ceil(state.routes.length / 2);
+  const { v: halo } = useLaco(1800, 600);
 
   const aba = (rota: (typeof state.routes)[number], indice: number) => {
     const ativa = state.index === indice;
@@ -43,6 +45,11 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
       shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: -3 }, elevation: 16 }}>
       {state.routes.slice(0, meio).map((r, i) => aba(r, i))}
       <View style={{ width: 84, alignItems: 'center' }}>
+        {/* Halo de lente: chama para a câmera sem tampar nada */}
+        <Animated.View pointerEvents="none" accessibilityElementsHidden style={{ position: 'absolute', top: -30, width: 68, height: 68,
+          borderRadius: 34, borderWidth: 3, borderColor: c.sol,
+          opacity: halo.interpolate({ inputRange: [0, 0.1, 1], outputRange: [0, 0.8, 0] }),
+          transform: [{ scale: halo.interpolate({ inputRange: [0, 1], outputRange: [1, 1.6] }) }] }} />
         <Pressable accessibilityRole="button" accessibilityLabel="Fotografar"
           onPress={() => {
             Haptics.selectionAsync().catch(() => {});

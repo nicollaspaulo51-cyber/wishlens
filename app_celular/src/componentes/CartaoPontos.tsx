@@ -4,6 +4,7 @@ import { AccessibilityInfo, Animated, Text, View } from 'react-native';
 
 import type { Cartao } from '../lib/api';
 import { FONTE_TITULO, useCores } from '../lib/cores';
+import { Brilho } from '../lib/movimento';
 import { Apagado } from './ui';
 
 export function CartaoPontos({ cartao }: { cartao: Cartao }) {
@@ -39,8 +40,9 @@ export function CartaoPontos({ cartao }: { cartao: Cartao }) {
   const giro = colar.interpolate({ inputRange: [0, 1], outputRange: ['-8deg', '-2deg'] });
   return (
     <Animated.View style={{ opacity: colar, transform: [{ scale: colar.interpolate({ inputRange: [0, 1], outputRange: [1.15, 1] }) }, { rotate: giro }] }}>
-      <View style={{ backgroundColor: c.figurinha, borderRadius: 8, borderWidth: 6, borderColor: '#FFFFFF', padding: 16,
+      <View style={{ borderRadius: 8, borderWidth: 6, borderColor: '#FFFFFF', backgroundColor: c.figurinha,
         shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 }}>
+      <View style={{ padding: 16, borderRadius: 2, overflow: 'hidden' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Text style={{ fontSize: 36 }} accessibilityElementsHidden>{tema.emoji}</Text>
           <View style={{ backgroundColor: c.sol, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 4 }}>
@@ -55,6 +57,8 @@ export function CartaoPontos({ cartao }: { cartao: Cartao }) {
         </View>
         <Apagado estilo={{ marginTop: 10 }}>{cartao.destaque}</Apagado>
         <Apagado estilo={{ fontSize: 12, marginTop: 6 }}>{cartao.juizes}</Apagado>
+        <Brilho pausa={2500} atraso={500} />
+      </View>
       </View>
     </Animated.View>
   );

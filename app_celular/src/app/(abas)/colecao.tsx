@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Apagado, Aviso, Cartaz, Subtitulo, Titulo } from '../../componentes/ui';
 import { api, type Medalha } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
+import { Brilho, Surge } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 
 const COR_NIVEL = { bronze: '#B87333', prata: '#9AA4AD', ouro: '#FFC83D' } as const;
@@ -24,11 +25,11 @@ export default function Colecao() {
           <>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {[[d.resumo.pontos, 'pontos'], [d.resumo.achados, 'achados diferentes'], [d.resumo.corrente, 'dias seguidos'],
-                [d.resumo.fotos, 'fotos'], [`${Math.round(d.resumo.recusadas * 100)}%`, 'recusadas']].map(([valor, rotulo]) => (
-                <View key={String(rotulo)} style={{ backgroundColor: c.superficie, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, minWidth: 96 }}>
+                [d.resumo.fotos, 'fotos'], [`${Math.round(d.resumo.recusadas * 100)}%`, 'recusadas']].map(([valor, rotulo], i) => (
+                <Surge key={String(rotulo)} ordem={i} estilo={{ backgroundColor: c.superficie, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, minWidth: 96 }}>
                   <Text style={{ fontFamily: FONTE_TITULO, fontSize: 22, color: c.tinta }}>{valor}</Text>
                   <Text style={{ color: c.apagado, fontSize: 12 }}>{rotulo}</Text>
-                </View>
+                </Surge>
               ))}
             </View>
             {d.estilo ? (
@@ -51,14 +52,17 @@ export default function Colecao() {
                   <Apagado>Nenhuma figurinha ainda. Procure em {p.tema.onde}.</Apagado>
                 ) : (
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }} accessibilityRole="list">
-                    {p.colados.map((f) => (
-                      <View key={f.achado} accessibilityLabel={`${f.achado}, achado por ${f.turma} da turma`}
-                        style={{ width: '31%', minHeight: 84, backgroundColor: c.figurinha, borderRadius: 6, borderWidth: 4, borderColor: '#FFFFFF',
+                    {p.colados.map((f, i) => (
+                      <Surge key={f.achado} ordem={i} estilo={{ width: '31%' }}>
+                      <View accessibilityLabel={`${f.achado}, achado por ${f.turma} da turma`}
+                        style={{ minHeight: 84, overflow: 'hidden', backgroundColor: c.figurinha, borderRadius: 6, borderWidth: 4, borderColor: '#FFFFFF',
                           padding: 6, justifyContent: 'space-between', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 3, elevation: 2,
                           ...(f.turma === 1 ? { borderColor: c.sol } : null) }}>
                         <Text style={{ color: c.tinta, fontWeight: '700', fontSize: 13 }} numberOfLines={3}>{f.achado}</Text>
                         <Text style={{ color: c.apagado, fontSize: 11 }}>{f.turma === 1 ? 'só você' : `${f.turma} na turma`}</Text>
+                        {f.turma === 1 ? <Brilho pausa={4500} atraso={i * 400} /> : null}
                       </View>
+                      </Surge>
                     ))}
                     {p.faltam.map((f) => (
                       <View key={f.dica + f.turma} accessibilityLabel={`Falta: começa com ${f.dica[0]}, ${f.turma} da turma já acharam`}
