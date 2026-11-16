@@ -66,12 +66,23 @@ export default function Jogar() {
     return () => assinatura?.remove();
   }, []);
 
-  // Lugares e manchas: de novo só quando você andou mais de 300 m
+  // Lugares e manchas: de novo só quando você andou mais de 300 m, ou em 20 s se o OpenStreetMap não respondeu
+  const [tentativa, setTentativa] = useState(0);
   useEffect(() => {
     if (!posicao || (ultimaBusca.current && distanciaKm(ultimaBusca.current, posicao) < KM_PARA_ATUALIZAR)) return;
     ultimaBusca.current = posicao;
-    api.mapa(posicao.lat, posicao.lon).then(setMapa).catch(() => { ultimaBusca.current = null; });
-  }, [posicao]);
+    // Sem cancelar na troca de posição: o GPS muda a cada 20 m e a resposta ainda vale
+    const deNovo = () => {
+      ultimaBusca.current = null;
+      setTimeout(() => setTentativa((n) => n + 1), 20000);
+    };
+    api.mapa(posicao.lat, posicao.lon)
+      .then((m) => {
+        setMapa((antes) => (m.lugares_ok === false && antes?.lugares.length ? { ...m, lugares: antes.lugares } : m));
+        if (m.lugares_ok === false) deNovo();
+      })
+      .catch(deNovo);
+  }, [posicao, tentativa]);
 
   // Aviso quando a posição no pódio muda enquanto o placar se atualiza sozinho
   useEffect(() => {

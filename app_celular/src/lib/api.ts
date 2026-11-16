@@ -42,7 +42,7 @@ export type Colecao = {
 };
 export type Lugar = { tema: string; nome: string; tipo: string | null; lat: number; lon: number; distancia_km: number; mapa: string };
 export type Mancha = { celula: string; tema: string; n: number; achados: string[]; lat: number; lon: number; guardiao: string | null };
-export type Mapa = { lugares: Lugar[]; manchas: Mancha[] };
+export type Mapa = { lugares: Lugar[]; manchas: Mancha[]; lugares_ok?: boolean };
 
 export class ErroApi extends Error {
   constructor(public status: number, mensagem: string) {

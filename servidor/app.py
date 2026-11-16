@@ -180,11 +180,12 @@ def _lugares(lat2: float, lon2: float, hora: int) -> tuple:
     return tuple(buscar_pontos_temas(TEMAS, lat2, lon2))  # RuntimeError (Overpass fora) não fica em cache
 
 
-def lugares_perto(lat: float, lon: float) -> list[dict]:
+def lugares_perto(lat: float, lon: float) -> list[dict] | None:
+    """None quando o OpenStreetMap (Overpass) não respondeu: diferente de "nada por perto"."""
     try:
         return list(_lugares(round(lat, 2), round(lon, 2), int(time.time() // 3600)))
     except RuntimeError:
-        return []
+        return None
 
 
 @lru_cache(maxsize=2048)
@@ -290,8 +291,8 @@ def _guardioes(s) -> list[dict]:
 @app.post("/mapa")
 def mapa(pos: Posicao, s=Depends(sessao)):
     """Lugares de cada tema (OpenStreetMap) perto de você e as manchas da turma, com o guardião de cada uma."""
-    lugares = [{**l, "distancia_km": round(distancia_km(pos.lat, pos.lon, l["lat"], l["lon"]), 2)}
-               for l in lugares_perto(pos.lat, pos.lon)]
+    perto = lugares_perto(pos.lat, pos.lon)
+    lugares = [{**l, "distancia_km": round(distancia_km(pos.lat, pos.lon, l["lat"], l["lon"]), 2)} for l in perto or []]
     try:
         manchas = s.manchas()
     except Exception:  # banco criado antes da função manchas_capturas
@@ -301,7 +302,8 @@ def mapa(pos: Posicao, s=Depends(sessao)):
         m["lat"], m["lon"] = jogo.centro_celula(m["celula"])
         m["guardiao"] = guardiao.get(m["celula"])
         m["n"] = int(m["n"])
-    return {"lugares": lugares, "manchas": manchas}
+    # lugares_ok=False: o OpenStreetMap não respondeu agora e o app tenta de novo daqui a pouco
+    return {"lugares": lugares, "manchas": manchas, "lugares_ok": perto is not None}
 
 
 class Contestacao(BaseModel):
@@ -374,7 +376,7 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
         lat, lon = gps
         celula = jogo.celula(lat, lon)
         cidade = f_bairro.result()
-        lugares = f_lugares.result()
+        lugares = f_lugares.result() or []
         perto = min(lugares, key=lambda l: distancia_km(lat, lon, l["lat"], l["lon"]), default=None)
         contexto["mirante"] = bool(perto) and distancia_km(lat, lon, perto["lat"], perto["lon"]) * 1000 <= jogo.MIRANTE_M
         contexto["tipo_lugar"] = perto.get("tipo") if contexto["mirante"] else None

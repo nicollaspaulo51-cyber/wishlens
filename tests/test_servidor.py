@@ -95,3 +95,13 @@ def test_recusa_entrada_invalida(cliente):
 def test_com_supabase_exige_login(cliente, monkeypatch):
     monkeypatch.setattr(srv, "SUPABASE", ("https://x.supabase.co", "chave"))
     assert cliente.get("/estado").status_code == 401
+
+
+def test_mapa_avisa_quando_o_openstreetmap_nao_respondeu(cliente, monkeypatch):
+    h = {"X-Apelido": "ana"}
+    pos = {"lat": -20.3, "lon": -40.3}
+    assert cliente.post("/mapa", json=pos, headers=h).json()["lugares_ok"] is True  # lista vazia de verdade
+    monkeypatch.setattr(srv, "lugares_perto", lambda lat, lon: None)
+    r = cliente.post("/mapa", json=pos, headers=h).json()
+    assert r["lugares"] == [] and r["lugares_ok"] is False
+    assert _enviar(cliente, lat=-20.3, lon=-40.3)["status"] == "ok"  # a foto vale mesmo sem o Overpass
