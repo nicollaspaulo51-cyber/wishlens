@@ -1,4 +1,4 @@
-"""Testes de clustering, exportação anonimizada e do fallback de armazenamento (sem internet)."""
+"""Testes de clustering, exportação anonimizada (sem internet)."""
 
 import sys
 from pathlib import Path
@@ -67,8 +67,13 @@ def test_anonimizar_remove_dados_pessoais():
     assert len(anon) == len(df)
 
 
-def test_sem_supabase_usa_memoria():
-    from src import armazenamento, banco
-    assert banco.configurado() is False          # sem secrets.toml nesta máquina
-    assert banco.sessao_atual() is None
-    assert "memória" in armazenamento.descricao_backend()
+def test_csv_do_supabase_vira_csv_anonimizado_com_pontos(tmp_path):
+    from src.exemplo import gerar_capturas
+    from src.exportar import COLUNAS_CSV, de_supabase
+
+    bruto = pd.DataFrame(gerar_capturas()).rename(columns={"usuario": "usuario_id"})
+    bruto["criado_em"] = pd.to_datetime(bruto["criado_em"]).dt.tz_localize("America/Sao_Paulo").astype(str)
+    bruto.to_csv(tmp_path / "capturas_rows.csv", index=False)
+    saida = de_supabase(tmp_path / "capturas_rows.csv")
+    assert set(saida.columns) <= set(COLUNAS_CSV) and "pontos" in saida
+    assert saida["usuario"].str.fullmatch(r"u\d\d").all() and len(saida) == len(bruto)

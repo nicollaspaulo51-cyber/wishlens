@@ -54,19 +54,17 @@ def test_nome_digitado():
     assert not nome_valido("x" * 61)
 
 
-def test_todos_os_modulos_e_paginas_carregam():
-    """Nenhum import quebrado depois de tirar a parte de compras."""
+def test_todos_os_modulos_e_o_servidor_carregam():
+    """Nenhum import quebrado depois de tirar a parte de compras e o Streamlit."""
     for arquivo in sorted((RAIZ / "src").glob("*.py")):
         if arquivo.stem != "__init__":
             importlib.import_module(f"src.{arquivo.stem}")
-    paginas = [RAIZ / "app" / "Home.py", *sorted((RAIZ / "app" / "pages").glob("*.py"))]
-    assert [p.name for p in paginas] == ["Home.py", "1_Pódio.py", "2_Minha_Coleção.py", "3_Avaliação.py", "4_Conta.py"]
-    for pagina in paginas:
+    for pagina in [RAIZ / "servidor" / "app.py"]:
         arvore = ast.parse(pagina.read_text(encoding="utf-8"))
         for no in ast.walk(arvore):
             if isinstance(no, ast.ImportFrom) and no.module and no.module.startswith("src"):
                 modulo = importlib.import_module(no.module)
                 for nome in no.names:
                     assert hasattr(modulo, nome.name), f"{pagina.name}: {no.module}.{nome.name} não existe"
-    for removido in ("links", "precos", "feed"):
+    for removido in ("links", "precos", "feed", "ui", "armazenamento", "mapa_jogo"):
         assert importlib.util.find_spec(f"src.{removido}") is None

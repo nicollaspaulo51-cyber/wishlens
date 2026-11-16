@@ -135,31 +135,6 @@ def test_mesma_foto_so_e_repetida_para_o_mesmo_achado():
     assert list(r["aceita"]) == [True, True, False] and r.loc[2, "motivo"] == "foto repetida"
 
 
-def test_capturas_misturando_memoria_e_supabase(monkeypatch):
-    """Exemplos em memória (sem fuso) + linhas do Supabase (ISO com fuso) não podem quebrar a página."""
-    import streamlit as st
-    from src import armazenamento
-    from src.banco import para_brasilia
-
-    class BancoFalso:
-        def capturas_todas(self):
-            return [{"id": "1", "usuario": "bia", "criado_em": para_brasilia("2026-11-12T13:00:00+00:00"),
-                     "tema": "carros", "achado": "Gol", "confianca": 0.9, "foto_real": True, "foto_hash": None}]
-
-    class Sessao(dict):
-        __getattr__ = dict.__getitem__
-        __setattr__ = dict.__setitem__
-
-    monkeypatch.setattr(st, "session_state", Sessao({"capturas": [
-        {"id": "2", "usuario": "exemplo:ana", "criado_em": datetime(2026, 11, 12, 9, 30), "tema": "pets",
-         "achado": "gato", "confianca": None, "foto_real": True, "foto_hash": None, "cidade": None, "celula": None}]}))
-    monkeypatch.setattr(armazenamento, "_banco", lambda: BancoFalso())
-    df = armazenamento.capturas()
-    assert df["criado_em"].dt.tz is None
-    assert sorted(df["criado_em"].dt.hour) == [9, 10]  # 13h UTC = 10h em Brasília
-    assert len(jogo.podio(jogo.calcular_pontos(df), "geral")) == 2
-
-
 def test_para_brasilia():
     from src.banco import para_brasilia
     assert para_brasilia("2026-11-13T02:30:00Z") == datetime(2026, 11, 12, 23, 30)
@@ -210,22 +185,6 @@ def test_exemplos_tem_opiniao_do_clip_e_discordancias():
     a = jogo.avaliar_juizes(jogo.calcular_pontos(pd.DataFrame(gerar_capturas())))
     assert a["comparadas"] > 100 and 0.6 < a["concordancia"] < 0.98
     assert len(a["vetos"]) and not a["contestadas"].empty
-
-
-def test_contestar_em_memoria(monkeypatch):
-    import streamlit as st
-    from src import armazenamento
-
-    class Sessao(dict):
-        __getattr__ = dict.__getitem__
-        __setattr__ = dict.__setitem__
-
-    monkeypatch.setattr(st, "session_state", Sessao({"capturas": []}))
-    monkeypatch.setattr(armazenamento, "_banco", lambda: None)
-    i = armazenamento.salvar_captura(None, "", 0.5, True, None, None, None, juiz="ia+clip", clip_tema="pecas")
-    armazenamento.contestar(i, "pecas")
-    df = armazenamento.capturas()
-    assert df.loc[0, "contestada"] == "pecas" and df.loc[0, "juiz"] == "ia+clip"
 
 
 def test_banco_antigo_salva_sem_colunas_dos_juizes():

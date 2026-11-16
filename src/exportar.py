@@ -28,3 +28,24 @@ def anonimizar(df: pd.DataFrame) -> pd.DataFrame:
         # "Jardim da Penha, Vitória - ES" -> "Vitória - ES" (descarta o bairro)
         saida["cidade"] = saida["cidade"].astype("string").str.split(",").str[-1].str.strip()
     return saida.sort_values(["usuario", "criado_em"]).reset_index(drop=True)
+
+
+def de_supabase(caminho) -> pd.DataFrame:
+    """CSV da tabela capturas exportado do Supabase -> CSV anonimizado com os pontos, para os notebooks."""
+    from src import jogo
+    from src.banco import para_brasilia
+
+    df = pd.read_csv(caminho)
+    if "usuario" not in df:
+        df = df.rename(columns={"usuario_id": "usuario"})
+    df["criado_em"] = df["criado_em"].map(para_brasilia)
+    pontuadas = jogo.calcular_pontos(df)
+    return anonimizar(pontuadas[[c for c in COLUNAS_CSV if c in pontuadas]])
+
+
+if __name__ == "__main__":  # python -m src.exportar capturas_rows.csv
+    import sys
+
+    destino = "data/processed/avaliacao_juizes.csv"
+    de_supabase(sys.argv[1]).to_csv(destino, index=False)
+    print(f"Salvo em {destino}")

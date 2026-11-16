@@ -1,4 +1,4 @@
-// A mesma paleta do app web (src/ui.py e .streamlit/config.toml): verde-pinheiro de mapa de trilha e o
+// Paleta do WishLens: verde-pinheiro de mapa de trilha e o
 // amarelo-sol da lupa, que só aparece em pontos e no tema do dia.
 import { useColorScheme } from 'react-native';
 

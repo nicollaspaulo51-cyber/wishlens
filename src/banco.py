@@ -1,7 +1,6 @@
-"""Acesso ao Supabase (banco PostgreSQL + login). Usado por src/armazenamento.py.
+"""Acesso ao Supabase (banco PostgreSQL) com o login da própria pessoa. Usado pelo servidor do juiz.
 
-Nada aqui é obrigatório: sem as chaves em `.streamlit/secrets.toml` ou sem o pacote
-`supabase` instalado, o app continua funcionando em memória.
+O token vem do app de celular; sem SUPABASE_URL e SUPABASE_KEY o servidor fica em memória (servidor/app.py).
 
 Estrutura das tabelas: supabase/schema.sql. Passo a passo: docs/SUPABASE.md.
 
@@ -10,12 +9,8 @@ ATENÇÃO: este módulo ainda não foi testado contra um projeto Supabase real.
 
 from __future__ import annotations
 
-import importlib.util
 from dataclasses import dataclass
 from datetime import datetime
-
-# Sem `import streamlit` no topo: o servidor do juiz (servidor/) usa a Sessao sem o Streamlit.
-_CHAVE_SESSAO = "_wl_supabase"
 
 COLUNAS_CAPTURA = ["id", "usuario", "criado_em", "tema", "achado", "confianca", "foto_real",
                    "foto_hash", "cidade", "celula",
@@ -48,29 +43,6 @@ def para_brasilia(valor) -> datetime:
     return momento
 
 
-def _segredos() -> tuple[str, str] | None:
-    import streamlit as st
-
-    try:
-        url, chave = st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"]
-    except (KeyError, FileNotFoundError, AttributeError):
-        return None
-    except Exception:  # st.secrets lança erros próprios quando não há secrets.toml
-        return None
-    return (url, chave) if url and chave else None
-
-
-def configurado() -> bool:
-    return _segredos() is not None and importlib.util.find_spec("supabase") is not None
-
-
-def _novo_cliente():
-    from supabase import create_client
-    url, chave = _segredos()
-    return create_client(url, chave)
-
-
-@dataclass
 class Sessao:
     cliente: object
     usuario_id: str
@@ -137,38 +109,3 @@ class Sessao:
     def guardioes(self) -> list[dict]:
         """Guardião de cada quadrado na semana (função no banco: só células com 2+ jogadores, sem horário)."""
         return self.cliente.rpc("guardioes_quadrados", {}).execute().data or []
-
-
-def sessao_atual() -> Sessao | None:
-    import streamlit as st
-
-    return st.session_state.get(_CHAVE_SESSAO)
-
-
-def entrar(email: str, senha: str) -> Sessao:
-    cliente = _novo_cliente()
-    auth = cliente.auth.sign_in_with_password({"email": email, "password": senha})
-    uid = auth.user.id
-    perfil = cliente.table("perfis").select("apelido").eq("id", uid).single().execute()
-    sessao = Sessao(cliente, uid, perfil.data["apelido"])
-    import streamlit as st
-
-    st.session_state[_CHAVE_SESSAO] = sessao
-    return sessao
-
-
-def cadastrar(email: str, senha: str, apelido: str) -> None:
-    """Cria a conta. O perfil (apelido) é criado no banco por um gatilho (ver schema.sql)."""
-    cliente = _novo_cliente()
-    auth = cliente.auth.sign_up({"email": email, "password": senha,
-                                 "options": {"data": {"apelido": apelido}}})
-    if auth.user is None:
-        raise RuntimeError("Não foi possível criar a conta.")
-
-
-def sair() -> None:
-    import streamlit as st
-
-    sessao = st.session_state.pop(_CHAVE_SESSAO, None)
-    if sessao:
-        sessao.cliente.auth.sign_out()

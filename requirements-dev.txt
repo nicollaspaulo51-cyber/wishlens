@@ -1,12 +1,9 @@
-# Dependências leves (sem o reconhecimento automático/torch): rodar o app em modo protótipo e os testes
-streamlit>=1.50  # containers horizontais da barra de abas
+# Dependências leves (sem torch) para os testes e a análise
 pandas>=2.2
 seaborn>=0.13
 scikit-learn>=1.5
-plotly>=5.24
 pillow>=10.4
 requests>=2.32
-streamlit-js-eval>=0.1.7
 pytest>=8
 # servidor do juiz (servidor/app.py) e os testes dele
 fastapi>=0.115

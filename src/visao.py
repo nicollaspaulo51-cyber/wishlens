@@ -1,7 +1,7 @@
 """Juiz principal do jogo: um modelo de visão open source (licença OSI) por API compatível com a da OpenAI.
 
 Diz o tema, o achado (modelo do carro, espécie, raça, peça) e se a foto é real (não é tela/impressão).
-Só roda com VISAO_URL em .streamlit/secrets.toml. Sem ela, ou se a chamada falhar, o CLIP julga
+Só roda com VISAO_URL no ambiente do servidor. Sem ela, ou se a chamada falhar, o CLIP julga
 sozinho (src/reconhecimento.py).
 
 Open source: só modelos com licença aprovada pela OSI (Apache 2.0, MIT). O Gemma saiu porque a licença

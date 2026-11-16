@@ -59,43 +59,42 @@ aviso logo depois da foto.
   Usa a posição, não a chance, porque o CLIP é "confiante demais": uma diferença pequena de parecença vira 95% × 5%.
 - Sem a IA, o CLIP julga sozinho e o achado é o objeto que mais combinou ("mouse", "teclado", "flor", "carro").
 - O que cada modelo disse fica gravado. Quando o juiz erra, a pessoa pode **contestar** ("era um mouse!"):
-  não ganha pontos, mas a contestação aparece na página Avaliação para melhorar o identificador.
+  não ganha pontos, mas a contestação fica gravada (coluna `contestada`) para melhorar o identificador.
 
 ## CRISP-DM
 | Fase | Pergunta | Onde está |
 |---|---|---|
 | 1. Negócio | Como um jogo de fotos do mundo real faz as pessoas descobrirem coisas novas na cidade? Quais estilos de jogador existem? O que é raro e onde? | este README |
-| 2. Dados | Capturas do jogo: tema, achado, hora, bairro, o que cada juiz disse ([dicionário](docs/DICIONARIO_DE_DADOS.md)) | `src/jogo.py`, CSV na página Avaliação |
+| 2. Dados | Capturas do jogo: tema, achado, hora, bairro, o que cada juiz disse ([dicionário](docs/DICIONARIO_DE_DADOS.md)) | `src/jogo.py`, CSV de `python -m src.exportar` |
 | 3. Preparação | Normalização dos achados ("VW Gol" = "Volkswagen Gol"), foto repetida, vetor de perfil por tema | `src/jogo.py` |
 | 4. Modelagem | K-Means (estilos de jogador por tema) + raridade pela frequência dos achados | `src/clustering.py`, `src/jogo.py` |
-| 5. Avaliação | CLIP e IA concordam (matriz de confusão)? Taxa de fotos recusadas e contestadas? Privacidade (LGPD)? | página 📊 Avaliação |
-| 6. Produto | Site publicado | `app/` |
+| 5. Avaliação | CLIP e IA concordam (matriz de confusão)? Taxa de fotos recusadas e contestadas? Privacidade (LGPD)? | `src/jogo.py` (`avaliar_juizes`), notebook `04` |
+| 6. Produto | App de celular + servidor do juiz | `app_celular/`, `servidor/` |
 
 Os notebooks `01`–`05` usam os dados do jogo (o `05` analisa as mecânicas: tema × tipo de lugar, clima,
 deslocamento impossível e o peso dos bônus). Enquanto a turma não joga, leem `data/processed/capturas_demo.csv`
-(fictício, `python -m src.exemplo`); com o CSV da página Avaliação salvo como `data/processed/avaliacao_juizes.csv`,
-passam a usar os dados reais sozinhos.
+(fictício, `python -m src.exemplo`); com os dados reais (exporte a tabela `capturas` no Supabase e rode `python -m src.exportar capturas_rows.csv`,
+que grava `data/processed/avaliacao_juizes.csv` anonimizado), passam a usar os dados reais sozinhos.
 
 ## Arquitetura
 ```
-Celular (GPS + câmera) → Streamlit
-   ├─ mapa do jogo (Leaflet, no navegador): personagem, pontos que piscam, cartão do lugar
-   ├─► OpenStreetMap / Overpass (onde procurar cada tema)
-   ├─► IA open source por API compatível com a da OpenAI (juiz principal) + CLIP (segundo juiz, no servidor)
-   └─► Supabase (capturas + login; sem a foto, só um hash)
-Página Avaliação ──► CSV anonimizado ──► notebooks
+App de celular (Expo / React Native, app_celular/): mapa nativo, câmera, pódio, álbum
+   │ foto + GPS (só no pedido)
+   ▼
+Servidor do juiz (FastAPI + CLIP, servidor/) numa máquina da turma (Docker)
+   ├─► regras do jogo (src/jogo.py): pontos, pódio, raridade, mecânicas
+   ├─► OpenStreetMap / Overpass (onde procurar cada tema) e Open-Meteo (clima)
+   └─► Supabase (capturas + login, com o token da própria pessoa; sem a foto, só um hash)
+Supabase ──► CSV anonimizado (python -m src.exportar) ──► notebooks
 ```
-
-**Em construção: app de celular.** O jogo está indo para um app nativo (Expo / React Native, em `app_celular/`).
-O CLIP roda no **servidor do juiz** (`servidor/`, FastAPI, publicado no Hugging Face Spaces), que reaproveita
-as mesmas regras de `src/`. Como publicar: [servidor/README.md](servidor/README.md).
+Tudo é open source, inclusive onde roda: Linux, Docker e Caddy. Como subir o juiz: [servidor/README.md](servidor/README.md).
+Como abrir o app: [app_celular/README.md](app_celular/README.md).
 
 ## Fontes de dados e licenças
 | Fonte | Uso | Licença |
 |---|---|---|
 | Fotos tiradas no jogo (autor + colegas, com consentimento) | capturas (a foto não é guardada) | uso no projeto, anonimizadas |
 | [OpenStreetMap](https://www.openstreetmap.org/copyright) | mapa e lugares de cada tema | ODbL |
-| [Leaflet](https://leafletjs.com/) | mapa no navegador | BSD-2 |
 | [CLIP ViT-B/32](https://huggingface.co/openai/clip-vit-base-patch32) | segundo juiz das fotos | MIT |
 | [Open-Meteo](https://open-meteo.com) | clima de agora (bônus de chuva) | dados CC-BY 4.0, API sem chave |
 | [Qwen2.5-VL 7B](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct) no [Ollama](https://ollama.com) ou [Mistral Small](https://huggingface.co/mistralai) pela API da Mistral | juiz principal | Apache 2.0 (Ollama: MIT) |
@@ -103,12 +102,10 @@ as mesmas regras de `src/`. Como publicar: [servidor/README.md](servidor/README.
 Todo o projeto usa só modelos com licença aprovada pela OSI. O Gemma, usado antes como juiz principal, saiu porque a
 licença dele (Gemma Terms of Use) não é OSI.
 
-O personagem do mapa é um desenho próprio do WishLens (SVG em `src/mapa_jogo.py`).
-
 ## Privacidade
 - A foto **não é guardada**: só um hash de 16 caracteres para detectar foto repetida.
 - A foto vai para a IA **já sem EXIF/GPS** e reduzida (`src/fotos.py`).
-- O GPS move o personagem no seu navegador; o banco guarda só o bairro e um **quadrado de ~500 m** (`celula`) para o
+- O GPS mostra você no mapa do celular e vai ao servidor só no pedido; o banco guarda só o bairro e um **quadrado de ~500 m** (`celula`) para o
   mapa da turma, nunca a coordenada exata. Hash e célula saem do CSV anonimizado.
 - O pódio mostra só o apelido. Os jogadores logados veem tema, achado e hora das capturas dos outros (é o que permite
   o pódio e a raridade), mas **não** o bairro nem a célula: o mapa da turma vem de uma função do banco que só devolve
@@ -130,49 +127,35 @@ O personagem do mapa é um desenho próprio do WishLens (SVG em `src/mapa_jogo.p
 | Coleta de dados reais com a turma | ⏳ a fazer |
 
 ## Documentação
-- [Como testar o jogo](docs/TESTAR_JOGO.md)
 - [Dicionário de dados](docs/DICIONARIO_DE_DADOS.md)
 - [Configurar o Supabase](docs/SUPABASE.md)
 - [Plano do projeto](docs/PLANO.md) e [roteiro do vídeo](docs/ROTEIRO_VIDEO.md) (da versão anterior)
 
 ## Como rodar
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-streamlit run app/Home.py
-```
-Sem o CLIP (instalação bem mais leve, sem `torch`): `pip install -r requirements-dev.txt`. Sem nenhum juiz, o jogo
-pede para a pessoa dizer o tema e o que fotografou.
-
-Testes (sem internet): `python -m pytest tests/` (o teste do CLIP real é pulado sem `torch` ou sem internet).
+- **Juiz:** `cd servidor && docker compose up -d --build` (detalhes em [servidor/README.md](servidor/README.md)).
+- **App:** `cd app_celular && npm install && npx expo start`, e abra no Expo Go.
+- **Análise e testes** (sem torch): `pip install -r requirements-dev.txt` e `python -m pytest tests/`
+  (o teste do CLIP real é pulado sem `torch` ou sem internet).
 
 ## IA open source (juiz principal)
 `src/visao.py` fala com qualquer API compatível com a da OpenAI (`/chat/completions`). Só use modelos com licença OSI
-(Apache 2.0, MIT). Formato completo em `.streamlit/secrets.toml.example`.
+(Apache 2.0, MIT). As variáveis ficam no `servidor/.env` do juiz.
 
 - **No computador (tudo local):** instale o [Ollama](https://ollama.com), rode `ollama pull qwen2.5vl:7b` e use
   `VISAO_URL = "http://localhost:11434/v1"`. Sem GPU, cada foto leva de 20 a 60 s.
-- **No Streamlit Cloud** (não tem RAM para rodar o modelo): crie uma chave em https://console.mistral.ai e cole nos
-  Secrets `VISAO_URL = "https://api.mistral.ai/v1"`, `VISAO_CHAVE = "sua-chave"` e `VISAO_MODELO = "mistral-small-latest"`.
+- **Pela API da Mistral** (se a máquina não tiver memória para o modelo): crie uma chave em https://console.mistral.ai e
+  ponha no `.env` `VISAO_URL = "https://api.mistral.ai/v1"`, `VISAO_CHAVE = "sua-chave"` e `VISAO_MODELO = "mistral-small-latest"`.
 - Atenção ao trocar de modelo: o Qwen2.5-VL 3B e o 72B **não** são Apache 2.0; o 7B e o 32B são.
 
 Sem a `VISAO_URL`, ou se a API falhar, o app continua só com o CLIP e mostra o motivo em uma linha.
 Capturas antigas, gravadas quando o juiz era o Gemma (`juiz = "gemma+clip"`), são lidas como `"ia+clip"`.
 
-## Publicar no Streamlit Community Cloud
-1. Entre em https://share.streamlit.io com a conta do GitHub e clique em **Create app**.
-2. Repositório `nicollaspaulo51-cyber/wishlens`, a branch desejada, arquivo principal `app/Home.py`.
-3. Em **Advanced settings**, escolha Python 3.12. O `requirements.txt` já instala o torch só-CPU.
-4. Cole as chaves do Supabase e as da IA (`VISAO_URL`, `VISAO_CHAVE`, `VISAO_MODELO`) em **Secrets** no formato de `.streamlit/secrets.toml.example`.
-
-A câmera e o GPS do navegador só funcionam em HTTPS (o Streamlit Cloud já usa) ou em `localhost`.
-
 ## Estrutura
 ```
-app/            Jogar (Home) + páginas Pódio, Minha Coleção e Avaliação
-servidor/       servidor do juiz para o app de celular (FastAPI + CLIP) e os arquivos do Space
-src/            temas, jogo (pontos e pódio), mapa_jogo (personagem e mapa), visao (IA open source), reconhecimento (CLIP),
-                lugares (OSM), localizacao, fotos, armazenamento/banco, clustering, exportação, interface
+app_celular/    app de celular (Expo / React Native)
+servidor/       servidor do juiz (FastAPI + CLIP), Dockerfile e compose.yaml
+src/            temas, jogo (pontos e pódio), visao (IA open source), reconhecimento (CLIP),
+                lugares (OSM), localizacao, fotos, banco, clustering, exportação
 notebooks/      análise CRISP-DM do jogo (01 → 05)
 data/processed/ dados de demonstração da versão anterior (fictícios)
 supabase/       estrutura do banco (schema.sql)

@@ -23,20 +23,21 @@ Com ele, cada pessoa tem uma conta, as capturas ficam salvas na nuvem e o pódio
    **Confirm email** para não precisar confirmar o e-mail a cada conta de teste.
 4. **Copie as chaves.** Em **Project Settings → API**, copie a **Project URL** e a chave **anon public**.
 5. **Configure o app.**
-   - **Rodando no Streamlit Cloud:** em *App settings → Secrets*, cole:
-     ```toml
-     SUPABASE_URL = "https://SEU-PROJETO.supabase.co"
-     SUPABASE_KEY = "sua-anon-key"
+   - **No servidor do juiz:** em `servidor/.env` (modelo em `servidor/.env.example`), preencha:
      ```
-   - **Rodando no computador:** crie `.streamlit/secrets.toml` com o mesmo conteúdo
-     (modelo em `.streamlit/secrets.toml.example`). Esse arquivo está no `.gitignore` e **nunca** deve ir para o GitHub.
+     SUPABASE_URL=https://SEU-PROJETO.supabase.co
+     SUPABASE_KEY=sua-anon-key
+     ```
+     e rode `docker compose up -d` de novo.
+   - **No app de celular:** as mesmas duas em `app_celular/.env`, como `EXPO_PUBLIC_SUPABASE_URL` e
+     `EXPO_PUBLIC_SUPABASE_KEY`. Os dois `.env` estão no `.gitignore` e **nunca** devem ir para o GitHub.
 6. **Instale o pacote** `supabase` (já está no `requirements.txt`).
 
-Pronto: ao abrir o app, a página Jogar mostra **Entre para jogar** (e a barra lateral, **Entrar / Criar conta**).
+Pronto: ao abrir o app, a tela de entrada pede e-mail e senha (**Entrar** ou **Criar conta**).
 
 ### Testar o pódio compartilhado
-1. Crie duas contas (ex.: no celular e no computador, ou numa janela anônima).
-2. Tire uma foto com cada uma em **Jogar**.
+1. Crie duas contas (ex.: em dois celulares).
+2. Tire uma foto com cada uma pelo botão da câmera.
 3. Abra **Pódio**: as duas contas devem aparecer.
 
 Já tinha rodado o `schema.sql` antes? Rode de novo: ele usa `if not exists` e só acrescenta o que falta (tabela `capturas`, coluna `marca`).
@@ -51,7 +52,7 @@ Já tinha rodado o `schema.sql` antes? Rode de novo: ele usa `if not exists` e s
 | Bairro e célula das capturas não são legíveis pela API (nem pelos outros jogadores) | `grant select (...)` só nas outras colunas |
 | O mapa da turma só recebe totais por quadrado e tema, sem quem/quando, com 2+ capturas | função `manchas_capturas()` |
 | No jogo, a posição fica num quadrado de ~500 m, nunca exata | coluna `celula` |
-| A chave usada pelo app é a pública (`anon`); a RLS é quem protege | `.streamlit/secrets.toml` |
+| A chave usada pelo app é a pública (`anon`); a RLS é quem protege | `servidor/.env` e `app_celular/.env` |
 
 ## Exportar para a análise
 

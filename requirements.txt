@@ -1,13 +1,10 @@
-# torch só-CPU (menor; cabe no Streamlit Community Cloud)
+# Análise (notebooks) e regras do jogo. O servidor do juiz tem o próprio: servidor/requirements.txt
 --find-links https://download.pytorch.org/whl/cpu/torch/
-streamlit>=1.50  # containers horizontais da barra de abas
 pandas>=2.2
 seaborn>=0.13
 scikit-learn>=1.5
-plotly>=5.24
 pillow>=10.4
 requests>=2.32
-streamlit-js-eval>=0.1.7
 torch>=2.4
 transformers>=4.45
 supabase>=2.9
