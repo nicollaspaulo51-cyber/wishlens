@@ -1,0 +1,24 @@
+# Juiz do WishLens numa máquina da turma, só com software open source (Docker, Caddy, FastAPI, CLIP).
+#   docker compose up -d                    -> juiz em http://<ip-da-máquina>:7860
+#   docker compose --profile https up -d    -> também em https://<DOMINIO> (precisa de domínio e das portas 80/443)
+services:
+  juiz:
+    build: ./space
+    restart: unless-stopped
+    env_file: { path: .env, required: false }  # SUPABASE_URL e SUPABASE_KEY; sem eles o jogo fica em memória
+    ports: ["7860:7860"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860/saude')"]
+      interval: 30s
+      start_period: 60s
+
+  https:
+    image: caddy:2
+    profiles: [https]
+    restart: unless-stopped
+    command: caddy reverse-proxy --from ${DOMINIO:?defina DOMINIO no .env} --to juiz:7860
+    ports: ["80:80", "443:443"]
+    volumes: [caddy:/data]  # o certificado do Let's Encrypt fica guardado entre reinícios
+
+volumes:
+  caddy: {}

@@ -21,4 +21,5 @@ ADD https://api.github.com/repos/${REPO}/git/refs/heads/${RAMO} /tmp/versao.json
 RUN git clone --depth 1 --branch ${RAMO} https://github.com/${REPO}.git .
 
 EXPOSE 7860
-CMD ["uvicorn", "servidor.app:app", "--host", "0.0.0.0", "--port", "7860"]
+# O Cloud Run diz a porta em $PORT; no Hugging Face ela não existe e fica a 7860
+CMD uvicorn servidor.app:app --host 0.0.0.0 --port ${PORT:-7860}

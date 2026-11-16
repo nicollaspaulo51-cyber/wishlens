@@ -24,13 +24,24 @@ pip install -r servidor/requirements.txt
 uvicorn servidor.app:app --port 7860
 ```
 
-## Publicar no Hugging Face Spaces (grátis)
+## Publicar numa máquina da turma (tudo open source)
 
-1. Crie uma conta em huggingface.co e um **Space** novo: SDK **Docker**, modelo **Blank**, hardware **CPU basic**.
-2. Em *Files*, envie os dois arquivos de `servidor/space/` (`Dockerfile` e `README.md`), substituindo os que existem.
-3. Em *Settings → Variables and secrets*, crie os **secrets** `SUPABASE_URL` e `SUPABASE_KEY` (a chave anon,
-   a mesma dos Secrets do Streamlit).
-4. Espere o build (~5 min). O endereço do servidor é `https://<usuario>-<space>.hf.space`; abra `/saude` nele.
-5. Para pegar código novo do GitHub: *Settings → Factory rebuild*.
+O juiz roda em qualquer computador com Linux e Docker: um PC velho, um Raspberry Pi 5 de 4 GB ou um servidor da
+faculdade. Ele precisa de uns 2 GB de memória livres e de ficar ligado.
 
-O Space grátis dorme depois de 48 h sem uso; a primeira foto depois disso espera ele acordar (1 a 2 min).
+1. **Linux e Docker.** Num PC com Ubuntu ou Debian: `sudo apt install docker.io docker-compose-v2 git`.
+   No Windows, primeiro o WSL (`wsl --install`, como administrador, e reiniciar), depois o mesmo comando dentro do Ubuntu.
+2. **Código:** `git clone -b claude/vibrant-feynman-4fhs11 https://github.com/nicollaspaulo51-cyber/wishlens.git`
+   e `cd wishlens/servidor`.
+3. **Chaves:** `cp .env.example .env` e preencha `SUPABASE_URL` e `SUPABASE_KEY` (a chave anon, a mesma dos Secrets
+   do Streamlit). Sem elas o jogo fica em memória, bom para testar.
+4. **Subir:** `docker compose up -d --build`. A primeira vez leva uns 10 min (PyTorch e CLIP).
+   Teste em `http://<ip-da-máquina>:7860/saude`. O juiz volta sozinho se a máquina reiniciar.
+5. **Acesso pela internet (HTTPS):** o celular precisa de HTTPS fora da rede local.
+   - No roteador, encaminhe as portas 80 e 443 para esta máquina.
+   - Aponte um domínio para o IP público (o da faculdade é o ideal) e ponha-o em `DOMINIO` no `.env`.
+   - `docker compose --profile https up -d`: o Caddy pega o certificado do Let's Encrypt sozinho.
+6. **No app:** `EXPO_PUBLIC_SERVIDOR_URL=https://<DOMINIO>` em `app_celular/.env`.
+7. **Atualizar** quando houver código novo no GitHub: `docker compose up -d --build`.
+
+Internet por 4G ou com CGNAT não deixa abrir portas: nesse caso, use a rede da faculdade.
