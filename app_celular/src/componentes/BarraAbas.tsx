@@ -1,4 +1,4 @@
-// Barra de baixo: duas abas à esquerda, três à direita e o botão da câmera no meio, mais alto que a barra.
+// Barra de baixo: metade das abas de cada lado e o botão da câmera no meio, mais alto que a barra.
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, type Tabs } from 'expo-router';
@@ -15,6 +15,7 @@ type Icone = ComponentProps<typeof Ionicons>['name'];
 const ICONES: Record<string, [Icone, Icone]> = {
   index: ['map', 'map-outline'],
   podio: ['trophy', 'trophy-outline'],
+  amigos: ['people', 'people-outline'],
   chat: ['chatbubbles', 'chatbubbles-outline'],
   colecao: ['albums', 'albums-outline'],
   conta: ['person-circle', 'person-circle-outline'],

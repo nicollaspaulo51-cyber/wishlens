@@ -2,6 +2,7 @@
 // no celular.
 import { requestPermissionsAsync, Asset } from 'expo-media-library';
 import { router } from 'expo-router';
+import { isAvailableAsync, shareAsync } from 'expo-sharing';
 import { useState } from 'react';
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,8 +52,14 @@ export function CompartilharFoto({ foto, enviada, captura, aceita }: { foto: str
       }
       await Asset.create(foto);
       setMsg({ texto: 'Foto salva na galeria do celular.', erro: false });
-    } catch (e) {
-      setMsg({ texto: e instanceof Error ? e.message : 'Não consegui salvar a foto.', erro: true });
+    } catch {
+      // No Expo Go do Android a galeria é bloqueada: a folha de compartilhar do celular salva em Fotos, Arquivos ou Drive
+      try {
+        if (!(await isAvailableAsync())) throw new Error();
+        await shareAsync(foto, { mimeType: 'image/jpeg', dialogTitle: 'Salvar a foto', UTI: 'public.jpeg' });
+      } catch {
+        setMsg({ texto: 'Não consegui salvar a foto neste celular.', erro: true });
+      }
     }
   }
 
@@ -79,7 +86,7 @@ export function CompartilharFoto({ foto, enviada, captura, aceita }: { foto: str
           padding: 16, paddingBottom: baixo + 16, gap: 10 }}>
           <Text accessibilityRole="header" style={{ fontFamily: FONTE_TITULO, fontSize: 22, color: c.tinta }}>Enviar para quem?</Text>
           {amigos === null ? <ActivityIndicator color={c.destaque} /> : null}
-          {amigos?.length === 0 ? <Apagado>Você ainda não tem amigos no WishLens. Adicione alguém na aba Chat.</Apagado> : null}
+          {amigos?.length === 0 ? <Apagado>Você ainda não tem amigos no WishLens. Adicione alguém na aba Amigos.</Apagado> : null}
           <ScrollView contentContainerStyle={{ gap: 8 }}>
             {amigos?.map((a) => (
               <Pressable key={a.apelido} accessibilityRole="button" accessibilityLabel={`Enviar para ${a.apelido}`} disabled={ocupado}

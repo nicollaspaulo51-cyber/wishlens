@@ -125,3 +125,21 @@ def test_limite_de_mensagens_por_minuto(c, monkeypatch):
     _amigos(c)
     codigos = [c.post("/conversa/bia", data={"texto": f"oi {i}"}, headers=_h("ana")).status_code for i in range(3)]
     assert codigos == [200, 200, 429]  # o pedido de amizade também contou
+
+
+def test_placar_dos_amigos(c, monkeypatch):
+    def clip(_imagem, _modo="livre"):
+        return {"nitidez": 80.0, "nao_identificou": False, "tema": "carros", "achado": "fiat uno", "foto_real": True,
+                "confianca": 0.9, "probs": {"carros": 0.9, "tela": 0.02, "nenhum": 0.08}, "vetor": [1.0] + [0.0] * 511}
+    monkeypatch.setattr(srv, "_clip", clip)
+    buf = io.BytesIO()
+    Image.new("RGB", (64, 48), (10, 120, 40)).save(buf, "JPEG")
+    r = c.post("/julgar", files={"foto": ("f.jpg", buf.getvalue(), "image/jpeg")}, headers=_h("bia")).json()
+    assert r["cartao"]["aceita"], r
+    c.post("/julgar", files={"foto": ("f.jpg", buf.getvalue(), "image/jpeg")}, headers=_h("caio"))  # caio não é amigo da ana
+    _amigos(c)
+    r = c.get("/amigos/placar", headers=_h("ana")).json()["ranking"]
+    assert [(x["apelido"], x["posicao"], x["voce"]) for x in r] == [("bia", 1, False), ("ana", 2, True)]
+    assert r[0]["pontos"] > 0 and r[1]["pontos"] == 0
+    assert c.get("/amigos/placar?modo=paisagens", headers=_h("ana")).json()["ranking"][0]["pontos"] == 0
+    assert c.get("/amigos/placar?periodo=ano", headers=_h("ana")).status_code == 400

@@ -37,7 +37,8 @@
         {
           "locationWhenInUsePermission": "O WishLens usa a sua localização para mostrar os lugares perto de você. Só o quadrado de ~500 m é guardado, nunca a coordenada exata."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "scheme": "wishlens",
     "experiments": {

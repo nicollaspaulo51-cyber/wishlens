@@ -28,6 +28,7 @@ from pydantic import BaseModel, Field
 
 from servidor.app import (ABAS, FOTO_MAX, SessaoMemoria, TODOS, _capturas, _pontuadas, _pontuadas_aba, gravar_aviso,
                           sessao)
+from src import jogo
 from src.categorias import nome_valido
 from src.fotos import preparar_para_salvar
 from src.temas import agora
@@ -174,6 +175,22 @@ def pedir(p: Pedido, mim: str = Depends(eu)):
             return {"estado": "aceita"}
         db.execute("insert or ignore into amizades values (?, ?, 'pedido', ?)", (mim, outro, _agora()))
     return {"estado": "pedido"}
+
+
+@router.get("/amigos/placar")
+def placar(periodo: str = "hoje", modo: str = "livre", mim: str = Depends(eu), s=Depends(sessao)):
+    """Você e seus amigos no mesmo ranking da aba (os amigos sem pontos entram com 0)."""
+    if periodo not in ("hoje", "semana", "geral") or modo not in ("livre", *ABAS):
+        raise HTTPException(400, "Período ou aba inválido.")
+    with _db() as db:
+        linhas = db.execute("select de, para from amizades where estado = 'aceita' and (de = ? or para = ?)", (mim, mim))
+        turma = {mim, *(r["para"] if r["de"] == mim else r["de"] for r in linhas)}
+    ranking = jogo.podio(_pontuadas(s) if modo == "livre" else _pontuadas_aba(s, modo), periodo)
+    com_pontos = [(str(r.usuario), int(r.pontos), int(r.achados)) for r in ranking.itertuples() if r.usuario in turma]
+    sem = sorted(turma - {a for a, _, _ in com_pontos})
+    todos = com_pontos + [(a, 0, 0) for a in sem]
+    return {"ranking": [{"posicao": i, "apelido": a, "pontos": p, "achados": n, "voce": a == mim}
+                        for i, (a, p, n) in enumerate(todos, 1)]}
 
 
 @router.post("/amigos/responder")

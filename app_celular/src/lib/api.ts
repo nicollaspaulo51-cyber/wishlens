@@ -127,6 +127,8 @@ export const api = {
   },
 
   amigos: () => chamar<Amigos>('/amigos'),
+  placarAmigos: (periodo: string, modo: Modo = 'livre') =>
+    chamar<{ ranking: LinhaPodio[] }>(`/amigos/placar?periodo=${periodo}&modo=${modo}`),
   pedirAmizade: (apelido: string) => chamar<{ estado: 'pedido' | 'aceita' }>('/amigos', json({ apelido })),
   responderAmizade: (apelido: string, aceitar: boolean) => chamar<{ ok: boolean }>('/amigos/responder', json({ apelido, aceitar })),
   desfazerAmizade: (apelido: string) => chamar<{ ok: boolean }>('/amigos/remover', json({ apelido })),

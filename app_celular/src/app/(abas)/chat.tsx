@@ -1,10 +1,9 @@
-// Chat: pedidos de amizade, adicionar amigo pelo apelido e a lista de conversas.
+// Chat: a lista de conversas com os amigos (adicionar e aceitar amigos fica na aba Amigos).
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Apagado, Aviso, Botao, Cartaz, Subtitulo, Titulo } from '../../componentes/ui';
+import { Apagado, Aviso, Botao, Subtitulo, Titulo } from '../../componentes/ui';
 import { api } from '../../lib/api';
 import { quandoFoi } from '../../lib/quando';
 import { useCores } from '../../lib/cores';
@@ -13,33 +12,7 @@ import { useDados } from '../../lib/useDados';
 export default function Chat() {
   const c = useCores();
   const amigos = useDados(api.amigos, [], 10);
-  const [novo, setNovo] = useState('');
-  const [msg, setMsg] = useState<{ texto: string; erro: boolean } | null>(null);
-  const [ocupado, setOcupado] = useState(false);
   const d = amigos.dados;
-
-  async function fazer(acao: () => Promise<unknown>, ok?: string) {
-    setOcupado(true);
-    setMsg(null);
-    try {
-      await acao();
-      if (ok) setMsg({ texto: ok, erro: false });
-      await amigos.recarregar();
-    } catch (e) {
-      setMsg({ texto: e instanceof Error ? e.message : 'Não deu certo. Tente de novo.', erro: true });
-    } finally {
-      setOcupado(false);
-    }
-  }
-
-  async function adicionar() {
-    const apelido = novo.trim();
-    await fazer(async () => {
-      const r = await api.pedirAmizade(apelido);
-      setNovo('');
-      setMsg({ texto: r.estado === 'aceita' ? `Você e ${apelido} agora são amigos.` : `Pedido enviado para ${apelido}.`, erro: false });
-    });
-  }
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.fundo }}>
@@ -47,36 +20,14 @@ export default function Chat() {
         refreshControl={<RefreshControl refreshing={amigos.carregando} onRefresh={amigos.recarregar} tintColor={c.destaque} />}>
         <Titulo>Chat</Titulo>
 
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TextInput value={novo} onChangeText={setNovo} placeholder="Apelido do amigo" placeholderTextColor={c.apagado}
-            autoCapitalize="none" autoCorrect={false} maxLength={30} accessibilityLabel="Apelido do amigo para adicionar"
-            onSubmitEditing={adicionar} returnKeyType="send"
-            style={{ flex: 1, minHeight: 48, borderWidth: 1.5, borderColor: c.linha, borderRadius: 14, paddingHorizontal: 14,
-              fontSize: 16, color: c.tinta, backgroundColor: c.superficie }} />
-          <Botao titulo="Adicionar" aoTocar={adicionar} desativado={novo.trim().length < 2 || ocupado} estilo={{ paddingHorizontal: 16 }} />
-        </View>
-        {msg ? <Text accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>{msg.texto}</Text> : null}
         {amigos.erro && !d ? <Aviso texto={amigos.erro} aoTentar={amigos.recarregar} /> : null}
-
         {d?.recebidos.length ? (
-          <>
-            <Subtitulo>Pedidos de amizade</Subtitulo>
-            {d.recebidos.map((a) => (
-              <Cartaz key={a} estilo={{ gap: 10 }}>
-                <Text style={{ color: c.tinta, fontSize: 16 }}><Text style={{ fontWeight: '700' }}>{a}</Text> quer ser seu amigo.</Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Botao titulo="Aceitar" estilo={{ flex: 1 }} desativado={ocupado} aoTocar={() => fazer(() => api.responderAmizade(a, true))} />
-                  <Botao titulo="Recusar" tipo="secundario" estilo={{ flex: 1 }} desativado={ocupado}
-                    aoTocar={() => fazer(() => api.responderAmizade(a, false))} />
-                </View>
-              </Cartaz>
-            ))}
-          </>
+          <Botao titulo={`${d.recebidos.length} ${d.recebidos.length === 1 ? 'pedido' : 'pedidos'} de amizade`} tipo="secundario"
+            aoTocar={() => router.navigate('/amigos')} rotulo="Ver os pedidos de amizade na aba Amigos" />
         ) : null}
-
         <Subtitulo>Conversas</Subtitulo>
         {d && !d.amigos.length ? (
-          <Apagado>Você ainda não tem amigos no WishLens. Adicione alguém pelo apelido que aparece no Pódio.</Apagado>
+          <Apagado>Você ainda não tem amigos no WishLens. Adicione alguém na aba Amigos.</Apagado>
         ) : null}
         {d?.amigos.map((a) => (
           <Pressable key={a.apelido} accessibilityRole="button"
@@ -105,9 +56,6 @@ export default function Chat() {
           </Pressable>
         ))}
 
-        {d?.enviados.length ? (
-          <Apagado estilo={{ marginTop: 8 }}>Esperando resposta: {d.enviados.join(', ')}.</Apagado>
-        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
