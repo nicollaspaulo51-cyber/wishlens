@@ -47,7 +47,7 @@ export default function Jogar() {
   const [mudou, setMudou] = useState<string | null>(null);
 
   const porId = useMemo(() => Object.fromEntries((temas.dados?.temas ?? []).map((t) => [t.id, t])) as Record<string, Tema>, [temas.dados]);
-  const ativos = mostrar ?? Object.keys(porId);
+  const ativos = useMemo(() => mostrar ?? Object.keys(porId), [mostrar, porId]);
 
   async function pedirGps() {
     setSemGps(null);
