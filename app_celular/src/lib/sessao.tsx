@@ -5,7 +5,7 @@ import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, type Session } from '@supabase/supabase-js';
 import { randomUUID } from 'expo-crypto';
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
 import { AppState, Platform } from 'react-native';
 
 import { usarCabecalhos } from './api';
@@ -69,7 +69,8 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  useEffect(() => {
+  // Layout: roda antes dos useEffect das telas filhas, então a primeira chamada delas já sai com o apelido
+  useLayoutEffect(() => {
     usarCabecalhos(async (): Promise<Record<string, string>> => {
       if (supabase) {
         const { data } = await supabase.auth.getSession(); // já renovado, se estava vencendo

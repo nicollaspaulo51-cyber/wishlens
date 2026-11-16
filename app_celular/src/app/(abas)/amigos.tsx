@@ -92,7 +92,7 @@ export default function Amigos() {
         {d && !d.amigos.length ? (
           <Apagado>Adicione um amigo pelo apelido (o mesmo que aparece no Pódio) para comparar os pontos.</Apagado>
         ) : null}
-        {ranking.length > 1 ? <Degraus ranking={ranking} chave={`amigos-${modo}-${periodo}`} /> : null}
+        {ranking.length > 1 && ranking[0].pontos > 0 ? <Degraus ranking={ranking} chave={`amigos-${modo}-${periodo}`} /> : null}
         {eu && ranking.length > 1 ? (
           <Text style={{ color: c.tinta, fontSize: 16 }}>
             {acima
