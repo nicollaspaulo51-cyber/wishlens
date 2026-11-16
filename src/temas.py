@@ -61,13 +61,21 @@ TEMAS: list[Tema] = [
          "parques, matas, lagoas e praias",
          "qualquer ave viva, mesmo pequena na foto: pombo, pardal, galinha, pato, papagaio de estimação",
          "#0091FF"),
-    Tema("pets", "Cachorros e gatos", "🐶", "cachorro ou gato",
-         "espécie e raça em português (ex.: cachorro vira-lata caramelo, gato siamês, cachorro shih-tzu)",
+    # id "pets" mantido: as capturas antigas de cachorros e gatos continuam no mesmo tema
+    Tema("pets", "Animais", "🐾", "animal",
+         "nome popular do animal em português, com a raça quando der (ex.: cachorro vira-lata caramelo, gato siamês, "
+         "cavalo, vaca, lagartixa, borboleta, capivara, sagui)",
          (("a dog", "cachorro"), ("a cat", "gato"), ("a puppy", "filhote de cachorro"), ("a kitten", "filhote de gato"),
-          ("a dog lying down", "cachorro"), ("a cat sleeping", "gato"), ("a dog on a leash", "cachorro")),
-         ('leisure="dog_park"', 'shop="pet"', 'amenity="veterinary"'),
-         "parcões, pet shops e veterinários",
-         "cachorros e gatos de verdade, de qualquer raça ou vira-lata, filhotes também",
+          ("a horse", "cavalo"), ("a cow", "vaca"), ("a goat", "cabra"), ("a pig", "porco"),
+          ("a lizard", "lagarto"), ("a gecko on a wall", "lagartixa"), ("a turtle", "tartaruga"),
+          ("a butterfly", "borboleta"), ("a bee", "abelha"), ("a spider", "aranha"), ("an ant", "formiga"),
+          ("a fish in the water", "peixe"), ("a frog", "sapo"), ("a squirrel", "esquilo"),
+          # sem "an animal" genérico: ele roubaria as fotos de pássaros
+          ("a small monkey on a tree", "sagui"), ("a capybara", "capivara"), ("a rabbit", "coelho")),
+         ('leisure="dog_park"', 'shop="pet"', 'amenity="veterinary"', 'tourism="zoo"'),
+         "parcões, pet shops, veterinários e zoológicos",
+         "qualquer animal vivo que não seja ave (as aves são do tema Pássaros): cachorro, gato, cavalo, vaca, "
+         "lagarto, inseto, peixe, sapo, sagui, capivara... Bicho de pelúcia ou de brinquedo NÃO conta",
          "#F76B15"),
     Tema("pecas", "Peças e periféricos de computador", "🖥️", "peça de computador",
          "nome da peça ou periférico em português (ex.: mouse, teclado, monitor, headset, webcam, pendrive, "

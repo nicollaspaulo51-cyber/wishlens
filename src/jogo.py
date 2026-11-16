@@ -45,7 +45,7 @@ COLUNAS_PONTOS = ["pontos", "base", "novidade", "raridade", "do_dia", "extra", "
 # Achado genérico (só "carro", "pássaro"...): vale só a base, e até LIMITE_GENERICO_DIA vezes por tema
 # por dia (sem o limite de "já achou hoje", que recusava o 2º carro de verdade sem modelo).
 LIMITE_GENERICO_DIA = 3
-GENERICOS = {"carro", "passaro", "planta", "cachorro", "gato", "cachorro ou gato", "peca de computador",
+GENERICOS = {"carro", "passaro", "planta", "cachorro", "gato", "cachorro ou gato", "animal", "peca de computador",
              "ave", "flor", "arvore"}
 
 
@@ -452,7 +452,7 @@ def corrente_atual(pontuadas: pd.DataFrame, usuario: str, hoje: date | None = No
 
 # Medalhas: (id, nome, o que conta). Níveis pela quantidade.
 MEDALHAS = [("passaros", "Olho de águia", "pássaros diferentes"), ("plantas", "Mão verde", "plantas diferentes"),
-            ("carros", "Garagem cheia", "carros diferentes"), ("pets", "Amigo dos bichos", "pets diferentes"),
+            ("carros", "Garagem cheia", "carros diferentes"), ("pets", "Amigo dos bichos", "animais diferentes"),
             ("pecas", "Garimpo tech", "peças diferentes"), ("mirantes", "Andarilho", "fotos em mirantes")]
 NIVEIS = [("bronze", 3), ("prata", 8), ("ouro", 15)]
 
