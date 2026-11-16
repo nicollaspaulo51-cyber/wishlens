@@ -360,8 +360,7 @@ def avisar(a: Aviso, s=Depends(sessao)):
     with _trava_avisos:
         AVISOS.parent.mkdir(parents=True, exist_ok=True)
         with AVISOS.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(registro, ensure_ascii=False, default=str) + "
-")
+            f.write(json.dumps(registro, ensure_ascii=False, default=str) + "\n")
     return {"ok": True}
 
 
