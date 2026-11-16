@@ -64,3 +64,11 @@ def test_frases_gemeas_de_tela():
     # "pássaro na tela" mais parecido que "pássaro de verdade" -> não é foto real
     g = ["passaros", "tela", "nenhum"]
     assert decidir_captura(g, [0.35, 0.55, 0.10])[:2] == ("passaros", False)
+
+
+def test_fone_tem_frases_proprias_e_nao_cai_no_mouse():
+    from src.temas import POR_ID
+    nomes = {nome for _, nome in POR_ID["pecas"].objetos_clip}
+    assert {"fone de ouvido", "headset", "mouse", "microfone"} <= nomes
+    fones = [o for o, nome in POR_ID["pecas"].objetos_clip if nome == "fone de ouvido"]
+    assert any("earbuds" in o for o in fones) and any("over-ear" in o for o in fones)

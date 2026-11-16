@@ -73,7 +73,11 @@ TEMAS: list[Tema] = [
          "nome da peça ou periférico em português (ex.: mouse, teclado, monitor, headset, webcam, pendrive, "
          "placa de vídeo, memória RAM, processador, placa-mãe, SSD, fonte)",
          (("a computer mouse", "mouse"), ("a computer keyboard", "teclado"), ("a computer monitor", "monitor"),
-          ("a gaming headset", "headset"), ("a webcam", "webcam"), ("a USB flash drive", "pendrive"),
+          ("a gaming headset", "headset"), ("over-ear headphones", "fone de ouvido"),
+          # Sem estas, fone comum e fone sem fio viravam "mouse" (a peça de formato mais parecido)
+          ("wireless earbuds in their charging case", "fone de ouvido"), ("in-ear earphones", "fone de ouvido"),
+          ("a microphone", "microfone"), ("computer speakers", "caixinha de som"),
+          ("a webcam", "webcam"), ("a USB flash drive", "pendrive"),
           ("a graphics card", "placa de vídeo"), ("RAM memory sticks", "memória RAM"),
           ("a computer motherboard", "placa-mãe"), ("a computer power supply", "fonte"),
           ("a computer part", "peça de computador")),
