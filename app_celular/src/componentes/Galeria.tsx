@@ -1,7 +1,7 @@
-// Galeria do Álbum, como um corredor de museu: cada foto salva fica num totem com plaquinha, e totens de câmera e
+// Galeria do Museu, como um corredor de museu: cada foto salva fica num totem com plaquinha, e totens de câmera e
 // troféu decoram o caminho. Arrastar para o lado passa as fotos; a do centro fica grande e as dos lados viram de leve.
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Animated, FlatList, Image, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,6 +9,7 @@ import { FONTE_TITULO, useCores } from '../lib/cores';
 import { apagarDaGaleria, enderecoDa, useGaleria, type FotoGaleria } from '../lib/galeria';
 import { Brilho, useEntrada, useLaco } from '../lib/movimento';
 import { CompartilharFoto } from './CompartilharFoto';
+import { Corredor, type Passo } from './Corredor';
 import { Apagado, Botao } from './ui';
 
 type Item = { tipo: 'foto'; foto: FotoGaleria; n: number } | { tipo: 'camera' | 'trofeu'; chave: string };
@@ -42,15 +43,43 @@ export function Galeria({ visita }: { visita: number }) {
   const centroRef = useRef(1);
   const larguraRef = useRef(item);
   larguraRef.current = item;
+  // O Zum corre enquanto a pessoa arrasta: a velocidade sai do deslocamento entre dois eventos de rolagem.
+  // Só muda o estado quando muda o passo ou a direção; 150 ms sem rolagem = parou.
+  const [corrida, setCorrida] = useState<{ passo: Passo; direcao: 1 | -1 }>({ passo: 'parado', direcao: 1 });
+  const corridaRef = useRef(corrida);
+  const ultimo = useRef<{ x: number; t: number } | null>(null);
+  const parar = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (parar.current) clearTimeout(parar.current); }, []);
   // Criado uma vez: um onScroll novo a cada render solta e religa a rolagem nativa no Android
   const aoRolar = useRef(Animated.event([{ nativeEvent: { contentOffset: { x } } }], {
     useNativeDriver: true,
     listener: (e: { nativeEvent: { contentOffset: { x: number } } }) => {
-      const i = Math.round(e.nativeEvent.contentOffset.x / larguraRef.current);
+      const agora = Date.now();
+      const pos = e.nativeEvent.contentOffset.x;
+      const i = Math.round(pos / larguraRef.current);
       if (i !== centroRef.current) {
         centroRef.current = i;
         setCentro(i);
       }
+      const antes = ultimo.current;
+      ultimo.current = { x: pos, t: agora };
+      if (antes && agora > antes.t) {
+        const v = (pos - antes.x) / (agora - antes.t); // px por ms
+        const passo: Passo = Math.abs(v) > 1.2 ? 'rapido' : Math.abs(v) > 0.03 ? 'correndo' : corridaRef.current.passo;
+        const direcao = v > 0 ? 1 : v < 0 ? -1 : corridaRef.current.direcao; // fotos indo para a esquerda = ele corre para a direita
+        if (passo !== corridaRef.current.passo || direcao !== corridaRef.current.direcao) {
+          corridaRef.current = { passo, direcao };
+          setCorrida(corridaRef.current);
+        }
+      }
+      if (parar.current) clearTimeout(parar.current);
+      parar.current = setTimeout(() => {
+        ultimo.current = null;
+        if (corridaRef.current.passo !== 'parado') {
+          corridaRef.current = { ...corridaRef.current, passo: 'parado' };
+          setCorrida(corridaRef.current);
+        }
+      }, 150);
     },
   })).current;
   const [aberta, setAberta] = useState<number | null>(null); // índice em `fotos` na tela cheia
@@ -68,6 +97,7 @@ export function Galeria({ visita }: { visita: number }) {
   const fotoNoCentro = fila[centro]?.tipo === 'foto' ? (fila[centro] as { n: number }).n : -1;
   return (
     <View style={{ marginHorizontal: -16, gap: 10 }}>
+      <View>
       <Animated.FlatList data={fila} horizontal showsHorizontalScrollIndicator={false}
         keyExtractor={(it) => (it.tipo === 'foto' ? it.foto.id : it.chave)}
         snapToInterval={item} decelerationRate="fast" contentContainerStyle={{ paddingHorizontal: lado }}
@@ -96,6 +126,12 @@ export function Galeria({ visita }: { visita: number }) {
             </Animated.View>
           );
         }} />
+      {/* Chão do museu e o Zum correndo nele, ao lado do pedestal (não cobre a foto nem a plaquinha) */}
+      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 2, backgroundColor: c.linha }} />
+      <View pointerEvents="none" style={{ position: 'absolute', bottom: 2, left: Math.max(0, width / 2 - 75 - 100) }}>
+        <Corredor passo={corrida.passo} direcao={corrida.direcao} />
+      </View>
+      </View>
 
       {/* Uma bolinha por foto: a acesa é a do centro */}
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6 }} accessible

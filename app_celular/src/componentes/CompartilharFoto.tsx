@@ -54,7 +54,7 @@ export function CompartilharFoto({ foto, enviada, captura, aceita, placa }: {
     try {
       const nova = await salvarNaGaleria(enviada, { id: captura, achado: placa?.achado || 'Foto', emoji: placa?.emoji ?? '📷',
         tema: placa?.tema ?? '', cor: placa?.cor ?? '#136B4C', pontos: placa?.pontos ?? 0 });
-      setMsg({ texto: nova ? 'Salva no seu álbum.' : 'Esta foto já está no seu álbum.', erro: false, galeria: true });
+      setMsg({ texto: nova ? 'Salva no seu museu.' : 'Esta foto já está no seu museu.', erro: false, galeria: true });
     } catch (e) {
       setMsg({ texto: e instanceof Error ? e.message : 'Não consegui salvar a foto.', erro: true });
     }
@@ -67,7 +67,7 @@ export function CompartilharFoto({ foto, enviada, captura, aceita, placa }: {
         return;
       }
       await Asset.create(foto);
-      setMsg({ texto: 'Foto salva no álbum e na galeria do celular.', erro: false });
+      setMsg({ texto: 'Foto salva no museu e na galeria do celular.', erro: false });
     } catch {
       // No Expo Go do Android a galeria é bloqueada: a folha de compartilhar do celular salva em Fotos, Arquivos ou Drive
       try {
@@ -84,7 +84,7 @@ export function CompartilharFoto({ foto, enviada, captura, aceita, placa }: {
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Botao titulo={aceita ? 'Enviar com o cartão' : 'Enviar a um amigo'} estilo={{ flex: 1 }} aoTocar={abrir}
           rotulo={aceita ? 'Enviar a foto e o cartão do achado a um amigo' : 'Enviar a foto a um amigo'} />
-        <Botao titulo="Salvar" tipo="secundario" aoTocar={salvar} rotulo="Salvar a foto no seu álbum" />
+        <Botao titulo="Salvar" tipo="secundario" aoTocar={salvar} rotulo="Salvar a foto no seu museu" />
       </View>
       {msg ? (
         <Text accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>
@@ -96,7 +96,7 @@ export function CompartilharFoto({ foto, enviada, captura, aceita, placa }: {
           {msg.galeria ? (
             <>
               <Text accessibilityRole="link" style={{ fontWeight: '700', textDecorationLine: 'underline' }}
-                onPress={() => router.navigate('/colecao')}> Ver na galeria</Text>
+                onPress={() => router.navigate('/colecao')}> Ver no museu</Text>
               {Platform.OS !== 'web' ? (
                 <Text accessibilityRole="link" style={{ fontWeight: '700', textDecorationLine: 'underline' }}
                   onPress={salvarNoCelular}>{'\n'}Também salvar no celular</Text>

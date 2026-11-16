@@ -1,4 +1,4 @@
-// Coleção: o álbum de figurinhas por tema. Colada = achado seu; tracejada = a turma já achou e você não.
+// Museu: a galeria das fotos salvas e o álbum de figurinhas por tema. Colada = achado seu; tracejada = a turma já achou e você não.
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -21,7 +21,7 @@ export default function Colecao() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.fundo }}>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={col.carregando} onRefresh={col.recarregar} tintColor={c.destaque} />}>
-        <Titulo>Álbum</Titulo>
+        <Titulo>Museu</Titulo>
         <Subtitulo>Sua galeria</Subtitulo>
         <Galeria visita={visita} />
         {col.erro && !d ? <Aviso texto={col.erro} aoTentar={col.recarregar} /> : null}
@@ -68,8 +68,8 @@ export default function Colecao() {
                       </View>
                       </Surge>
                     ))}
-                    {p.faltam.map((f) => (
-                      <View key={f.dica + f.turma} accessibilityLabel={`Falta: começa com ${f.dica[0]}, ${f.turma} da turma já acharam`}
+                    {p.faltam.map((f, i) => (
+                      <View key={`${f.dica}-${f.turma}-${i}`} accessibilityLabel={`Falta: começa com ${f.dica[0]}, ${f.turma} da turma já acharam`}
                         style={{ width: '31%', minHeight: 84, borderRadius: 6, borderWidth: 2, borderStyle: 'dashed', borderColor: c.linha,
                           padding: 6, justifyContent: 'space-between' }}>
                         <Text style={{ color: c.apagado, fontFamily: FONTE_TITULO, fontSize: 22 }}>{f.dica}</Text>

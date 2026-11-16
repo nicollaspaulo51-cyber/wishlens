@@ -1,4 +1,4 @@
-// Galeria do Álbum: as fotos que a pessoa salvou, guardadas só neste celular (documentos do app + a lista no
+// Galeria do Museu: as fotos que a pessoa salvou, guardadas só neste celular (documentos do app + a lista no
 // AsyncStorage). Somem se o app for desinstalado ou os dados do Expo Go forem apagados.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Directory, File, Paths } from 'expo-file-system';

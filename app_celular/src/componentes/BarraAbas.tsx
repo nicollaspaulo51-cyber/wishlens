@@ -17,7 +17,7 @@ const ICONES: Record<string, [Icone, Icone]> = {
   podio: ['trophy', 'trophy-outline'],
   amigos: ['people', 'people-outline'],
   chat: ['chatbubbles', 'chatbubbles-outline'],
-  colecao: ['albums', 'albums-outline'],
+  colecao: ['library', 'library-outline'],
   conta: ['person-circle', 'person-circle-outline'],
 };
 

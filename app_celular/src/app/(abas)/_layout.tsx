@@ -12,7 +12,7 @@ export default function Abas() {
       <Tabs.Screen name="podio" options={{ title: 'Pódio' }} />
       <Tabs.Screen name="amigos" options={{ title: 'Amigos' }} />
       <Tabs.Screen name="chat" options={{ title: 'Chat' }} />
-      <Tabs.Screen name="colecao" options={{ title: 'Álbum' }} />
+      <Tabs.Screen name="colecao" options={{ title: 'Museu' }} />
       <Tabs.Screen name="conta" options={{ title: 'Conta' }} />
     </Tabs>
   );
