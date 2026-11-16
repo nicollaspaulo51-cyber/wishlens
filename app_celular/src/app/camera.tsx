@@ -12,6 +12,7 @@ import { CartaoPontos } from '../componentes/CartaoPontos';
 import { Apagado, Botao, Fichas, Titulo } from '../componentes/ui';
 import { api, type Julgamento, type Tema } from '../lib/api';
 import { useCores } from '../lib/cores';
+import { useModo } from '../lib/modo';
 import { useDados } from '../lib/useDados';
 
 async function posicaoAgora() {
@@ -37,6 +38,8 @@ export default function Camera() {
   const [contestada, setContestada] = useState<string | null>(null);
   const [era, setEra] = useState<string>('');
   const temas = useDados(api.temas);
+  const modo = useModo();
+  const aba = temas.dados?.abas?.find((a) => a.id === modo);
 
   async function fotografar() {
     if (!camera.current) return;
@@ -48,7 +51,7 @@ export default function Camera() {
       setFoto(crua.uri);
       const menor = await (await ImageManipulator.manipulate(crua.uri).resize({ width: 1024, height: null }).renderAsync())
         .saveAsync({ format: SaveFormat.JPEG, compress: 0.85 });
-      const r = await api.julgar(menor.uri, await local);
+      const r = await api.julgar(menor.uri, await local, modo);
       setResposta(r);
       if (r.status === 'ok' && r.cartao.aceita) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (e) {
@@ -102,7 +105,7 @@ export default function Camera() {
           {erro ? <Text style={{ color: c.recusa, fontSize: 16 }} accessibilityLiveRegion="assertive">{erro}</Text> : null}
           {resposta?.status === 'borrada' ? (
             <View style={{ backgroundColor: c.superficie, borderRadius: 14, padding: 16, gap: 6 }}>
-              <Text style={{ color: c.tinta, fontSize: 17, fontWeight: '700' }}>Foto borrada</Text>
+              <Text style={{ color: c.tinta, fontSize: 17, fontWeight: '700' }}>{resposta.titulo ?? 'Foto borrada'}</Text>
               <Text style={{ color: c.tinta, fontSize: 15, lineHeight: 21 }}>{resposta.mensagem}</Text>
             </View>
           ) : null}
@@ -160,7 +163,7 @@ export default function Camera() {
             <Text style={{ color: '#fff', fontSize: 22 }}>✕</Text>
           </Pressable>
           <Text style={{ color: '#fff', fontSize: 14, backgroundColor: 'rgba(0,0,0,0.45)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}>
-            Algo real, de um dos temas
+            {aba ? `${aba.emoji} ${aba.nome}` : 'Algo real, de um dos temas'}
           </Text>
         </View>
         <View style={{ alignItems: 'center', paddingBottom: Platform.OS === 'web' ? 24 : 12 }}>

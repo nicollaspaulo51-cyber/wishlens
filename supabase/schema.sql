@@ -157,7 +157,8 @@ language sql stable security definer set search_path = public as $$
   with semana as (
     select c.celula, c.usuario_id, c.tema || ':' || lower(c.achado) as chave, c.criado_em
     from public.capturas c
-    where c.celula is not null and c.foto_real and c.tema <> 'nenhum'
+    -- as fotos das abas Paisagens, Treino e Academias não fazem guardião do Mapa livre
+    where c.celula is not null and c.foto_real and c.tema not in ('nenhum', 'paisagens', 'treino', 'academia')
       and c.criado_em >= (date_trunc('week', now() at time zone 'America/Sao_Paulo') at time zone 'America/Sao_Paulo')
   ), por as (
     select s.celula, s.usuario_id, count(distinct s.chave) as achados, min(s.criado_em) as primeiro

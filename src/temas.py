@@ -90,6 +90,40 @@ TEMAS: list[Tema] = [
 ]
 POR_ID = {t.id: t for t in TEMAS}
 
+# Modos (cada um numa aba do app, com o seu juiz e o seu pódio). O tema da captura é o id do modo e o achado é
+# o tipo (pôr do sol, barra fixa, supino...). O Mapa livre são os 5 TEMAS acima e não muda.
+MODOS: dict[str, Tema] = {t.id: t for t in [
+    Tema("paisagens", "Paisagens", "🌄", "paisagem", "tipo de paisagem",
+         (("a sunset over the horizon", "pôr do sol"), ("a sunrise over the horizon", "nascer do sol"),
+          ("a city skyline seen from far away", "vista da cidade"), ("a beach with the sea and the horizon", "praia"),
+          ("a mountain landscape", "montanha"), ("a river or lake landscape", "rio ou lagoa"),
+          ("a waterfall", "cachoeira"), ("a starry night sky", "céu estrelado"),
+          ("a wide landscape with a horizon", "paisagem"), ("a forest seen from far away", "paisagem")),
+         ('tourism="viewpoint"',), "mirantes",
+         "a vista aberta, com horizonte. Uma árvore ou flor de perto não é paisagem", "#0EA5A4"),
+    Tema("treino", "Treino ao ar livre", "🤸", "aparelho de praça", "aparelho de ginástica de praça",
+         (("an outdoor pull-up bar in a park", "barra fixa"), ("outdoor parallel bars for exercise", "paralelas"),
+          ("an outdoor sit-up bench in a park", "abdominal"),
+          ("an outdoor elliptical walker exercise machine in a park", "simulador de caminhada"),
+          ("an outdoor leg press exercise machine in a public square", "leg press de praça"),
+          ("an outdoor rowing exercise machine in a park", "remada"),
+          ("an outdoor chest press exercise machine in a park", "supino de praça"),
+          ("outdoor fitness equipment in a public park", "aparelho de praça")),
+         ('leisure="fitness_station"', 'leisure~"park|pitch"'), "academias ao ar livre de praças e parques",
+         "aparelhos de ginástica de praça ou parque", "#D6409F"),
+    Tema("academia", "Academias", "🏋️", "aparelho de academia", "aparelho de musculação ou ginástica",
+         (("a treadmill in a gym", "esteira"), ("a weight bench press in a gym", "supino"),
+          ("a leg press machine in a gym", "leg press"), ("dumbbells on a rack", "halteres"),
+          ("an exercise bike in a gym", "bicicleta ergométrica"), ("a cable crossover machine", "cross-over"),
+          ("a barbell with weight plates", "barra com anilhas"), ("a smith machine in a gym", "smith"),
+          ("a lat pulldown machine", "puxador"), ("kettlebells on the floor of a gym", "kettlebell"),
+          ("gym exercise equipment", "aparelho de academia")),
+         ('leisure="fitness_centre"',), "academias de ginástica",
+         "aparelhos de musculação ou ginástica dentro da academia. Foto com uma pessoa em destaque não vale",
+         "#E54666"),
+]}
+TODOS = {**POR_ID, **MODOS}  # o tema de qualquer captura, de qualquer aba
+
 # "Não vale": frases genéricas de tela/impressão + frases GÊMEAS de cada objeto dos temas
 # ("um pássaro numa tela de computador"), para "pássaro de verdade" disputar com "pássaro na tela".
 MODELOS_TELA = ("a photo of a computer screen showing {}", "a photo of a phone screen displaying {}",

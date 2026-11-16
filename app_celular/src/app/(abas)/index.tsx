@@ -7,9 +7,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Mapa } from '../../componentes/Mapa';
 import { PainelDoDia } from '../../componentes/PainelDoDia';
-import { Aviso, Botao } from '../../componentes/ui';
-import { api, type Mapa as DadosMapa, type Tema } from '../../lib/api';
+import { Aviso, Botao, Fichas } from '../../componentes/ui';
+import { api, type Mapa as DadosMapa, type Modo, type Tema } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
+import { escolherModo, NOME_LIVRE, useModo } from '../../lib/modo';
 import { Brilho, Surge, useContagem, useEntrada } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 
@@ -45,9 +46,15 @@ export default function Jogar() {
   const ultimaBusca = useRef<{ lat: number; lon: number } | null>(null);
   const posAntes = useRef<number | null>(null);
   const [mudou, setMudou] = useState<string | null>(null);
+  const modo = useModo();
+  const modoAgora = useRef(modo);
+  modoAgora.current = modo;
+  const aba = temas.dados?.abas?.find((a) => a.id === modo);
 
-  const porId = useMemo(() => Object.fromEntries((temas.dados?.temas ?? []).map((t) => [t.id, t])) as Record<string, Tema>, [temas.dados]);
-  const ativos = useMemo(() => mostrar ?? Object.keys(porId), [mostrar, porId]);
+  const porId = useMemo(() => Object.fromEntries([...(temas.dados?.temas ?? []), ...(temas.dados?.abas ?? [])].map((t) => [t.id, t])) as Record<string, Tema>,
+    [temas.dados]);
+  const doLivre = useMemo(() => (temas.dados?.temas ?? []).map((t) => t.id), [temas.dados]);
+  const ativos = useMemo(() => (modo === 'livre' ? mostrar ?? doLivre : [modo]), [modo, mostrar, doLivre]);
 
   async function pedirGps() {
     setSemGps(null);
@@ -68,6 +75,11 @@ export default function Jogar() {
 
   // Lugares e manchas: de novo só quando você andou mais de 300 m, ou em 20 s se o OpenStreetMap não respondeu
   const [tentativa, setTentativa] = useState(0);
+  // Trocou de aba: o mapa mostra os lugares dela (busca de novo, sem esperar andar 300 m)
+  useEffect(() => {
+    ultimaBusca.current = null;
+    setMapa(null);
+  }, [modo]);
   useEffect(() => {
     if (!posicao || (ultimaBusca.current && distanciaKm(ultimaBusca.current, posicao) < KM_PARA_ATUALIZAR)) return;
     ultimaBusca.current = posicao;
@@ -76,13 +88,15 @@ export default function Jogar() {
       ultimaBusca.current = null;
       setTimeout(() => setTentativa((n) => n + 1), 20000);
     };
-    api.mapa(posicao.lat, posicao.lon)
+    const pedida = modo;
+    api.mapa(posicao.lat, posicao.lon, modo)
       .then((m) => {
+        if (pedida !== modoAgora.current) return; // resposta de outra aba, que chegou atrasada
         setMapa((antes) => (m.lugares_ok === false && antes?.lugares.length ? { ...m, lugares: antes.lugares } : m));
         if (m.lugares_ok === false) deNovo();
       })
       .catch(deNovo);
-  }, [posicao, tentativa]);
+  }, [posicao, tentativa, modo]);
 
   // Aviso quando a posição no pódio muda enquanto o placar se atualiza sozinho
   useEffect(() => {
@@ -126,8 +140,18 @@ export default function Jogar() {
             </View>
           ) : null}
         </View>
+        <Fichas<Modo> rotulo="Aba do jogo" valor={modo} aoEscolher={escolherModo}
+          opcoes={[NOME_LIVRE, ...(temas.dados?.abas ?? [])].map((a) => ({ valor: a.id as Modo, texto: `${a.emoji} ${a.nome}` }))} />
         {estado.erro && !e ? <Aviso texto={estado.erro} aoTentar={estado.recarregar} /> : null}
-        {e ? (
+        {aba ? (
+          <Surge chave={aba.id} estilo={[{ backgroundColor: c.superficie, borderRadius: 14, padding: 12, gap: 4,
+            borderLeftWidth: 5, borderLeftColor: aba.cor }, sombra]}>
+            <Text style={{ fontFamily: FONTE_TITULO, fontSize: 18, color: c.tinta }}>{aba.emoji} {aba.nome}</Text>
+            <Text style={{ color: c.tinta, fontSize: 14, lineHeight: 19 }}>Vale: {aba.conta}.</Text>
+            <Text style={{ color: c.apagado, fontSize: 13 }}>No mapa: {aba.onde} perto de você. Os pontos desta aba têm pódio próprio.</Text>
+          </Surge>
+        ) : null}
+        {e && modo === 'livre' ? (
           <>
             {/* O tema do dia é a figurinha holográfica: borda branca, um leve giro e o brilho que passa */}
             <Surge ordem={1}>
@@ -154,7 +178,7 @@ export default function Jogar() {
         ) : null}
       </SafeAreaView>
 
-      {posicao && temas.dados ? (
+      {posicao && temas.dados && modo === 'livre' ? (
         <View style={{ position: 'absolute', left: 12, right: 12, bottom: 40, flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}
           accessibilityLabel="Mostrar no mapa" pointerEvents="box-none">
           {temas.dados.temas.map((t) => {

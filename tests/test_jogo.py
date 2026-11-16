@@ -372,3 +372,41 @@ def test_mesmo_objeto_seu_vale_zero_e_da_turma_perde_a_raridade():
     p = jogo.calcular_pontos(pd.DataFrame([seu, turma]))
     assert not p.iloc[0]["aceita"] and p.iloc[0]["motivo"] == "você já fotografou este mesmo objeto"
     assert p.iloc[1]["aceita"] and p.iloc[1]["raridade"] == 0 and p.iloc[1]["novidade"] > 0
+
+
+# ---------------------------------------------------------------- abas
+def test_sol_e_hora_dourada_em_vitoria():
+    nascer, por = jogo.sol(date(2026, 11, 16), -20.3, -40.3)
+    assert 4.7 < nascer < 5.3 and 17.7 < por < 18.3  # ~5h e ~18h em novembro
+    assert jogo.hora_dourada(datetime(2026, 11, 16, 17, 30), "-20.300,-40.300")
+    assert not jogo.hora_dourada(datetime(2026, 11, 16, 12, 0), "-20.300,-40.300")
+    assert not jogo.hora_dourada(datetime(2026, 11, 16, 17, 30), None)
+
+
+def test_pontos_da_aba_paisagens_e_mapa_livre_separados():
+    df = pd.DataFrame([cap("ana", "pôr do sol", tema="paisagens", hora=10), cap("ana", "pôr do sol", tema="paisagens", hora=11),
+                       cap("ana", "volkswagen gol", hora=12)])
+    p = jogo.pontos_modo(df, "paisagens")
+    assert len(p) == 2 and list(p["aceita"]) == [True, False]  # o mesmo tipo no mesmo dia não vale de novo
+    assert p["pontos"].iloc[0] == jogo.BASE + jogo.NOVIDADE + jogo.RARIDADE
+
+
+def test_treino_exige_o_lugar_e_da_bonus_de_aparelho_novo():
+    linhas = [{**cap("ana", "barra fixa", tema="treino", hora=10), "mirante": True, "celula": "-20.300,-40.300"},
+              {**cap("ana", "paralelas", tema="treino", hora=11), "mirante": False}]
+    p = jogo.pontos_modo(pd.DataFrame(linhas), "treino")
+    assert p["aceita"].tolist() == [True, False]
+    assert p["pontos"].iloc[0] == jogo.BASE + jogo.APARELHO_NOVO + jogo.LUGAR_NOVO
+
+
+def test_dono_da_academia_ganha_por_dia_e_por_dias_seguidos():
+    linhas = []
+    for d in range(3):  # segunda a quarta, a mesma academia: ana com 2 aparelhos, bia com 1
+        dia = DIA + timedelta(days=d)
+        for u, aparelhos in (("ana", ["supino", "esteira"]), ("bia", ["supino"])):
+            linhas += [{**cap(u, a, tema="academia", hora=9 + i, dia=dia), "mirante": True, "celula": "-20.300,-40.300"}
+                       for i, a in enumerate(aparelhos)]
+    p = jogo.pontos_modo(pd.DataFrame(linhas), "academia")
+    bonus = p[p["bonus_dono"].eq(True)]
+    assert set(bonus["usuario"]) == {"ana"}
+    assert bonus["pontos"].tolist() == [jogo.DONO_DIA, jogo.DONO_DIA, jogo.DONO_DIA + jogo.DONO_SEGUIDOS]

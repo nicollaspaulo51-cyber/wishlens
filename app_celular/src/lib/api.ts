@@ -6,6 +6,9 @@ import { Platform } from 'react-native';
 export const SERVIDOR = (process.env.EXPO_PUBLIC_SERVIDOR_URL ?? 'http://localhost:7860').replace(/\/$/, '');
 
 export type Tema = { id: string; nome: string; emoji: string; cor: string; onde: string };
+// Aba do jogo além do Mapa livre (Paisagens, Treino ao ar livre, Academias): conta = o que vale nela
+export type Aba = Tema & { conta: string };
+export type Modo = 'livre' | 'paisagens' | 'treino' | 'academia';
 export type Desafio = { texto: string; feito: number; alvo: number; ok: boolean };
 export type Estado = {
   apelido: string;
@@ -29,10 +32,10 @@ export type Cartao = {
   pode_contestar: boolean;
 };
 export type Julgamento =
-  | { status: 'borrada'; mensagem: string }
+  | { status: 'borrada'; titulo?: string; mensagem: string }
   | { status: 'ok'; id: string; cartao: Cartao; avisos: string[]; aviso_juiz: string | null; pontos_hoje: number; posicao: number | null };
 export type LinhaPodio = { posicao: number; apelido: string; pontos: number; achados: number; voce: boolean };
-export type Podio = { ranking: LinhaPodio[]; guardioes: { apelido: string; quadrados: number }[] };
+export type Podio = { ranking: LinhaPodio[]; guardioes: { apelido: string; quadrados: number }[]; donos?: { apelido: string; quadrados: number }[] };
 export type Medalha = { id: string; nome: string; conta: string; nivel: 'bronze' | 'prata' | 'ouro' | null; valor: number; proximo: number };
 export type Colecao = {
   resumo: { pontos: number; achados: number; corrente: number; fotos: number; recusadas: number };
@@ -82,16 +85,16 @@ const json = (corpo: unknown): RequestInit => ({
 
 export const api = {
   estado: () => chamar<Estado>('/estado'),
-  podio: (periodo: string, tema?: string | null) =>
-    chamar<Podio>(`/podio?periodo=${periodo}${tema ? `&tema=${encodeURIComponent(tema)}` : ''}`),
+  podio: (periodo: string, tema?: string | null, modo: Modo = 'livre') =>
+    chamar<Podio>(`/podio?periodo=${periodo}&modo=${modo}${tema ? `&tema=${encodeURIComponent(tema)}` : ''}`),
   colecao: () => chamar<Colecao>('/colecao'),
-  temas: () => chamar<{ temas: Tema[]; tema_do_dia: string; modos: string[] }>('/temas'),
+  temas: () => chamar<{ temas: Tema[]; tema_do_dia: string; modos: string[]; abas?: Aba[] }>('/temas'),
   // A posição vai no corpo, nunca na URL (a URL acaba nos logs do servidor)
-  mapa: (lat: number, lon: number) => chamar<Mapa>('/mapa', json({ lat, lon })),
+  mapa: (lat: number, lon: number, modo: Modo = 'livre') => chamar<Mapa>('/mapa', json({ lat, lon, modo })),
   contestar: (id: string, tema: string) => chamar<{ ok: boolean }>('/contestar', json({ id, tema })),
   avisar: (tipo: TipoAviso, texto: string, captura?: string) =>
     chamar<{ ok: boolean }>('/aviso', json({ tipo, texto, captura: captura ?? null, aparelho: `${Platform.OS} ${Platform.Version}` })),
-  async julgar(uri: string, posicao: { lat: number; lon: number } | null, modo = 'livre') {
+  async julgar(uri: string, posicao: { lat: number; lon: number } | null, modo: Modo = 'livre') {
     const form = new FormData();
     if (Platform.OS === 'web') {
       form.append('foto', await (await fetch(uri)).blob(), 'foto.jpg');

@@ -12,7 +12,7 @@ from servidor import app as srv  # noqa: E402
 
 
 def _clip_falso(tema="carros", achado="volkswagen gol", borrada=False, vetor=None):
-    def julgar(_imagem):
+    def julgar(_imagem, _modo="livre"):
         return {"nitidez": 80.0, "nao_identificou": borrada, "tema": tema, "achado": achado, "foto_real": True,
                 "confianca": 0.9, "probs": {tema: 0.9, "tela": 0.02, "nenhum": 0.08},
                 "vetor": vetor or [1.0] + [0.0] * 511}
@@ -34,7 +34,7 @@ def cliente(monkeypatch):
     monkeypatch.setattr(srv, "CLIP_INSTALADO", True)
     monkeypatch.setattr(srv, "_clip", _clip_falso())
     monkeypatch.setattr("src.reconhecimento.aquecer", lambda: None)  # não carrega o CLIP de verdade
-    monkeypatch.setattr(srv, "lugares_perto", lambda lat, lon: [])
+    monkeypatch.setattr(srv, "lugares_perto", lambda lat, lon, modo="livre": [])
     monkeypatch.setattr(srv, "_bairro_seguro", lambda lat, lon: "Centro, Vitória - ES")
     monkeypatch.setattr(srv, "_clima", lambda *a: None)
     srv._memoria.clear()
@@ -125,3 +125,53 @@ def test_aviso_de_suporte_vai_para_o_arquivo_com_o_que_o_juiz_disse(cliente, mon
     for _ in range(4):
         assert cliente.post("/aviso", json={"tipo": "app", "texto": "travou"}, headers=h).status_code == 200
     assert cliente.post("/aviso", json={"tipo": "app", "texto": "travou"}, headers=h).status_code == 429
+
+
+# ---------------------------------------------------------------- abas Paisagens, Treino e Academias
+def _lugar(tipo, dlat=0.0):
+    return lambda lat, lon, modo="livre": [{"lat": lat + dlat, "lon": lon, "tipo": tipo}]
+
+
+def test_paisagem_pontua_so_na_sua_aba_e_nao_mexe_no_mapa_livre(cliente, monkeypatch):
+    monkeypatch.setattr(srv, "_clip", _clip_falso(tema="paisagens", achado="pôr do sol"))
+    r = _enviar(cliente, modo="paisagens")
+    assert r["cartao"]["aceita"] and r["cartao"]["tema"]["id"] == "paisagens" and r["modo"] == "paisagens"
+    h = {"X-Apelido": "ana"}
+    assert cliente.get("/podio", params={"modo": "paisagens"}, headers=h).json()["ranking"][0]["apelido"] == "ana"
+    assert cliente.get("/podio", headers=h).json()["ranking"] == []      # o pódio do Mapa livre não vê
+    assert cliente.get("/estado", headers=h).json()["pontos_hoje"] == 0
+
+
+def test_aba_errada_diz_onde_a_foto_vale(cliente, monkeypatch):
+    def arvore(_imagem, _modo="livre"):
+        return {**_clip_falso(tema=None, achado="")(_imagem), "tema": None, "outra_aba": "livre"}
+    monkeypatch.setattr(srv, "_clip", arvore)
+    r = _enviar(cliente, modo="paisagens")
+    assert not r["cartao"]["aceita"] and "Mapa livre" in r["cartao"]["motivo"]
+
+
+def test_treino_e_academia_exigem_estar_no_lugar(cliente, monkeypatch):
+    monkeypatch.setattr(srv, "_clip", _clip_falso(tema="treino", achado="barra fixa"))
+    sem_gps = _enviar(cliente, modo="treino")
+    assert sem_gps["status"] == "borrada" and "localização" in sem_gps["titulo"] and srv._memoria == []
+    monkeypatch.setattr(srv, "lugares_perto", _lugar("fitness_station", dlat=0.01))  # ~1 km
+    longe = _enviar(cliente, modo="treino", lat=-20.3, lon=-40.3)
+    assert not longe["cartao"]["aceita"] and "praça" in longe["cartao"]["motivo"]
+    monkeypatch.setattr(srv, "lugares_perto", _lugar("fitness_station"))
+    monkeypatch.setattr(srv, "_clip", _clip_falso(tema="treino", achado="barra fixa", vetor=[0.0, 1.0] + [0.0] * 510))
+    perto = _enviar(cliente, _jpeg(deslocar=40), modo="treino", lat=-20.3, lon=-40.3)
+    assert perto["cartao"]["aceita"] and any("praça nova" in b for b in perto["cartao"]["bonus"])
+    monkeypatch.setattr(srv, "lugares_perto", lambda lat, lon, modo="livre": None)
+    assert _enviar(cliente, modo="treino", lat=-20.3, lon=-40.3)["titulo"] == "Lugar não confirmado"
+
+
+def test_dono_da_academia_aparece_com_duas_pessoas(cliente, monkeypatch):
+    monkeypatch.setattr(srv, "lugares_perto", _lugar("fitness_centre"))
+    for apelido, aparelhos in (("ana", ["supino", "esteira"]), ("bia", ["supino"])):
+        for i, a in enumerate(aparelhos):
+            monkeypatch.setattr(srv, "_clip", _clip_falso(tema="academia", achado=a, vetor=[0.0] * i + [1.0] + [0.0] * (511 - i)))
+            assert _enviar(cliente, _jpeg(deslocar=10 * i + (50 if apelido == "bia" else 0)), apelido=apelido,
+                           modo="academia", lat=-20.3, lon=-40.3)["cartao"]["aceita"]
+    podio = cliente.get("/podio", params={"modo": "academia"}, headers={"X-Apelido": "ana"}).json()
+    assert podio["donos"] == [{"apelido": "ana", "quadrados": 1}] and podio["guardioes"] == []
+    assert podio["ranking"][0]["apelido"] == "ana"

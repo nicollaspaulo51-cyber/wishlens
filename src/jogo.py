@@ -18,6 +18,7 @@ raridade de cada captura só olha as que vieram antes (não muda depois).
 
 from __future__ import annotations
 
+import math
 import random
 import re
 import unicodedata
@@ -501,7 +502,7 @@ def pistas_por_tipo(pontuadas: pd.DataFrame, limite: int = 3) -> dict[str, list[
     return saida
 
 
-def guardioes(capturas: pd.DataFrame, hoje: date | None = None) -> pd.DataFrame:
+def guardioes(capturas: pd.DataFrame, hoje: date | None = None, temas=tuple(POR_ID)) -> pd.DataFrame:
     """Guardião de cada quadrado de ~500 m na semana: quem tem mais achados diferentes ali.
 
     Só quadrados onde ≥2 pessoas fotografaram (ninguém aparece sozinho num lugar). Empate: quem chegou antes.
@@ -511,7 +512,8 @@ def guardioes(capturas: pd.DataFrame, hoje: date | None = None) -> pd.DataFrame:
     if capturas.empty or "celula" not in capturas:
         return pd.DataFrame(columns=colunas)
     df = no_periodo(capturas, "semana", hoje)
-    df = df[df["celula"].map(lambda v: bool(_valor(v))) & df["foto_real"].astype(bool) & (df["tema"] != "nenhum")]
+    # só os temas pedidos: as fotos das outras abas não fazem guardião no Mapa livre
+    df = df[df["celula"].map(lambda v: bool(_valor(v))) & df["foto_real"].astype(bool) & df["tema"].isin(temas)]
     if df.empty:
         return pd.DataFrame(columns=colunas)
     df = df.assign(chave=df["tema"] + ":" + df["achado"].map(normalizar))
@@ -633,3 +635,149 @@ def avaliar_juizes(pontuadas: pd.DataFrame) -> dict:
                                 .groupby(["tema_dito", "contestada"]).size().rename("vezes").reset_index()
                                 .sort_values("vezes", ascending=False))
     return saida
+
+
+# ---------------------------------------------------------------- abas Paisagens, Treino ao ar livre e Academias
+# Cada aba tem o seu pódio, e o Mapa livre (tema do dia, lupa, desafios, meta) não as enxerga. O tema da captura é
+# o id da aba e o achado é o tipo (pôr do sol, barra fixa, supino). "mirante" é "estava no lugar da aba": perto de
+# um mirante (Paisagens, bônus), de um aparelho de praça ou dentro de uma academia (Treino e Academias, exigido).
+NO_LUGAR_EXIGIDO = {"treino": "fora de uma praça ou parque com aparelhos de ginástica",
+                    "academia": "fora de uma academia de ginástica"}
+HORA_DOURADA, APARELHO_NOVO, LUGAR_NOVO = 5, 2, 5      # paisagem até 1 h do nascer ou do pôr do sol: +5
+DONO_DIA, DONO_SEGUIDOS, DONO_DIAS = 5, 10, 3           # dono da academia: +5 por dia, +10 a cada 3 dias seguidos
+
+
+def sol(dia: date, lat: float, lon: float) -> tuple[float, float]:
+    """Nascer e pôr do sol em horas de Brasília (aproximação da NOAA, erro de poucos minutos: basta para 1 h)."""
+    n = dia.timetuple().tm_yday
+    b = 2 * math.pi * (n - 81) / 364
+    equacao = 9.87 * math.sin(2 * b) - 7.53 * math.cos(b) - 1.5 * math.sin(b)  # minutos
+    declinacao = math.radians(23.44) * math.sin(2 * math.pi * (284 + n) / 365)
+    x = -math.tan(math.radians(lat)) * math.tan(declinacao)
+    meio_arco = math.degrees(math.acos(max(-1.0, min(1.0, x)))) / 15
+    meio_dia = 12 - lon / 15 - equacao / 60 - 3  # UTC-3
+    return meio_dia - meio_arco, meio_dia + meio_arco
+
+
+def hora_dourada(momento, celula_: str | None) -> bool:
+    """A foto foi até 1 h do nascer ou do pôr do sol? O lugar é o centro do quadrado de ~500 m (nunca o GPS)."""
+    if not _valor(celula_):
+        return False
+    momento = pd.Timestamp(momento).to_pydatetime()
+    nascer, por = sol(momento.date(), *centro_celula(celula_))
+    hora = momento.hour + momento.minute / 60
+    return abs(hora - nascer) <= 1 or abs(hora - por) <= 1
+
+
+def donos_academia(pontuadas: pd.DataFrame, hoje: date | None = None) -> pd.DataFrame:
+    """Dono de cada academia (quadrado de ~500 m) na semana: quem tem mais aparelhos diferentes ali.
+    Mesma regra dos guardiões (2+ pessoas, empate para quem chegou antes), só com as fotos aceitas da aba."""
+    if pontuadas.empty:
+        return guardioes(pontuadas)
+    df = pontuadas[(pontuadas["tema"] == "academia") & pontuadas["aceita"].astype(bool)]
+    if "bonus_dono" in df:
+        df = df[df["bonus_dono"].ne(True)]
+    return guardioes(df, hoje, temas=("academia",))
+
+
+def _dia(x) -> date:
+    return dia_de(pd.Timestamp(x).to_pydatetime())
+
+
+def pontos_modo(capturas: pd.DataFrame, modo: str) -> pd.DataFrame:
+    """Pontos da aba (só as capturas com tema == modo), no mesmo formato de calcular_pontos."""
+    from src.temas import MODOS
+    generico_ = normalizar(MODOS[modo].generico)
+    df = (capturas[capturas["tema"] == modo] if not capturas.empty else capturas)
+    df = df.sort_values("criado_em", kind="stable").reset_index(drop=True).copy()
+    hashes: dict[str, list[str]] = {}
+    vistos_dia: set = set()
+    vistos: set = set()
+    semana_aparelho: set = set()
+    semana_lugar: set = set()
+    contagem: Counter = Counter()
+    linhas = []
+    for c in df.itertuples(index=False):
+        momento = pd.Timestamp(c.criado_em).to_pydatetime()
+        dia = dia_de(momento)
+        semana = dia - timedelta(days=dia.weekday())
+        chave = normalizar(getattr(c, "achado", ""))
+        h = getattr(c, "foto_hash", None)
+        h = h if isinstance(h, str) else None
+        no_lugar = bool(_valor(getattr(c, "mirante", None)))
+        real = getattr(c, "foto_real", True)
+        generico = chave == generico_
+        motivo = None
+        if real is not None and not pd.isna(real) and not bool(real):
+            motivo = "não é foto real (tela, impressão ou desenho)"
+        elif deslocamento_impossivel(getattr(c, "km_anterior", None), getattr(c, "min_anterior", None)):
+            motivo = "deslocamento impossível desde a foto anterior"
+        elif not chave:
+            motivo = "não deu para saber o que é"
+        elif modo in NO_LUGAR_EXIGIDO and not no_lugar:
+            motivo = NO_LUGAR_EXIGIDO[modo]
+        elif repetida(h, hashes.get(chave, [])):
+            motivo = "foto repetida"
+        elif _valor(getattr(c, "mesmo_objeto", None)) == "seu":
+            motivo = "você já fotografou este mesmo objeto"
+        elif not generico and (c.usuario, chave, dia) in vistos_dia:
+            motivo = "você já achou isso hoje"
+        if motivo:
+            linhas.append({"pontos": 0, "base": 0, "novidade": 0, "raridade": 0, "do_dia": False, "extra": 0,
+                           "lupa": 0, "meta": 0, "detalhes": "", "aceita": False, "motivo": motivo})
+            continue
+        detalhes: list[str] = []
+        novidade = raridade = extra = 0
+        if modo == "paisagens":
+            novidade = 0 if generico or (c.usuario, chave) in vistos else NOVIDADE
+            raridade = 0 if generico else round(RARIDADE / (1 + contagem[chave]))
+            if no_lugar:
+                extra += MIRANTE
+                detalhes.append(f"mirante +{MIRANTE}")
+            if hora_dourada(momento, getattr(c, "celula", None)):
+                extra += HORA_DOURADA
+                detalhes.append(f"hora dourada +{HORA_DOURADA}")
+        else:
+            if not generico and (c.usuario, chave, semana) not in semana_aparelho:
+                semana_aparelho.add((c.usuario, chave, semana))
+                novidade = APARELHO_NOVO
+            cel = _valor(getattr(c, "celula", None))
+            # shortcut: o lugar é o quadrado de ~500 m, e no Supabase a célula não é legível pela API: lá este bônus
+            # fica de fora até existir uma função security definer que conte as praças de cada pessoa na semana
+            if modo == "treino" and cel and (c.usuario, cel, semana) not in semana_lugar:
+                semana_lugar.add((c.usuario, cel, semana))
+                extra += LUGAR_NOVO
+                detalhes.append(f"praça nova na semana +{LUGAR_NOVO}")
+        linhas.append({"pontos": BASE + novidade + raridade + extra, "base": BASE, "novidade": novidade,
+                       "raridade": raridade, "do_dia": False, "extra": extra, "lupa": 0, "meta": 0,
+                       "detalhes": "; ".join(detalhes), "aceita": True, "motivo": None})
+        vistos.add((c.usuario, chave))
+        vistos_dia.add((c.usuario, chave, dia))
+        contagem[chave] += 1
+        if h:
+            hashes.setdefault(chave, []).append(h)
+    pontos = pd.DataFrame(linhas, columns=COLUNAS_PONTOS)
+    saida = pd.concat([df.drop(columns=[c for c in COLUNAS_PONTOS if c in df.columns]), pontos], axis=1)
+    if modo != "academia" or saida.empty:
+        return saida
+    return pd.concat([saida, _bonus_donos(saida)], ignore_index=True)
+
+
+def _bonus_donos(pontuadas: pd.DataFrame) -> pd.DataFrame:
+    """Uma linha de pontos para cada dia em que a pessoa foi dona de uma academia (+5, e +10 a cada 3 dias seguidos).
+    O dono de cada dia sai das fotos até o fim daquele dia."""
+    dias_foto = pontuadas["criado_em"].map(_dia)
+    seguidos: dict[str, tuple[date, int]] = {}
+    linhas = []
+    for d in sorted(set(dias_foto)):
+        for usuario in sorted(set(donos_academia(pontuadas[dias_foto <= d], d)["usuario"])):
+            ultimo, n = seguidos.get(usuario, (None, 0))
+            n = n + 1 if ultimo == d - timedelta(days=1) else 1
+            seguidos[usuario] = (d, n)
+            bonus = DONO_DIA + (DONO_SEGUIDOS if n % DONO_DIAS == 0 else 0)
+            texto = f"dono de academia +{DONO_DIA}" + (f"; {n} dias seguidos +{DONO_SEGUIDOS}" if n % DONO_DIAS == 0 else "")
+            linhas.append({"usuario": usuario, "criado_em": datetime.combine(d, datetime.min.time()).replace(hour=23, minute=59),
+                           "tema": "academia", "achado": "dono da academia", "foto_real": True, "pontos": bonus,
+                           "base": 0, "novidade": 0, "raridade": 0, "do_dia": False, "extra": bonus, "lupa": 0,
+                           "meta": 0, "detalhes": texto, "aceita": True, "motivo": None, "bonus_dono": True})
+    return pd.DataFrame(linhas, columns=[*pontuadas.columns, "bonus_dono"])

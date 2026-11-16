@@ -35,9 +35,12 @@ from src.cartao import linha_juizes, partes_e_destaque
 from src.categorias import nome_valido
 from src.fotos import preparar_para_salvar
 from src.lugares import buscar_pontos_temas, distancia_km
-from src.temas import POR_ID, TEMAS, agora, tema_do_dia
+from src.temas import MODOS as ABAS, POR_ID, TEMAS, TODOS, agora, tema_do_dia
 
-MODOS = ("livre",)
+MODOS = ("livre", *ABAS)
+# Até onde a foto conta como "no lugar" da aba, pelo tipo do lugar do OpenStreetMap. GPS dentro de prédio erra mais;
+# parque e quadra são áreas grandes e o OSM só dá o centro delas.
+LUGAR_M = {"fitness_station": 40, "fitness_centre": 60, "park": 150, "pitch": 150}
 FOTO_MAX = 10 * 1024 * 1024
 SUPABASE = (os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_KEY"))
 VISAO = (os.environ.get("VISAO_URL"), os.environ.get("VISAO_CHAVE"),
@@ -60,10 +63,10 @@ app = FastAPI(title="WishLens: juiz", lifespan=_ciclo)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
-def _clip(imagem: Image.Image) -> dict:
+def _clip(imagem: Image.Image, modo: str = "livre") -> dict:
     from src.reconhecimento import julgar_clip
 
-    return julgar_clip(imagem)
+    return julgar_clip(imagem, modo)
 
 
 # ---------------------------------------------------------------- quem está jogando
@@ -162,8 +165,14 @@ def _capturas(s) -> pd.DataFrame:
     return df
 
 
-def _pontuadas(s) -> pd.DataFrame:
-    return jogo.calcular_pontos(_capturas(s))
+def _pontuadas(s, capturas: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Pontos do Mapa livre: as fotos das outras abas não entram (nem no tema do dia, lupa, desafios ou meta)."""
+    df = _capturas(s) if capturas is None else capturas
+    return jogo.calcular_pontos(df[~df["tema"].isin(ABAS)])
+
+
+def _pontuadas_aba(s, modo: str, capturas: pd.DataFrame | None = None) -> pd.DataFrame:
+    return jogo.pontos_modo(_capturas(s) if capturas is None else capturas, modo)
 
 
 def _hoje(pontuadas: pd.DataFrame, eu: str) -> tuple[int, int | None]:
@@ -178,14 +187,15 @@ def _tema(t) -> dict:
 
 # ---------------------------------------------------------------- serviços de fora, com cache
 @lru_cache(maxsize=512)
-def _lugares(lat2: float, lon2: float, hora: int) -> tuple:
-    return tuple(buscar_pontos_temas(TEMAS, lat2, lon2))  # RuntimeError (Overpass fora) não fica em cache
+def _lugares(modo: str, lat2: float, lon2: float, hora: int) -> tuple:
+    temas = TEMAS if modo == "livre" else [ABAS[modo]]
+    return tuple(buscar_pontos_temas(temas, lat2, lon2))  # RuntimeError (Overpass fora) não fica em cache
 
 
-def lugares_perto(lat: float, lon: float) -> list[dict] | None:
-    """None quando o OpenStreetMap (Overpass) não respondeu: diferente de "nada por perto"."""
+def lugares_perto(lat: float, lon: float, modo: str = "livre") -> list[dict] | None:
+    """Lugares da aba perto de você. None quando o OpenStreetMap (Overpass) não respondeu: diferente de "nada por perto"."""
     try:
-        return list(_lugares(round(lat, 2), round(lon, 2), int(time.time() // 3600)))
+        return list(_lugares(modo, round(lat, 2), round(lon, 2), int(time.time() // 3600)))
     except RuntimeError:
         return None
 
@@ -224,7 +234,8 @@ def saude():
 
 @app.get("/temas")
 def temas():
-    return {"temas": [_tema(t) for t in TEMAS], "tema_do_dia": tema_do_dia().id, "modos": list(MODOS)}
+    return {"temas": [_tema(t) for t in TEMAS], "tema_do_dia": tema_do_dia().id, "modos": list(MODOS),
+            "abas": [{**_tema(t), "conta": t.conta} for t in ABAS.values()]}
 
 
 @app.get("/estado")
@@ -239,14 +250,21 @@ def estado(s=Depends(sessao)):
 
 
 @app.get("/podio")
-def podio(periodo: str = "hoje", tema: str | None = None, s=Depends(sessao)):
-    if periodo not in ("hoje", "semana", "geral") or (tema and tema not in POR_ID):
-        raise HTTPException(400, "Período ou tema inválido.")
-    ranking = jogo.podio(_pontuadas(s), periodo, tema=tema)
+def podio(periodo: str = "hoje", tema: str | None = None, modo: str = "livre", s=Depends(sessao)):
+    if periodo not in ("hoje", "semana", "geral") or (tema and tema not in POR_ID) or modo not in MODOS:
+        raise HTTPException(400, "Período, tema ou aba inválido.")
+    contar = lambda nomes: [{"apelido": str(u), "quadrados": int(n)} for u, n in pd.Series(nomes, dtype=object).value_counts().items()]
+    if modo == "livre":
+        ranking, guardioes, donos = jogo.podio(_pontuadas(s), periodo, tema=tema), [g["apelido"] for g in _guardioes(s)], []
+    else:
+        p = _pontuadas_aba(s, modo)
+        # shortcut: os donos saem da célula, que no Supabase não é legível pela API: lá a lista fica vazia
+        # até existir uma função security definer como guardioes_quadrados
+        ranking, guardioes = jogo.podio(p, periodo), []
+        donos = list(jogo.donos_academia(p)["usuario"]) if modo == "academia" else []
     linhas = [{"posicao": int(r.posicao), "apelido": str(r.usuario), "pontos": int(r.pontos),
                "achados": int(r.achados), "voce": r.usuario == s.apelido} for r in ranking.itertuples()]
-    return {"ranking": linhas, "guardioes": [{"apelido": str(u), "quadrados": int(n)} for u, n in
-                                            pd.Series([g["apelido"] for g in _guardioes(s)]).value_counts().items()]}
+    return {"ranking": linhas, "guardioes": contar(guardioes), "donos": contar(donos)}
 
 
 @app.get("/colecao")
@@ -283,6 +301,10 @@ class Posicao(BaseModel):
     lon: float = Field(ge=-180, le=180)
 
 
+class PedidoMapa(Posicao):
+    modo: str = "livre"
+
+
 def _guardioes(s) -> list[dict]:
     try:
         return s.guardioes()
@@ -291,15 +313,19 @@ def _guardioes(s) -> list[dict]:
 
 
 @app.post("/mapa")
-def mapa(pos: Posicao, s=Depends(sessao)):
-    """Lugares de cada tema (OpenStreetMap) perto de você e as manchas da turma, com o guardião de cada uma."""
-    perto = lugares_perto(pos.lat, pos.lon)
+def mapa(pos: PedidoMapa, s=Depends(sessao)):
+    """Lugares da aba (OpenStreetMap) perto de você e as manchas da turma, com o guardião de cada uma (Mapa livre)."""
+    if pos.modo not in MODOS:
+        raise HTTPException(400, "Aba inválida.")
+    perto = lugares_perto(pos.lat, pos.lon) if pos.modo == "livre" else lugares_perto(pos.lat, pos.lon, pos.modo)
     lugares = [{**l, "distancia_km": round(distancia_km(pos.lat, pos.lon, l["lat"], l["lon"]), 2)} for l in perto or []]
     try:
         manchas = s.manchas()
     except Exception:  # banco criado antes da função manchas_capturas
         manchas = []
-    guardiao = {g["celula"]: g["apelido"] for g in _guardioes(s)}
+    da_aba = POR_ID if pos.modo == "livre" else (pos.modo,)
+    manchas = [m for m in manchas if m["tema"] in da_aba]
+    guardiao = {g["celula"]: g["apelido"] for g in _guardioes(s)} if pos.modo == "livre" else {}
     for m in manchas:
         m["lat"], m["lon"] = jogo.centro_celula(m["celula"])
         m["guardiao"] = guardiao.get(m["celula"])
@@ -374,7 +400,7 @@ def contestar(c: Contestacao, s=Depends(sessao)):
 
 
 def _cartao(resultado: dict, captura: visao.Captura, vezes: int, juizes: dict) -> dict:
-    t = POR_ID.get(captura.tema or "")
+    t = TODOS.get(captura.tema or "")
     cartao = {"aceita": bool(resultado.get("aceita")), "pontos": int(resultado.get("pontos") or 0),
               "tema": _tema(t) if t else None, "achado": captura.achado or (t.generico if t else ""),
               "juizes": linha_juizes(juizes, captura.tema)}
@@ -403,16 +429,27 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
         raise HTTPException(400, "Não consegui abrir a foto.")
 
     gps = (lat, lon) if lat is not None and lon is not None else None
-    jpeg = preparar_para_salvar(imagem) if VISAO[0] else None  # sem EXIF/GPS: é o que vai para a IA
-    f_ia = _fila.submit(visao.identificar_captura, jpeg, VISAO[0], VISAO[2], VISAO[1]) if VISAO[0] else None
+    livre = modo == "livre"
+    if not gps and modo in jogo.NO_LUGAR_EXIGIDO:  # não julga nem salva: nesta aba a foto só vale no lugar
+        return {"status": "borrada", "titulo": "Ligue a localização",
+                "mensagem": f"Na aba {ABAS[modo].nome} a foto só vale {jogo.NO_LUGAR_EXIGIDO[modo].replace('fora de', 'dentro de')}. "
+                            "Ligue a localização e tire de novo."}
+    usar_ia = VISAO[0] and livre  # a IA conhece só os 5 temas do Mapa livre
+    jpeg = preparar_para_salvar(imagem) if usar_ia else None  # sem EXIF/GPS: é o que vai para a IA
+    f_ia = _fila.submit(visao.identificar_captura, jpeg, VISAO[0], VISAO[2], VISAO[1]) if usar_ia else None
     f_bairro = _fila.submit(_bairro_seguro, *gps) if gps else None
     f_clima = _fila.submit(_clima, round(gps[0], 2), round(gps[1], 2), int(time.time() // 1800)) if gps else None
-    f_lugares = _fila.submit(lugares_perto, *gps) if gps else None
-    clip = _clip(imagem)  # o CLIP usa o processador enquanto o resto espera a rede
+    f_lugares = (_fila.submit(lugares_perto, *gps) if livre else _fila.submit(lugares_perto, *gps, modo)) if gps else None
+    clip = _clip(imagem, modo)  # o CLIP usa o processador enquanto o resto espera a rede
 
     if clip["nao_identificou"]:  # não julga nem salva: a pessoa tira outra
-        return {"status": "borrada", "mensagem": "Não foi possível identificar: a foto ficou borrada. "
-                                                 "Tire outra, com o celular parado e o objeto em foco."}
+        return {"status": "borrada", "titulo": "Foto borrada",
+                "mensagem": "Não foi possível identificar: a foto ficou borrada. "
+                            "Tire outra, com o celular parado e o objeto em foco."}
+    if f_lugares and modo in jogo.NO_LUGAR_EXIGIDO and f_lugares.result() is None:
+        return {"status": "borrada", "titulo": "Lugar não confirmado",
+                "mensagem": "O mapa (OpenStreetMap) não respondeu agora, então não deu para confirmar o lugar. "
+                            "Tente de novo daqui a pouco."}
     captura, aviso = None, None
     if f_ia:
         try:
@@ -431,7 +468,9 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
         cidade = f_bairro.result()
         lugares = f_lugares.result() or []
         perto = min(lugares, key=lambda l: distancia_km(lat, lon, l["lat"], l["lon"]), default=None)
-        contexto["mirante"] = bool(perto) and distancia_km(lat, lon, perto["lat"], perto["lon"]) * 1000 <= jogo.MIRANTE_M
+        limite = jogo.MIRANTE_M if livre or not perto else LUGAR_M.get(perto.get("tipo"), jogo.MIRANTE_M)
+        # nas outras abas, "mirante" quer dizer "no lugar da aba" (mirante, praça com aparelhos ou academia)
+        contexto["mirante"] = bool(perto) and distancia_km(lat, lon, perto["lat"], perto["lon"]) * 1000 <= limite
         contexto["tipo_lugar"] = perto.get("tipo") if contexto["mirante"] else None
         contexto["clima"] = f_clima.result()
         agora = jogo.agora_naive()
@@ -454,11 +493,21 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
               "mesmo_objeto": mesmo, **contexto}
     h = jogo.hash_foto(imagem)
     historico = _capturas(s)
-    antes = jogo.calcular_pontos(historico)
     nova = {"usuario": s.apelido, "criado_em": jogo.agora_naive(), "tema": captura.tema or "nenhum",
-            "achado": captura.achado, "foto_real": captura.foto_real, "foto_hash": h, **juizes}
-    resultado = jogo.pontuar_nova(historico, nova)
-    medalhas_antes = {m["id"]: m["nivel"] for m in jogo.medalhas(antes, s.apelido)}
+            "achado": captura.achado, "foto_real": captura.foto_real, "foto_hash": h, "celula": celula, **juizes}
+    dica = _dica_outra_aba(modo, clip.get("outra_aba")) if not captura.tema else None
+    if livre:
+        antes = _pontuadas(s, historico)
+        resultado = jogo.pontuar_nova(historico[~historico["tema"].isin(ABAS)], nova)
+        medalhas_antes = {m["id"]: m["nivel"] for m in jogo.medalhas(antes, s.apelido)}
+    else:
+        antes = _pontuadas_aba(s, modo, historico)
+        if captura.tema:
+            tudo = pd.concat([historico, pd.DataFrame([{**nova, "_nova": True}])], ignore_index=True)
+            pontuadas = jogo.pontos_modo(tudo, modo)
+            resultado = pontuadas[pontuadas["_nova"].eq(True)].iloc[0].to_dict()
+        else:
+            resultado = {"aceita": False, "motivo": dica or f"não é {ABAS[modo].conta.split('.')[0].lower()}"}
     vezes = jogo.vezes_achado(antes, captura.tema or "", captura.achado)
 
     registro = {"id": str(uuid.uuid4()), "criado_em": nova["criado_em"], "tema": captura.tema or "nenhum",
@@ -467,10 +516,27 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
     s.salvar_captura(registro)
     _cache["linhas"] = None
 
-    depois = _pontuadas(s)
+    depois = _pontuadas(s) if livre else _pontuadas_aba(s, modo)
     avisos = [d[0].upper() + d[1:] for d in filter(None, str(resultado.get("detalhes") or "").split("; "))]
-    avisos += [f"Medalha nova: {m['nome']} ({m['nivel']})" for m in jogo.medalhas(depois, s.apelido)
-               if m["nivel"] and m["nivel"] != medalhas_antes.get(m["id"])]
+    if livre:
+        avisos += [f"Medalha nova: {m['nome']} ({m['nivel']})" for m in jogo.medalhas(depois, s.apelido)
+                   if m["nivel"] and m["nivel"] != medalhas_antes.get(m["id"])]
+        if dica:
+            avisos.insert(0, dica)
     pontos, posicao = _hoje(depois, s.apelido)
-    return {"status": "ok", "id": registro["id"], "cartao": _cartao(resultado, captura, vezes, juizes),
+    cartao = _cartao(resultado, captura, vezes, juizes)
+    if not livre:
+        cartao["pode_contestar"] = False  # contestar é escolher outro tema do Mapa livre
+    return {"status": "ok", "id": registro["id"], "cartao": cartao, "modo": modo,
             "avisos": avisos, "aviso_juiz": aviso, "pontos_hoje": pontos, "posicao": posicao}
+
+
+def _dica_outra_aba(modo: str, outra: str | None) -> str | None:
+    """Em vez de só recusar, diz em qual aba a foto pontuaria."""
+    if not outra:
+        return None
+    if modo == "paisagens" and outra == "livre":
+        return ("Isso parece uma planta ou objeto de perto. Afaste-se para mostrar a vista, "
+                "ou fotografe na aba Mapa livre.")
+    nome = "Mapa livre" if outra == "livre" else ABAS[outra].nome
+    return f"Isso parece ser da aba {nome}: lá esta foto vale pontos."

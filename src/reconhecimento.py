@@ -70,19 +70,30 @@ def aquecer() -> None:
         _aquecimento.start()
 
 
-def frases_captura() -> list[tuple[str, str, str]]:
-    """(grupo, frase, nome em português): grupo = id do tema, "tela" (não vale) ou "nenhum"."""
-    from src.temas import FRASES_NENHUM, FRASES_TELA, TEMAS
-    return ([(t.id, f"a photo of {o}", nome) for t in TEMAS for o, nome in t.objetos_clip]
-            + [("tela", f, "") for f in FRASES_TELA] + [("nenhum", f, "") for f in FRASES_NENHUM])
+def frases_captura(modo: str = "livre") -> list[tuple[str, str, str]]:
+    """(grupo, frase, nome em português): grupo = id do tema, "tela" (não vale), "nenhum" ou "outro:<aba>".
+
+    Cada aba julga só os seus temas. Os objetos das outras abas entram como "outro:<aba>", que vale como
+    "nenhum" mas diz onde a foto pontuaria: no Mapa livre uma paisagem perde para "a wide landscape" e vai
+    para Paisagens; em Paisagens, "a tree" de perto ganha da vista e manda para o Mapa livre.
+    """
+    from src.temas import FRASES_NENHUM, FRASES_TELA, MODOS, TEMAS
+    abas = {"livre": TEMAS, **{m: [t] for m, t in MODOS.items()}}
+    validos = abas[modo]
+    outros = [(aba, t) for aba, ts in abas.items() if aba != modo for t in ts]
+    # numa academia, "uma sala por dentro" é o próprio lugar do jogo
+    nenhum = [f for f in FRASES_NENHUM if not (modo == "academia" and "room interior" in f)]
+    return ([(t.id, f"a photo of {o}", nome) for t in validos for o, nome in t.objetos_clip]
+            + [(f"outro:{aba}", f"a photo of {o}", "") for aba, t in outros for o, _ in t.objetos_clip]
+            + [("tela", f, "") for f in FRASES_TELA] + [("nenhum", f, "") for f in nenhum])
 
 
-@lru_cache(maxsize=1)
-def _vetores_captura():
+@lru_cache(maxsize=4)
+def _vetores_captura(modo: str = "livre"):
     import torch
 
     modelo, processador = _carregar()
-    frases = frases_captura()
+    frases = frases_captura(modo)
     with torch.no_grad():
         entrada = processador(text=[f for _, f, _ in frases], return_tensors="pt", padding=True)
         vet = _vetor(modelo.get_text_features(**entrada))
@@ -125,26 +136,34 @@ def achado_do_tema(frases: list[tuple[str, str, str]], probs: list[float], tema:
     return max(candidatas)[1] if candidatas else ""
 
 
-def julgar_clip(imagem: Image.Image) -> dict:
+def outra_aba(grupos: list[str], probs: list[float]) -> str | None:
+    """A aba onde a foto pontuaria, quando a frase que mais combinou é de outra aba ("livre", "paisagens"...)."""
+    melhor = max(range(len(probs)), key=probs.__getitem__)
+    return grupos[melhor].removeprefix("outro:") if grupos[melhor].startswith("outro:") else None
+
+
+def julgar_clip(imagem: Image.Image, modo: str = "livre") -> dict:
     """Opinião do CLIP: tema (ou None), achado, foto_real, confiança, a chance de cada grupo e o vetor da foto
     (512 números normalizados: o "retrato" usado para saber se o mesmo objeto já foi fotografado)."""
     import torch
 
     modelo, processador = _carregar()
-    vet_texto, frases = _vetores_captura()
+    vet_texto, frases = _vetores_captura(modo)
     with torch.no_grad():
         entrada = processador(images=imagem.convert("RGB"), return_tensors="pt")
         vet_img = _vetor(modelo.get_image_features(**entrada))
         vet_img = vet_img / vet_img.norm(dim=-1, keepdim=True)
         probs = (modelo.logit_scale.exp() * vet_img @ vet_texto.T).softmax(dim=-1)[0].tolist()
     grupos = [g for g, _, _ in frases]
-    tema, real, conf = decidir_captura(grupos, probs)
+    # para decidir, as outras abas são "nenhum"
+    tema, real, conf = decidir_captura(["nenhum" if g.startswith("outro:") else g for g in grupos], probs)
     por_grupo = probs_por_grupo(grupos, probs)
     valor_nitidez = nitidez(imagem)
     return {"nitidez": round(valor_nitidez, 1),
             "nao_identificou": nao_identificou(valor_nitidez, max(por_grupo.values())),
             "tema": tema, "achado": achado_do_tema(frases, probs, tema) if tema else "",
             "foto_real": real, "confianca": conf, "probs": por_grupo,
+            "outra_aba": None if tema else outra_aba(grupos, probs),
             "vetor": [round(x, 4) for x in vet_img[0].tolist()]}
 
 

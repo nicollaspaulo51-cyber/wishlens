@@ -3,8 +3,9 @@ import { Animated, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Apagado, Aviso, Cartaz, Fichas, Subtitulo, Titulo } from '../../componentes/ui';
-import { api, type LinhaPodio } from '../../lib/api';
+import { api, type LinhaPodio, type Modo } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
+import { escolherModo, NOME_LIVRE, useModo } from '../../lib/modo';
 import { Brilho, Surge, useEntrada } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 
@@ -15,7 +16,8 @@ export default function Podio() {
   const [periodo, setPeriodo] = useState<Periodo>('hoje');
   const [tema, setTema] = useState('todos');
   const temas = useDados(api.temas);
-  const podio = useDados(() => api.podio(periodo, tema === 'todos' ? null : tema), [periodo, tema], 30);
+  const modo = useModo();
+  const podio = useDados(() => api.podio(periodo, modo === 'livre' && tema !== 'todos' ? tema : null, modo), [periodo, tema, modo], 30);
   const ranking = podio.dados?.ranking ?? [];
   const eu = ranking.find((r) => r.voce);
 
@@ -26,11 +28,15 @@ export default function Podio() {
         <Titulo>Pódio</Titulo>
         <Fichas<Periodo> rotulo="Período" valor={periodo} aoEscolher={setPeriodo}
           opcoes={[{ valor: 'hoje', texto: 'Hoje' }, { valor: 'semana', texto: 'Semana' }, { valor: 'geral', texto: 'Geral' }]} />
-        <Fichas rotulo="Tema" valor={tema} aoEscolher={setTema}
-          opcoes={[{ valor: 'todos', texto: 'Todos' }, ...(temas.dados?.temas ?? []).map((t) => ({ valor: t.id, texto: `${t.emoji} ${t.nome}` }))]} />
+        <Fichas<Modo> rotulo="Aba do jogo" valor={modo} aoEscolher={escolherModo}
+          opcoes={[NOME_LIVRE, ...(temas.dados?.abas ?? [])].map((a) => ({ valor: a.id as Modo, texto: `${a.emoji} ${a.nome}` }))} />
+        {modo === 'livre' ? (
+          <Fichas rotulo="Tema" valor={tema} aoEscolher={setTema}
+            opcoes={[{ valor: 'todos', texto: 'Todos' }, ...(temas.dados?.temas ?? []).map((t) => ({ valor: t.id, texto: `${t.emoji} ${t.nome}` }))]} />
+        ) : null}
         {podio.erro && !podio.dados ? <Aviso texto={podio.erro} aoTentar={podio.recarregar} /> : null}
         {podio.dados && ranking.length === 0 ? <Aviso texto="Ninguém pontuou neste período ainda. Tire a primeira foto em Jogar." /> : null}
-        {ranking.length ? <Degraus ranking={ranking} chave={`${periodo}-${tema}`} /> : null}
+        {ranking.length ? <Degraus ranking={ranking} chave={`${modo}-${periodo}-${tema}`} /> : null}
         {eu ? <Text style={{ color: c.tinta, fontSize: 16 }}>Você está em <Text style={{ fontWeight: '700' }}>{eu.posicao}º</Text> de {ranking.length}.</Text> : null}
         {ranking.length > 3 ? (
           <Cartaz estilo={{ paddingVertical: 4 }}>
@@ -45,6 +51,23 @@ export default function Podio() {
           </Cartaz>
         ) : null}
 
+        {modo === 'academia' ? (
+          <>
+            <Subtitulo>Donos das academias</Subtitulo>
+            <Apagado>Quem tem mais aparelhos diferentes numa academia na semana é o dono dela: +5 por dia e +10 a cada 3 dias seguidos. Só contam academias onde 2 pessoas ou mais jogaram.</Apagado>
+            {podio.dados?.donos?.length ? (
+              <Cartaz estilo={{ paddingVertical: 4 }}>
+                {podio.dados.donos.map((d) => (
+                  <View key={d.apelido} style={{ flexDirection: 'row', paddingVertical: 10 }}>
+                    <Text style={{ flex: 1, color: c.tinta, fontSize: 16 }}>🏋️ {d.apelido}</Text>
+                    <Text style={{ color: c.apagado }}>{d.quadrados} {d.quadrados === 1 ? 'academia' : 'academias'}</Text>
+                  </View>
+                ))}
+              </Cartaz>
+            ) : <Apagado>Nenhuma academia tem dono ainda.</Apagado>}
+          </>
+        ) : null}
+        {modo === 'livre' ? (<>
         <Subtitulo>Guardiões da semana</Subtitulo>
         <Apagado>Quem tem mais achados diferentes num quadrado de ~500 m guarda aquele quadrado até domingo. Só contam quadrados onde 2 pessoas ou mais jogaram.</Apagado>
         {podio.dados?.guardioes.length ? (
@@ -57,6 +80,7 @@ export default function Podio() {
             ))}
           </Cartaz>
         ) : <Apagado>Ninguém guarda um quadrado ainda.</Apagado>}
+        </>) : null}
       </ScrollView>
     </SafeAreaView>
   );
