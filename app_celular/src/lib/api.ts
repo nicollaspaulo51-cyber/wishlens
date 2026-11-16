@@ -1,4 +1,6 @@
 // Conversa com o servidor do juiz (servidor/app.py). Os tipos espelham o que as rotas devolvem.
+import { fetch as fetchExpo } from 'expo/fetch';
+import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
 
 export const SERVIDOR = (process.env.EXPO_PUBLIC_SERVIDOR_URL ?? 'http://localhost:7860').replace(/\/$/, '');
@@ -54,11 +56,12 @@ export function usarCabecalhos(fonte: typeof cabecalhos) {
   cabecalhos = fonte;
 }
 
-async function chamar<T>(caminho: string, init: RequestInit = {}): Promise<T> {
+async function chamar<T>(caminho: string, init: RequestInit = {}, enviar: typeof fetch = fetch): Promise<T> {
   let resp: Response;
   try {
-    resp = await fetch(SERVIDOR + caminho, { ...init, headers: { ...(await cabecalhos()), ...(init.headers as object) } });
-  } catch {
+    resp = await enviar(SERVIDOR + caminho, { ...init, headers: { ...(await cabecalhos()), ...(init.headers as object) } });
+  } catch (erro) {
+    console.warn('falha ao chamar o juiz', caminho, erro);
     throw new ErroApi(0, 'Sem conexão com o servidor do juiz. Confira a internet e tente de novo.');
   }
   if (!resp.ok) {
@@ -89,14 +92,15 @@ export const api = {
     if (Platform.OS === 'web') {
       form.append('foto', await (await fetch(uri)).blob(), 'foto.jpg');
     } else {
-      // React Native envia o arquivo a partir do uri (objeto próprio do RN, sem tipo no DOM)
-      form.append('foto', { uri, name: 'foto.jpg', type: 'image/jpeg' } as unknown as Blob);
+      // SDK 58: o arquivo vai como File do expo-file-system, enviado pelo fetch do expo (o {uri, name, type} antigo falha)
+      form.append('foto', new File(uri), 'foto.jpg');
     }
     if (posicao) {
       form.append('lat', String(posicao.lat));
       form.append('lon', String(posicao.lon));
     }
     form.append('modo', modo);
-    return chamar<Julgamento>('/julgar', { method: 'POST', body: form });
+    const enviar = Platform.OS === 'web' ? undefined : (fetchExpo as unknown as typeof fetch);
+    return chamar<Julgamento>('/julgar', { method: 'POST', body: form }, enviar);
   },
 };
