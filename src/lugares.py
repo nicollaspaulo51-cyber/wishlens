@@ -102,7 +102,7 @@ def _overpass(consulta: str) -> dict | None:
     for url in OVERPASS_URLS:
         try:
             resp = requests.post(url, data={"data": consulta},
-                                 headers={"User-Agent": USER_AGENT}, timeout=8)
+                                 headers={"User-Agent": USER_AGENT}, timeout=20)  # a busca dos 5 temas leva ~10 s
             resp.raise_for_status()
             dados = resp.json()
         except requests.RequestException:  # inclui JSON inválido (página de erro com status 200)
