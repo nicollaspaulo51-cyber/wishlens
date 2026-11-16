@@ -131,6 +131,13 @@ export default function Camera() {
               ) : null}
             </>
           ) : null}
+          {resposta?.status === 'ok' ? (
+            <Botao titulo="Algo errado? Avisar o suporte" tipo="secundario" rotulo="Avisar o suporte sobre esta foto"
+              aoTocar={() => router.push({ pathname: '/avisar', params: { tipo: 'juiz', captura: resposta.id,
+                achado: resposta.cartao.achado || undefined } })} />
+          ) : erro ? (
+            <Botao titulo="Avisar o suporte" tipo="secundario" aoTocar={() => router.push({ pathname: '/avisar', params: { tipo: 'app' } })} />
+          ) : null}
           {resposta || erro ? (
             <View style={{ gap: 10 }}>
               <Botao titulo="Tirar outra" aoTocar={outra} />

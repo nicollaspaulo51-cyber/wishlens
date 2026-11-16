@@ -105,3 +105,23 @@ def test_mapa_avisa_quando_o_openstreetmap_nao_respondeu(cliente, monkeypatch):
     r = cliente.post("/mapa", json=pos, headers=h).json()
     assert r["lugares"] == [] and r["lugares_ok"] is False
     assert _enviar(cliente, lat=-20.3, lon=-40.3)["status"] == "ok"  # a foto vale mesmo sem o Overpass
+
+
+def test_aviso_de_suporte_vai_para_o_arquivo_com_o_que_o_juiz_disse(cliente, monkeypatch, tmp_path):
+    import json
+    monkeypatch.setattr(srv, "AVISOS", tmp_path / "avisos.jsonl")
+    srv._avisos_recentes.clear()
+    foto = _enviar(cliente, lat=-20.3, lon=-40.3)
+    h = {"X-Apelido": "ana"}
+    r = cliente.post("/aviso", json={"tipo": "juiz", "texto": "Era um fone, não um mouse", "captura": foto["id"],
+                                     "aparelho": "android"}, headers=h)
+    assert r.json() == {"ok": True}
+    aviso = json.loads((tmp_path / "avisos.jsonl").read_text(encoding="utf-8"))
+    assert aviso["apelido"] == "ana" and aviso["texto"] == "Era um fone, não um mouse"
+    assert aviso["juiz_disse"]["tema"] == "carros" and "celula" not in aviso["juiz_disse"]
+    assert "-20.3" not in json.dumps(aviso)  # nada da localização
+    assert cliente.post("/aviso", json={"tipo": "x", "texto": "abc"}, headers=h).status_code == 400
+    assert cliente.post("/aviso", json={"tipo": "app", "texto": "a" * 501}, headers=h).status_code == 422
+    for _ in range(4):
+        assert cliente.post("/aviso", json={"tipo": "app", "texto": "travou"}, headers=h).status_code == 200
+    assert cliente.post("/aviso", json={"tipo": "app", "texto": "travou"}, headers=h).status_code == 429

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import importlib.util
 import io
+import json
 import os
 import threading
 import time
@@ -20,6 +21,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from functools import lru_cache
+from pathlib import Path
 
 import pandas as pd
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
@@ -309,6 +311,58 @@ def mapa(pos: Posicao, s=Depends(sessao)):
 class Contestacao(BaseModel):
     id: str = Field(max_length=40)
     tema: str
+
+
+# ---------------------------------------------------------------- avisos (suporte)
+# Cada aviso vira uma linha de avisos.jsonl, no volume do Docker: sobrevive a reinícios e não vai para o Git.
+# Para ler: docker exec servidor-juiz-1 cat /home/user/avisos/avisos.jsonl
+AVISOS = Path(os.environ.get("AVISOS_DIR", "/home/user/avisos")) / "avisos.jsonl"
+TIPOS_AVISO = ("juiz", "app", "outro")
+AVISOS_POR_HORA = 5
+_avisos_recentes: dict[str, list[float]] = {}
+_trava_avisos = threading.Lock()
+# Do que o juiz disse sobre a foto, só isto vai junto (nunca célula, bairro, hash ou vetor)
+CAMPOS_DO_JUIZ = ("tema", "achado", "confianca", "foto_real", "juiz", "clip_tema", "clip_prob_tema",
+                  "clip_prob_tela", "clip_rank_tema")
+
+
+class Aviso(BaseModel):
+    tipo: str
+    texto: str = Field(min_length=3, max_length=500)
+    captura: str | None = Field(None, max_length=40)
+    aparelho: str | None = Field(None, max_length=40)
+
+
+def _do_juiz(s, id_captura: str | None) -> dict | None:
+    if not id_captura:
+        return None
+    df = _capturas(s)
+    linha = df[df["id"] == id_captura]
+    if linha.empty:
+        return None
+    r = linha.iloc[0]
+    return {c: (None if pd.isna(r[c]) else r[c].item() if hasattr(r[c], "item") else r[c]) for c in CAMPOS_DO_JUIZ}
+
+
+@app.post("/aviso")
+def avisar(a: Aviso, s=Depends(sessao)):
+    if a.tipo not in TIPOS_AVISO:
+        raise HTTPException(400, "Tipo de aviso inválido.")
+    agora = time.time()
+    with _trava_avisos:
+        recentes = [t for t in _avisos_recentes.get(s.apelido, []) if agora - t < 3600]
+        if len(recentes) >= AVISOS_POR_HORA:
+            raise HTTPException(429, "Você já mandou 5 avisos nesta hora. Tente de novo mais tarde.")
+        _avisos_recentes[s.apelido] = [*recentes, agora]
+    registro = {"quando": jogo.agora().isoformat(timespec="seconds"), "apelido": s.apelido, "tipo": a.tipo,
+                "texto": a.texto.strip(), "aparelho": a.aparelho, "captura": a.captura,
+                "juiz_disse": _do_juiz(s, a.captura)}
+    with _trava_avisos:
+        AVISOS.parent.mkdir(parents=True, exist_ok=True)
+        with AVISOS.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(registro, ensure_ascii=False, default=str) + "
+")
+    return {"ok": True}
 
 
 @app.post("/contestar")

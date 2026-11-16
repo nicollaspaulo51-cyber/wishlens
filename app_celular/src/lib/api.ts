@@ -44,6 +44,8 @@ export type Lugar = { tema: string; nome: string; tipo: string | null; lat: numb
 export type Mancha = { celula: string; tema: string; n: number; achados: string[]; lat: number; lon: number; guardiao: string | null };
 export type Mapa = { lugares: Lugar[]; manchas: Mancha[]; lugares_ok?: boolean };
 
+export type TipoAviso = 'juiz' | 'app' | 'outro';
+
 export class ErroApi extends Error {
   constructor(public status: number, mensagem: string) {
     super(mensagem);
@@ -87,6 +89,8 @@ export const api = {
   // A posição vai no corpo, nunca na URL (a URL acaba nos logs do servidor)
   mapa: (lat: number, lon: number) => chamar<Mapa>('/mapa', json({ lat, lon })),
   contestar: (id: string, tema: string) => chamar<{ ok: boolean }>('/contestar', json({ id, tema })),
+  avisar: (tipo: TipoAviso, texto: string, captura?: string) =>
+    chamar<{ ok: boolean }>('/aviso', json({ tipo, texto, captura: captura ?? null, aparelho: `${Platform.OS} ${Platform.Version}` })),
   async julgar(uri: string, posicao: { lat: number; lon: number } | null, modo = 'livre') {
     const form = new FormData();
     if (Platform.OS === 'web') {

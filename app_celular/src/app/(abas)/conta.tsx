@@ -1,4 +1,5 @@
 // Conta: quem você é no jogo, como pontuar e o que o app guarda sobre você.
+import { router } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -54,6 +55,10 @@ export default function Conta() {
           A foto vai só para o juiz dizer o que é. Da sua localização, o jogo guarda o bairro e um quadrado de ~500 m,
           nunca o ponto exato. A turma vê seu apelido, seus pontos e seus achados.
         </Apagado>
+
+        <Subtitulo>Achou um problema?</Subtitulo>
+        <Apagado>O juiz errou, o app travou ou algo ficou estranho? Mande um aviso: ele é lido e corrigido.</Apagado>
+        <Botao titulo="Avisar um problema" aoTocar={() => router.push('/avisar')} />
 
         <Botao titulo="Sair da conta" tipo="secundario" aoTocar={sair} estilo={{ marginTop: 20 }} />
       </ScrollView>

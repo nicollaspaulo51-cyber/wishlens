@@ -21,6 +21,7 @@ function Navegacao() {
       <Stack.Screen name="(abas)" />
       <Stack.Screen name="entrar" />
       <Stack.Screen name="camera" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="avisar" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
     </Stack>
   );
 }
