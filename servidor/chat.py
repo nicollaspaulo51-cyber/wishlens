@@ -145,7 +145,8 @@ def amigos(mim: str = Depends(eu)):
             nao_lidas = db.execute("select count(*) from mensagens where de = ? and para = ? and lida = 0 and apagada = 0",
                                    (outro, mim)).fetchone()[0]
             lista.append({"apelido": outro, "nao_lidas": nao_lidas,
-                          "ultima": {"texto": _resumo(ultima), "minha": ultima["de"] == mim,
+                          # a mensagem automática ("agora vocês são amigos") não é de ninguém
+                          "ultima": {"texto": _resumo(ultima), "minha": ultima["de"] == mim and not ultima["sistema"],
                                      "criado_em": ultima["criado_em"]} if ultima else None})
     lista.sort(key=lambda a: a["ultima"]["criado_em"] if a["ultima"] else "", reverse=True)
     return {"amigos": lista,

@@ -50,6 +50,7 @@ def _jpeg_com_gps() -> bytes:
 
 def test_pedido_aceite_e_conversa(c):
     _amigos(c)
+    assert not c.get("/amigos", headers=_h("bia")).json()["amigos"][0]["ultima"]["minha"]  # a automática não é "Você:"
     r = c.post("/conversa/bia", data={"texto": "oi, achei um ipê!"}, headers=_h("ana")).json()
     assert r["minha"] and r["texto"] == "oi, achei um ipê!"
     assert c.get("/chat/novas", headers=_h("bia")).json()["nao_lidas"] == 1  # o "agora vocês são amigos" é da bia
