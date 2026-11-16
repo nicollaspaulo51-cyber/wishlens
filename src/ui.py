@@ -63,8 +63,12 @@ def _css() -> str:
 /* Selo do tema do dia: o único bloco amarelo da tela */
 .wl-selo {{ display:flex; align-items:center; gap:.8rem; padding:.6rem .8rem; border-radius:8px;
            border:3px solid var(--wl-fig); box-shadow:0 0 0 1px var(--wl-line); color:var(--wl-sol-ink);
-           background:linear-gradient(115deg, var(--wl-sol) 0 38%, #FFE596 50%, var(--wl-sol) 62%);
-           margin-bottom:.7rem; }}
+           background:linear-gradient(115deg, var(--wl-sol) 0 38%, #FFF2C2 50%, var(--wl-sol) 62%) 0 0 / 300% 100%;
+           margin-bottom:.7rem; transform:rotate(-.8deg);
+           animation:wl-colar-selo .6s cubic-bezier(.16,1,.3,1) both, wl-brilho-selo 1.1s ease-in-out .5s both; }}
+/* O momento do app: a figurinha do tema do dia é colada (cai girando) e um brilho passa por ela uma vez */
+@keyframes wl-colar-selo {{ from {{ opacity:0; transform:scale(1.18) rotate(-6deg); }} }}
+@keyframes wl-brilho-selo {{ to {{ background-position:100% 0; }} }}
 .wl-selo .wl-emoji {{ font-size:2rem; line-height:1; }}
 .wl-selo .wl-t {{ font-family:var(--wl-titulos); font-weight:800; font-size:1.25rem; line-height:1.15; }}
 .wl-selo .wl-dobro {{ margin-left:auto; font-family:var(--wl-titulos); font-weight:800; font-size:1.7rem; line-height:1; }}
@@ -143,7 +147,24 @@ def _css() -> str:
 .wl-medalha.bronze {{ border-color:#B87333; }} .wl-medalha.prata {{ border-color:#9AA5AD; }}
 .wl-medalha.ouro {{ border-color:var(--wl-sol); background:color-mix(in srgb, var(--wl-sol) 18%, var(--wl-surface)); }}
 .wl-medalha.nada {{ opacity:.7; }}
-@media (prefers-reduced-motion: reduce) {{ .wl-conta, .wl-lupa.cheia i, .wl-valeu {{ animation:none; }}
+/* Movimento de apoio: trocar de aba desliza a tela, o pódio sobe, as figurinhas são coladas em sequência */
+@keyframes wl-surgir {{ from {{ opacity:0; transform:translateY(10px); }} }}
+@keyframes wl-subir {{ from {{ transform:scaleY(0); }} }}
+@keyframes wl-pilula {{ from {{ opacity:0; transform:scale(.6); }} }}
+[data-testid="stMainBlockContainer"] > div > :not(:has(.st-key-wl_abas)) {{
+  animation:wl-surgir .35s cubic-bezier(.16,1,.3,1) backwards; }}
+[data-testid="stMainBlockContainer"] > div > :nth-child(n+5) {{ animation-delay:.06s; }}
+[data-testid="stMainBlockContainer"] > div > :nth-child(n+7) {{ animation-delay:.12s; }}
+.wl-degrau .wl-bloco {{ transform-origin:bottom; animation:wl-subir .7s cubic-bezier(.16,1,.3,1) backwards; }}
+.wl-degrau.p2 .wl-bloco {{ animation-delay:.12s; }} .wl-degrau.p1 .wl-bloco {{ animation-delay:.28s; }}
+.wl-fig.colada {{ animation:wl-colar .4s cubic-bezier(.16,1,.3,1) backwards; }}
+.wl-fig.colada:nth-child(2) {{ animation-delay:.04s; }} .wl-fig.colada:nth-child(3) {{ animation-delay:.08s; }}
+.wl-fig.colada:nth-child(4) {{ animation-delay:.12s; }} .wl-fig.colada:nth-child(n+5) {{ animation-delay:.16s; }}
+.st-key-wl_aba_on [data-testid="stPageLink"] a {{ animation:wl-pilula .3s cubic-bezier(.16,1,.3,1); }}
+.st-key-wl_abas a span, .st-key-wl_camera button {{ transition:transform .12s ease-out; }}
+.st-key-wl_abas a:active span {{ transform:scale(.86); }}
+@media (prefers-reduced-motion: reduce) {{ .wl-conta, .wl-lupa.cheia i, .wl-valeu, .wl-selo, .wl-degrau .wl-bloco,
+  .wl-fig.colada, .st-key-wl_aba_on [data-testid="stPageLink"] a, [data-testid="stMainBlockContainer"] > div > * {{ animation:none; }}
   .wl-meta .wl-trilho b {{ transition:none; }} }}
 /* Cara de app: sem o cabeçalho, a barra lateral e o rodapé do Streamlit; as abas ficam presas embaixo */
 header[data-testid="stHeader"], [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"],
