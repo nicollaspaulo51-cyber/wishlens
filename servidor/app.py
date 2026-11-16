@@ -35,7 +35,7 @@ from src.cartao import linha_juizes, partes_e_destaque
 from src.categorias import nome_valido
 from src.fotos import preparar_para_salvar
 from src.lugares import buscar_pontos_temas, distancia_km
-from src.temas import POR_ID, TEMAS, tema_do_dia
+from src.temas import POR_ID, TEMAS, agora, tema_do_dia
 
 MODOS = ("livre",)
 FOTO_MAX = 10 * 1024 * 1024
@@ -354,7 +354,7 @@ def avisar(a: Aviso, s=Depends(sessao)):
         if len(recentes) >= AVISOS_POR_HORA:
             raise HTTPException(429, "Você já mandou 5 avisos nesta hora. Tente de novo mais tarde.")
         _avisos_recentes[s.apelido] = [*recentes, agora]
-    registro = {"quando": jogo.agora().isoformat(timespec="seconds"), "apelido": s.apelido, "tipo": a.tipo,
+    registro = {"quando": agora().isoformat(timespec="seconds"), "apelido": s.apelido, "tipo": a.tipo,
                 "texto": a.texto.strip(), "aparelho": a.aparelho, "captura": a.captura,
                 "juiz_disse": _do_juiz(s, a.captura)}
     with _trava_avisos:
