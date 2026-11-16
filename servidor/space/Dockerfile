@@ -12,7 +12,7 @@ ARG REPO=nicollaspaulo51-cyber/wishlens
 ARG RAMO=claude/vibrant-feynman-4fhs11
 
 # Dependências e pesos do CLIP primeiro: só são refeitos quando o requirements muda
-ADD https://raw.githubusercontent.com/${REPO}/refs/heads/${RAMO}/servidor/requirements.txt /tmp/requirements.txt
+ADD --chmod=644 https://raw.githubusercontent.com/${REPO}/refs/heads/${RAMO}/servidor/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir --user -r /tmp/requirements.txt
 RUN python -c "from transformers import CLIPModel, CLIPProcessor; m = 'openai/clip-vit-base-patch32'; CLIPModel.from_pretrained(m); CLIPProcessor.from_pretrained(m)"
 
