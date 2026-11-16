@@ -348,12 +348,12 @@ def _do_juiz(s, id_captura: str | None) -> dict | None:
 def avisar(a: Aviso, s=Depends(sessao)):
     if a.tipo not in TIPOS_AVISO:
         raise HTTPException(400, "Tipo de aviso inválido.")
-    agora = time.time()
+    instante = time.time()
     with _trava_avisos:
-        recentes = [t for t in _avisos_recentes.get(s.apelido, []) if agora - t < 3600]
+        recentes = [t for t in _avisos_recentes.get(s.apelido, []) if instante - t < 3600]
         if len(recentes) >= AVISOS_POR_HORA:
             raise HTTPException(429, "Você já mandou 5 avisos nesta hora. Tente de novo mais tarde.")
-        _avisos_recentes[s.apelido] = [*recentes, agora]
+        _avisos_recentes[s.apelido] = [*recentes, instante]
     registro = {"quando": agora().isoformat(timespec="seconds"), "apelido": s.apelido, "tipo": a.tipo,
                 "texto": a.texto.strip(), "aparelho": a.aparelho, "captura": a.captura,
                 "juiz_disse": _do_juiz(s, a.captura)}
