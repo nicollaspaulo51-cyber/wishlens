@@ -119,7 +119,9 @@ export default function Camera() {
               {resposta.avisos.map((a) => (
                 <Text key={a} style={{ color: c.tinta, fontSize: 15 }}>⚡ {a}</Text>
               ))}
-              {enviada ? <CompartilharFoto foto={foto} enviada={enviada} captura={resposta.id} aceita={resposta.cartao.aceita} /> : null}
+              {enviada ? <CompartilharFoto foto={foto} enviada={enviada} captura={resposta.id} aceita={resposta.cartao.aceita}
+                placa={{ achado: resposta.cartao.achado, emoji: resposta.cartao.tema?.emoji ?? '📷', tema: resposta.cartao.tema?.nome ?? '',
+                  cor: resposta.cartao.tema?.cor ?? '#136B4C', pontos: resposta.cartao.aceita ? resposta.cartao.pontos : 0 }} /> : null}
               {resposta.posicao ? (
                 <Text style={{ color: c.tinta, fontSize: 16 }}>
                   <Text style={{ fontWeight: '700' }}>{resposta.posicao}º lugar hoje</Text> com {resposta.pontos_hoje} pontos.

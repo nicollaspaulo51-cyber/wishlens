@@ -10,6 +10,7 @@ import { Apagado, Aviso, Botao, Cartaz, Fichas, Subtitulo, Titulo } from '../../
 import { api } from '../../lib/api';
 import { useCores } from '../../lib/cores';
 import { useModo } from '../../lib/modo';
+import { useVisita } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 
 type Periodo = 'hoje' | 'semana' | 'geral';
@@ -24,6 +25,7 @@ export default function Amigos() {
   const [msg, setMsg] = useState<{ texto: string; erro: boolean } | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const d = amigos.dados;
+  const visita = useVisita();
   const ranking = placar.dados?.ranking ?? [];
   const eu = ranking.find((r) => r.voce);
   const acima = eu && eu.posicao > 1 ? ranking[eu.posicao - 2] : null;
@@ -93,7 +95,7 @@ export default function Amigos() {
         {d && !d.amigos.length ? (
           <Apagado>Adicione um amigo pelo apelido (o mesmo que aparece no Pódio) para comparar os pontos.</Apagado>
         ) : null}
-        {ranking.length > 1 && ranking[0].pontos > 0 ? <Degraus ranking={ranking} chave={`amigos-${modo}-${periodo}`} /> : null}
+        {ranking.length > 1 && ranking[0].pontos > 0 ? <Degraus ranking={ranking} chave={`amigos-${modo}-${periodo}-${visita}`} /> : null}
         {eu && ranking.length > 1 ? (
           <Text style={{ color: c.tinta, fontSize: 16 }}>
             {ranking[0].pontos === 0 ? 'Ninguém pontuou ainda. Tire a primeira foto!'

@@ -8,7 +8,7 @@ import { Apagado, Aviso, Cartaz, Fichas, Subtitulo, Titulo } from '../../compone
 import { api } from '../../lib/api';
 import { useCores } from '../../lib/cores';
 import { useModo } from '../../lib/modo';
-import { Surge } from '../../lib/movimento';
+import { Surge, useVisita } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 
 type Periodo = 'hoje' | 'semana' | 'geral';
@@ -22,6 +22,7 @@ export default function Podio() {
   const podio = useDados(() => api.podio(periodo, modo === 'livre' && tema !== 'todos' ? tema : null, modo), [periodo, tema, modo], 30);
   const ranking = podio.dados?.ranking ?? [];
   const eu = ranking.find((r) => r.voce);
+  const visita = useVisita();
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.fundo }}>
@@ -37,12 +38,12 @@ export default function Podio() {
         ) : null}
         {podio.erro && !podio.dados ? <Aviso texto={podio.erro} aoTentar={podio.recarregar} /> : null}
         {podio.dados && ranking.length === 0 ? <Aviso texto="Ninguém pontuou neste período ainda. Tire a primeira foto em Jogar." /> : null}
-        {ranking.length ? <Degraus ranking={ranking} chave={`${modo}-${periodo}-${tema}`} /> : null}
+        {ranking.length ? <Degraus ranking={ranking} chave={`${modo}-${periodo}-${tema}-${visita}`} /> : null}
         {eu ? <Text style={{ color: c.tinta, fontSize: 16 }}>Você está em <Text style={{ fontWeight: '700' }}>{eu.posicao}º</Text> de {ranking.length}.</Text> : null}
         {ranking.length > 3 ? (
           <Cartaz estilo={{ padding: 0, overflow: 'hidden' }}>
             {ranking.slice(3).map((r, i) => (
-              <Surge key={r.apelido} ordem={i + 3}><View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12,
+              <Surge key={r.apelido} ordem={i + 3} chave={visita}><View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12,
                 borderBottomWidth: i < ranking.length - 4 ? 1 : 0, borderBottomColor: c.linha, backgroundColor: r.voce ? c.suave : 'transparent' }}>
                 <Text style={{ width: 32, color: c.apagado, fontWeight: '700' }}>{r.posicao}º</Text>
                 <Text style={{ flex: 1, color: c.tinta, fontSize: 16 }}>{r.apelido}{r.voce ? ' (você)' : ''}</Text>

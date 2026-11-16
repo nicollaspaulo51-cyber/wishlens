@@ -1,5 +1,6 @@
 // Animações do app (Animated do React Native, no driver nativo). Todas param com "reduzir movimento" ligado no celular.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useIsFocused } from 'expo-router';
 import { AccessibilityInfo, Animated, Dimensions, Easing, View, type StyleProp, type ViewStyle } from 'react-native';
 
 export function useMovimentoReduzido() {
@@ -10,6 +11,17 @@ export function useMovimentoReduzido() {
     return () => sub.remove();
   }, []);
   return reduzido;
+}
+
+// Conta as visitas a uma aba: as abas ficam montadas, então as entradas (Surge) usam isto como `chave` para
+// animar de novo cada vez que a pessoa volta para a aba
+export function useVisita() {
+  const focada = useIsFocused();
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (focada) setN((x) => x + 1);
+  }, [focada]);
+  return n;
 }
 
 // Vai de 0 a 1 com mola quando aparece (de novo a cada mudança de `chave`)

@@ -2,10 +2,11 @@
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Galeria } from '../../componentes/Galeria';
 import { Apagado, Aviso, Cartaz, Subtitulo, Titulo } from '../../componentes/ui';
 import { api, type Medalha } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
-import { Brilho, Surge } from '../../lib/movimento';
+import { Brilho, Surge, useVisita } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 
 const COR_NIVEL = { bronze: '#B87333', prata: '#9AA4AD', ouro: '#FFC83D' } as const;
@@ -14,19 +15,22 @@ export default function Colecao() {
   const c = useCores();
   const col = useDados(api.colecao);
   const d = col.dados;
+  const visita = useVisita();
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.fundo }}>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={col.carregando} onRefresh={col.recarregar} tintColor={c.destaque} />}>
         <Titulo>Álbum</Titulo>
+        <Subtitulo>Sua galeria</Subtitulo>
+        <Galeria visita={visita} />
         {col.erro && !d ? <Aviso texto={col.erro} aoTentar={col.recarregar} /> : null}
         {d ? (
           <>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {[[d.resumo.pontos, 'pontos'], [d.resumo.achados, 'achados diferentes'], [d.resumo.corrente, 'dias seguidos'],
                 [d.resumo.fotos, 'fotos'], [`${Math.round(d.resumo.recusadas * 100)}%`, 'recusadas']].map(([valor, rotulo], i) => (
-                <Surge key={String(rotulo)} ordem={i} estilo={{ backgroundColor: c.superficie, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, minWidth: 96 }}>
+                <Surge key={String(rotulo)} ordem={i} chave={visita} estilo={{ backgroundColor: c.superficie, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, minWidth: 96 }}>
                   <Text style={{ fontFamily: FONTE_TITULO, fontSize: 22, color: c.tinta }}>{valor}</Text>
                   <Text style={{ color: c.apagado, fontSize: 12 }}>{rotulo}</Text>
                 </Surge>
@@ -53,7 +57,7 @@ export default function Colecao() {
                 ) : (
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }} accessibilityRole="list">
                     {p.colados.map((f, i) => (
-                      <Surge key={f.achado} ordem={i} estilo={{ width: '31%' }}>
+                      <Surge key={f.achado} ordem={i} chave={visita} estilo={{ width: '31%' }}>
                       <View accessibilityLabel={`${f.achado}, achado por ${f.turma} da turma`}
                         style={{ minHeight: 84, overflow: 'hidden', backgroundColor: c.figurinha, borderRadius: 6, borderWidth: 4, borderColor: '#FFFFFF',
                           padding: 6, justifyContent: 'space-between', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 3, elevation: 2,

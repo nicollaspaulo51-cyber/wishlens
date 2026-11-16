@@ -7,12 +7,14 @@ import { Apagado, Aviso, Botao, Subtitulo, Titulo } from '../../componentes/ui';
 import { api } from '../../lib/api';
 import { quandoFoi } from '../../lib/quando';
 import { useCores } from '../../lib/cores';
+import { Surge, useVisita } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 
 export default function Chat() {
   const c = useCores();
   const amigos = useDados(api.amigos, [], 10);
   const d = amigos.dados;
+  const visita = useVisita();
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.fundo }}>
@@ -29,8 +31,8 @@ export default function Chat() {
         {d && !d.amigos.length ? (
           <Apagado>Você ainda não tem amigos no WishLens. Adicione alguém na aba Amigos.</Apagado>
         ) : null}
-        {d?.amigos.map((a) => (
-          <Pressable key={a.apelido} accessibilityRole="button"
+        {d?.amigos.map((a, i) => (
+          <Surge key={a.apelido} ordem={i} chave={visita}><Pressable accessibilityRole="button"
             accessibilityLabel={`Conversa com ${a.apelido}${a.nao_lidas ? `, ${a.nao_lidas} não lidas` : ''}`}
             onPress={() => router.push({ pathname: '/conversa/[apelido]', params: { apelido: a.apelido } })}
             style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14,
@@ -53,7 +55,7 @@ export default function Chat() {
                 </View>
               ) : null}
             </View>
-          </Pressable>
+          </Pressable></Surge>
         ))}
 
       </ScrollView>

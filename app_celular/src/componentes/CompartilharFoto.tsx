@@ -8,15 +8,20 @@ import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, Text, View }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type Amigo } from '../lib/api';
+import { salvarNaGaleria, type FotoGaleria } from '../lib/galeria';
 import { FONTE_TITULO, useCores } from '../lib/cores';
 import { Apagado, Botao } from './ui';
 
-export function CompartilharFoto({ foto, enviada, captura, aceita }: { foto: string; enviada: string; captura: string; aceita: boolean }) {
+type Placa = Pick<FotoGaleria, 'achado' | 'emoji' | 'tema' | 'cor' | 'pontos'>;
+
+export function CompartilharFoto({ foto, enviada, captura, aceita, placa }: {
+  foto: string; enviada: string; captura: string; aceita: boolean; placa?: Placa;
+}) {
   const c = useCores();
   const baixo = useSafeAreaInsets().bottom;
   const [amigos, setAmigos] = useState<Amigo[] | null>(null);
   const [aberto, setAberto] = useState(false);
-  const [msg, setMsg] = useState<{ texto: string; erro: boolean; para?: string } | null>(null);
+  const [msg, setMsg] = useState<{ texto: string; erro: boolean; para?: string; galeria?: boolean } | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
   async function abrir() {
@@ -43,15 +48,26 @@ export function CompartilharFoto({ foto, enviada, captura, aceita }: { foto: str
     }
   }
 
+  // Salvar = galeria do app (sem permissão, funciona no Expo Go). O celular é um passo a mais, só se a pessoa pedir.
   async function salvar() {
     setMsg(null);
     try {
+      const nova = await salvarNaGaleria(enviada, { id: captura, achado: placa?.achado || 'Foto', emoji: placa?.emoji ?? '📷',
+        tema: placa?.tema ?? '', cor: placa?.cor ?? '#136B4C', pontos: placa?.pontos ?? 0 });
+      setMsg({ texto: nova ? 'Salva no seu álbum.' : 'Esta foto já está no seu álbum.', erro: false, galeria: true });
+    } catch (e) {
+      setMsg({ texto: e instanceof Error ? e.message : 'Não consegui salvar a foto.', erro: true });
+    }
+  }
+
+  async function salvarNoCelular() {
+    try {
       if (!(await requestPermissionsAsync(true, ['photo'])).granted) {
-        setMsg({ texto: 'Para salvar, o WishLens precisa de permissão para guardar fotos.', erro: true });
+        setMsg({ texto: 'Para salvar no celular, o WishLens precisa de permissão para guardar fotos.', erro: true });
         return;
       }
       await Asset.create(foto);
-      setMsg({ texto: 'Foto salva na galeria do celular.', erro: false });
+      setMsg({ texto: 'Foto salva no álbum e na galeria do celular.', erro: false });
     } catch {
       // No Expo Go do Android a galeria é bloqueada: a folha de compartilhar do celular salva em Fotos, Arquivos ou Drive
       try {
@@ -68,7 +84,7 @@ export function CompartilharFoto({ foto, enviada, captura, aceita }: { foto: str
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Botao titulo={aceita ? 'Enviar com o cartão' : 'Enviar a um amigo'} estilo={{ flex: 1 }} aoTocar={abrir}
           rotulo={aceita ? 'Enviar a foto e o cartão do achado a um amigo' : 'Enviar a foto a um amigo'} />
-        {Platform.OS !== 'web' ? <Botao titulo="Salvar" tipo="secundario" aoTocar={salvar} rotulo="Salvar a foto no celular" /> : null}
+        <Botao titulo="Salvar" tipo="secundario" aoTocar={salvar} rotulo="Salvar a foto no seu álbum" />
       </View>
       {msg ? (
         <Text accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>
@@ -76,6 +92,16 @@ export function CompartilharFoto({ foto, enviada, captura, aceita }: { foto: str
           {msg.para ? (
             <Text style={{ fontWeight: '700', textDecorationLine: 'underline' }}
               onPress={() => router.push({ pathname: '/conversa/[apelido]', params: { apelido: msg.para! } })}> Abrir a conversa</Text>
+          ) : null}
+          {msg.galeria ? (
+            <>
+              <Text accessibilityRole="link" style={{ fontWeight: '700', textDecorationLine: 'underline' }}
+                onPress={() => router.navigate('/colecao')}> Ver na galeria</Text>
+              {Platform.OS !== 'web' ? (
+                <Text accessibilityRole="link" style={{ fontWeight: '700', textDecorationLine: 'underline' }}
+                  onPress={salvarNoCelular}>{'\n'}Também salvar no celular</Text>
+              ) : null}
+            </>
           ) : null}
         </Text>
       ) : null}
