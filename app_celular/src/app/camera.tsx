@@ -9,6 +9,8 @@ import { ActivityIndicator, Image, Platform, Pressable, ScrollView, Text, View }
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CartaoPontos } from '../componentes/CartaoPontos';
+import { CompartilharFoto } from '../componentes/CompartilharFoto';
+import { SeletorAba } from '../componentes/SeletorAba';
 import { Apagado, Botao, Fichas, Titulo } from '../componentes/ui';
 import { api, type Julgamento, type Tema } from '../lib/api';
 import { useCores } from '../lib/cores';
@@ -33,13 +35,13 @@ export default function Camera() {
   const camera = useRef<CameraView>(null);
   const [pronta, setPronta] = useState(false);
   const [foto, setFoto] = useState<string | null>(null);
+  const [enviada, setEnviada] = useState<string | null>(null); // a versão menor, que foi ao juiz
   const [resposta, setResposta] = useState<Julgamento | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [contestada, setContestada] = useState<string | null>(null);
   const [era, setEra] = useState<string>('');
   const temas = useDados(api.temas);
   const modo = useModo();
-  const aba = temas.dados?.abas?.find((a) => a.id === modo);
 
   async function fotografar() {
     if (!camera.current) return;
@@ -51,6 +53,7 @@ export default function Camera() {
       setFoto(crua.uri);
       const menor = await (await ImageManipulator.manipulate(crua.uri).resize({ width: 1024, height: null }).renderAsync())
         .saveAsync({ format: SaveFormat.JPEG, compress: 0.85 });
+      setEnviada(menor.uri);
       const r = await api.julgar(menor.uri, await local, modo);
       setResposta(r);
       if (r.status === 'ok' && r.cartao.aceita) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -61,6 +64,7 @@ export default function Camera() {
 
   function outra() {
     setFoto(null);
+    setEnviada(null);
     setResposta(null);
     setErro(null);
     setContestada(null);
@@ -115,6 +119,7 @@ export default function Camera() {
               {resposta.avisos.map((a) => (
                 <Text key={a} style={{ color: c.tinta, fontSize: 15 }}>⚡ {a}</Text>
               ))}
+              {enviada ? <CompartilharFoto foto={foto} enviada={enviada} captura={resposta.id} aceita={resposta.cartao.aceita} /> : null}
               {resposta.posicao ? (
                 <Text style={{ color: c.tinta, fontSize: 16 }}>
                   <Text style={{ fontWeight: '700' }}>{resposta.posicao}º lugar hoje</Text> com {resposta.pontos_hoje} pontos.
@@ -162,9 +167,7 @@ export default function Camera() {
             style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ color: '#fff', fontSize: 22 }}>✕</Text>
           </Pressable>
-          <Text style={{ color: '#fff', fontSize: 14, backgroundColor: 'rgba(0,0,0,0.45)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}>
-            {aba ? `${aba.emoji} ${aba.nome}` : 'Algo real, de um dos temas'}
-          </Text>
+          <SeletorAba escuro />
         </View>
         <View style={{ alignItems: 'center', paddingBottom: Platform.OS === 'web' ? 24 : 12 }}>
           <Pressable accessibilityRole="button" accessibilityLabel="Tirar a foto" disabled={!pronta} onPress={fotografar}

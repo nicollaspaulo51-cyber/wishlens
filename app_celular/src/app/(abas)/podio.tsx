@@ -2,10 +2,11 @@ import { useState, type ReactNode } from 'react';
 import { Animated, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SeletorAba } from '../../componentes/SeletorAba';
 import { Apagado, Aviso, Cartaz, Fichas, Subtitulo, Titulo } from '../../componentes/ui';
-import { api, type LinhaPodio, type Modo } from '../../lib/api';
+import { api, type LinhaPodio } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
-import { escolherModo, NOME_LIVRE, useModo } from '../../lib/modo';
+import { useModo } from '../../lib/modo';
 import { Brilho, Surge, useEntrada } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 
@@ -28,8 +29,7 @@ export default function Podio() {
         <Titulo>Pódio</Titulo>
         <Fichas<Periodo> rotulo="Período" valor={periodo} aoEscolher={setPeriodo}
           opcoes={[{ valor: 'hoje', texto: 'Hoje' }, { valor: 'semana', texto: 'Semana' }, { valor: 'geral', texto: 'Geral' }]} />
-        <Fichas<Modo> rotulo="Aba do jogo" valor={modo} aoEscolher={escolherModo}
-          opcoes={[NOME_LIVRE, ...(temas.dados?.abas ?? [])].map((a) => ({ valor: a.id as Modo, texto: `${a.emoji} ${a.nome}` }))} />
+        <SeletorAba />
         {modo === 'livre' ? (
           <Fichas rotulo="Tema" valor={tema} aoEscolher={setTema}
             opcoes={[{ valor: 'todos', texto: 'Todos' }, ...(temas.dados?.temas ?? []).map((t) => ({ valor: t.id, texto: `${t.emoji} ${t.nome}` }))]} />

@@ -241,10 +241,14 @@ def temas():
 @app.get("/estado")
 def estado(s=Depends(sessao)):
     """O placar do topo e o painel do dia: pontos, posição, lupa, corrente, meta e desafios."""
-    p = _pontuadas(s)
+    todas = _capturas(s)
+    p = _pontuadas(s, todas)
     pontos, posicao = _hoje(p, s.apelido)
     meta = jogo.meta_da_turma(p)
-    return {"apelido": s.apelido, "pontos_hoje": pontos, "posicao": posicao, "tema_do_dia": _tema(tema_do_dia()),
+    # pontos de hoje em cada aba, para o seletor de abas do app
+    abas = {"livre": pontos, **{m: _hoje(_pontuadas_aba(s, m, todas), s.apelido)[0] for m in ABAS}}
+    return {"apelido": s.apelido, "pontos_hoje": pontos, "posicao": posicao, "pontos_abas": abas,
+            "tema_do_dia": _tema(tema_do_dia()),
             "dia": jogo.estado_do_dia(p, s.apelido), "corrente": jogo.corrente_atual(p, s.apelido),
             "meta": {**meta, "tema": meta["tema"].id}}
 
@@ -383,11 +387,16 @@ def avisar(a: Aviso, s=Depends(sessao)):
     registro = {"quando": agora().isoformat(timespec="seconds"), "apelido": s.apelido, "tipo": a.tipo,
                 "texto": a.texto.strip(), "aparelho": a.aparelho, "captura": a.captura,
                 "juiz_disse": _do_juiz(s, a.captura)}
+    gravar_aviso(registro)
+    return {"ok": True}
+
+
+def gravar_aviso(registro: dict) -> None:
+    """Uma linha no arquivo de avisos (suporte e denúncias do chat)."""
     with _trava_avisos:
         AVISOS.parent.mkdir(parents=True, exist_ok=True)
         with AVISOS.open("a", encoding="utf-8") as f:
             f.write(json.dumps(registro, ensure_ascii=False, default=str) + "\n")
-    return {"ok": True}
 
 
 @app.post("/contestar")
@@ -540,3 +549,9 @@ def _dica_outra_aba(modo: str, outra: str | None) -> str | None:
                 "ou fotografe na aba Mapa livre.")
     nome = "Mapa livre" if outra == "livre" else ABAS[outra].nome
     return f"Isso parece ser da aba {nome}: lá esta foto vale pontos."
+
+
+# Chat com amigos (servidor/chat.py): importado no fim porque usa a sessão e as capturas daqui
+from servidor import chat  # noqa: E402
+
+app.include_router(chat.router)

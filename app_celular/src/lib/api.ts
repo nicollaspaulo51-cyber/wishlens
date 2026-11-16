@@ -14,6 +14,7 @@ export type Estado = {
   apelido: string;
   pontos_hoje: number;
   posicao: number | null;
+  pontos_abas?: Partial<Record<Modo, number>>;
   tema_do_dia: Tema;
   dia: { lupa: number; lupa_cheia: boolean; desafios: Desafio[] };
   corrente: number;
@@ -49,6 +50,13 @@ export type Mapa = { lugares: Lugar[]; manchas: Mancha[]; lugares_ok?: boolean }
 
 export type TipoAviso = 'juiz' | 'app' | 'outro';
 
+// Chat com amigos (servidor/chat.py)
+export type CartaoAchado = { tema: string; nome: string; emoji: string; cor: string; achado: string; pontos: number; aba: Modo };
+export type Mensagem = { id: number; de: string; minha: boolean; texto: string; sistema: boolean; foto: string | null;
+  cartao: CartaoAchado | null; criado_em: string };
+export type Amigo = { apelido: string; nao_lidas: number; ultima: { texto: string; minha: boolean; criado_em: string } | null };
+export type Amigos = { amigos: Amigo[]; recebidos: string[]; enviados: string[] };
+
 export class ErroApi extends Error {
   constructor(public status: number, mensagem: string) {
     super(mensagem);
@@ -57,6 +65,8 @@ export class ErroApi extends Error {
 
 // O provedor de sessão (sessao.tsx) diz quais cabeçalhos mandar: o token do Supabase ou o apelido de teste.
 let cabecalhos: () => Promise<Record<string, string>> = async () => ({});
+// As fotos do chat só abrem com os mesmos cabeçalhos (o <Image> do app manda eles junto)
+export const cabecalhosAtuais = () => cabecalhos();
 export function usarCabecalhos(fonte: typeof cabecalhos) {
   cabecalhos = fonte;
 }
@@ -83,6 +93,17 @@ const json = (corpo: unknown): RequestInit => ({
   body: JSON.stringify(corpo),
 });
 
+async function anexarFoto(form: FormData, uri: string) {
+  if (Platform.OS === 'web') {
+    form.append('foto', await (await fetch(uri)).blob(), 'foto.jpg');
+  } else {
+    // SDK 58: o arquivo vai como File do expo-file-system, enviado pelo fetch do expo (o {uri, name, type} antigo falha)
+    form.append('foto', new File(uri), 'foto.jpg');
+  }
+}
+
+const envioDeArquivo = () => (Platform.OS === 'web' ? undefined : (fetchExpo as unknown as typeof fetch));
+
 export const api = {
   estado: () => chamar<Estado>('/estado'),
   podio: (periodo: string, tema?: string | null, modo: Modo = 'livre') =>
@@ -96,18 +117,29 @@ export const api = {
     chamar<{ ok: boolean }>('/aviso', json({ tipo, texto, captura: captura ?? null, aparelho: `${Platform.OS} ${Platform.Version}` })),
   async julgar(uri: string, posicao: { lat: number; lon: number } | null, modo: Modo = 'livre') {
     const form = new FormData();
-    if (Platform.OS === 'web') {
-      form.append('foto', await (await fetch(uri)).blob(), 'foto.jpg');
-    } else {
-      // SDK 58: o arquivo vai como File do expo-file-system, enviado pelo fetch do expo (o {uri, name, type} antigo falha)
-      form.append('foto', new File(uri), 'foto.jpg');
-    }
+    await anexarFoto(form, uri);
     if (posicao) {
       form.append('lat', String(posicao.lat));
       form.append('lon', String(posicao.lon));
     }
     form.append('modo', modo);
-    const enviar = Platform.OS === 'web' ? undefined : (fetchExpo as unknown as typeof fetch);
-    return chamar<Julgamento>('/julgar', { method: 'POST', body: form }, enviar);
+    return chamar<Julgamento>('/julgar', { method: 'POST', body: form }, envioDeArquivo());
+  },
+
+  amigos: () => chamar<Amigos>('/amigos'),
+  pedirAmizade: (apelido: string) => chamar<{ estado: 'pedido' | 'aceita' }>('/amigos', json({ apelido })),
+  responderAmizade: (apelido: string, aceitar: boolean) => chamar<{ ok: boolean }>('/amigos/responder', json({ apelido, aceitar })),
+  desfazerAmizade: (apelido: string) => chamar<{ ok: boolean }>('/amigos/remover', json({ apelido })),
+  bloquear: (apelido: string) => chamar<{ ok: boolean }>('/bloquear', json({ apelido })),
+  naoLidas: () => chamar<{ nao_lidas: number }>('/chat/novas'),
+  conversa: (apelido: string) => chamar<{ mensagens: Mensagem[] }>(`/conversa/${encodeURIComponent(apelido)}`),
+  apagarMensagem: (id: number) => chamar<{ ok: boolean }>(`/mensagem/${id}`, { method: 'DELETE' }),
+  denunciar: (id: number, motivo: string) => chamar<{ ok: boolean }>('/denunciar', json({ id, motivo })),
+  async enviarMensagem(apelido: string, m: { texto?: string; foto?: string; captura?: string }) {
+    const form = new FormData();
+    form.append('texto', m.texto ?? '');
+    if (m.captura) form.append('captura', m.captura);
+    if (m.foto) await anexarFoto(form, m.foto);
+    return chamar<Mensagem>(`/conversa/${encodeURIComponent(apelido)}`, { method: 'POST', body: form }, envioDeArquivo());
   },
 };

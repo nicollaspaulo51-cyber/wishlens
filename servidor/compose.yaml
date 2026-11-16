@@ -9,7 +9,8 @@ services:
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_KEY: ${SUPABASE_KEY:-}
     ports: ["7860:7860"]
-    volumes: [avisos:/home/user/avisos]  # avisos do suporte: sobrevivem a reinícios
+    # avisos do suporte e dados do chat (conversas e fotos): sobrevivem a reinícios
+    volumes: [avisos:/home/user/avisos, dados:/home/user/dados]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860/saude')"]
       interval: 30s
@@ -26,3 +27,4 @@ services:
 volumes:
   caddy: {}
   avisos: {}
+  dados: {}

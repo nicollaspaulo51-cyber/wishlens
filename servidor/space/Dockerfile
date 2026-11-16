@@ -8,7 +8,7 @@ USER user
 ENV HOME=/home/user PATH=/home/user/.local/bin:$PATH HF_HOME=/home/user/.cache/huggingface
 WORKDIR /home/user/app
 # Pasta dos avisos do suporte (vira volume no compose): criada pelo próprio usuário, para ele poder gravar
-RUN mkdir -p /home/user/avisos
+RUN mkdir -p /home/user/avisos /home/user/dados
 
 ARG REPO=nicollaspaulo51-cyber/wishlens
 ARG RAMO=claude/vibrant-feynman-4fhs11

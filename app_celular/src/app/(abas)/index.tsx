@@ -7,10 +7,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Mapa } from '../../componentes/Mapa';
 import { PainelDoDia } from '../../componentes/PainelDoDia';
-import { Aviso, Botao, Fichas } from '../../componentes/ui';
-import { api, type Mapa as DadosMapa, type Modo, type Tema } from '../../lib/api';
+import { SeletorAba } from '../../componentes/SeletorAba';
+import { Aviso, Botao } from '../../componentes/ui';
+import { api, type Mapa as DadosMapa, type Tema } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
-import { escolherModo, NOME_LIVRE, useModo } from '../../lib/modo';
+import { useModo } from '../../lib/modo';
 import { Brilho, Surge, useContagem, useEntrada } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 
@@ -50,6 +51,15 @@ export default function Jogar() {
   const modoAgora = useRef(modo);
   modoAgora.current = modo;
   const aba = temas.dados?.abas?.find((a) => a.id === modo);
+  // A explicação da aba aparece por 4 s quando você troca de aba (a completa fica no seletor)
+  const [dica, setDica] = useState(false);
+  const primeira = useRef(true);
+  useEffect(() => {
+    if (primeira.current) { primeira.current = false; return; }
+    setDica(true);
+    const t = setTimeout(() => setDica(false), 4000);
+    return () => clearTimeout(t);
+  }, [modo]);
 
   const porId = useMemo(() => Object.fromEntries([...(temas.dados?.temas ?? []), ...(temas.dados?.abas ?? [])].map((t) => [t.id, t])) as Record<string, Tema>,
     [temas.dados]);
@@ -109,6 +119,7 @@ export default function Jogar() {
   }, [estado.dados?.posicao]);
 
   const e = estado.dados;
+  const pontosAba = e ? e.pontos_abas?.[modo] ?? (modo === 'livre' ? e.pontos_hoje : 0) : 0;
   const sombra = { shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 5 };
   return (
     <View style={{ flex: 1, backgroundColor: c.suave }}>
@@ -131,24 +142,27 @@ export default function Jogar() {
             <Text accessibilityRole="header" style={{ fontFamily: FONTE_TITULO, fontSize: 20, color: c.tinta, letterSpacing: -0.5 }}>WishLens</Text>
           </View>
           {e ? (
-            <View accessible accessibilityLabel={`${e.pontos_hoje} pontos hoje, ${e.posicao ? `${e.posicao}º lugar` : 'sem posição ainda'}`}
+            <View accessible accessibilityLabel={`${pontosAba} pontos hoje nesta aba${modo === 'livre' ? `, ${e.posicao ? `${e.posicao}º lugar` : 'sem posição ainda'}` : ''}`}
               style={[{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.superficie, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }, sombra]}>
-              <Pontos valor={e.pontos_hoje} />
-              <View style={{ width: 1, height: 18, backgroundColor: c.linha }} />
-              <Ionicons name="trophy" size={15} color={c.destaque} />
-              <Text style={{ fontFamily: FONTE_TITULO, fontSize: 18, color: c.tinta }}>{e.posicao ? `${e.posicao}º` : '—'}</Text>
+              <Pontos valor={pontosAba} />
+              {modo === 'livre' ? (
+                <>
+                  <View style={{ width: 1, height: 18, backgroundColor: c.linha }} />
+                  <Ionicons name="trophy" size={15} color={c.destaque} />
+                  <Text style={{ fontFamily: FONTE_TITULO, fontSize: 18, color: c.tinta }}>{e.posicao ? `${e.posicao}º` : '—'}</Text>
+                </>
+              ) : null}
             </View>
           ) : null}
         </View>
-        <Fichas<Modo> rotulo="Aba do jogo" valor={modo} aoEscolher={escolherModo}
-          opcoes={[NOME_LIVRE, ...(temas.dados?.abas ?? [])].map((a) => ({ valor: a.id as Modo, texto: `${a.emoji} ${a.nome}` }))} />
+        <SeletorAba pontos={e?.pontos_abas} estilo={sombra} />
         {estado.erro && !e ? <Aviso texto={estado.erro} aoTentar={estado.recarregar} /> : null}
-        {aba ? (
-          <Surge chave={aba.id} estilo={[{ backgroundColor: c.superficie, borderRadius: 14, padding: 12, gap: 4,
+        {aba && dica ? (
+          <Surge chave={aba.id} estilo={[{ backgroundColor: c.superficie, borderRadius: 14, padding: 12, gap: 2,
             borderLeftWidth: 5, borderLeftColor: aba.cor }, sombra]}>
-            <Text style={{ fontFamily: FONTE_TITULO, fontSize: 18, color: c.tinta }}>{aba.emoji} {aba.nome}</Text>
-            <Text style={{ color: c.tinta, fontSize: 14, lineHeight: 19 }}>Vale: {aba.conta}.</Text>
-            <Text style={{ color: c.apagado, fontSize: 13 }}>No mapa: {aba.onde} perto de você. Os pontos desta aba têm pódio próprio.</Text>
+            <Text accessibilityLiveRegion="polite" style={{ color: c.tinta, fontSize: 14, lineHeight: 19 }}>
+              <Text style={{ fontWeight: '700' }}>{aba.emoji} {aba.nome}:</Text> vale {aba.conta}.
+            </Text>
           </Surge>
         ) : null}
         {e && modo === 'livre' ? (

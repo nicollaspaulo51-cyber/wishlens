@@ -4,6 +4,7 @@ import 'react-native-url-polyfill/auto';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, type Session } from '@supabase/supabase-js';
+import { randomUUID } from 'expo-crypto';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AppState, Platform } from 'react-native';
 
@@ -25,6 +26,16 @@ if (supabase && Platform.OS !== 'web') {
 }
 
 const CHAVE_APELIDO = 'wl_apelido';
+// Sem o Supabase: chave aleatória deste aparelho. O juiz dá o chat de um apelido só ao primeiro aparelho que o usa.
+const CHAVE_APARELHO = 'wl_chave';
+
+async function chaveDoAparelho() {
+  const guardada = await AsyncStorage.getItem(CHAVE_APARELHO);
+  if (guardada) return guardada;
+  const nova = `${randomUUID()}${randomUUID()}`.replace(/-/g, '');
+  await AsyncStorage.setItem(CHAVE_APARELHO, nova);
+  return nova;
+}
 
 type Sessao = {
   pronto: boolean;
@@ -64,7 +75,7 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
         const { data } = await supabase.auth.getSession(); // já renovado, se estava vencendo
         return data.session ? { Authorization: `Bearer ${data.session.access_token}` } : {};
       }
-      return apelido ? { 'X-Apelido': apelido } : {};
+      return apelido ? { 'X-Apelido': apelido, 'X-Chave': await chaveDoAparelho() } : {};
     });
   }, [apelido, sessao]);
 
