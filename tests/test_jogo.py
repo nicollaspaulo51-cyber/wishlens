@@ -435,3 +435,15 @@ def test_estatisticas_baldes_fixos_e_vazio():
     assert e["por_clima"][-1] == {"chave": "sem dado", "valor": 1} and e["top_achados"][0]["valor"] == 2
     vazio = jogo.estatisticas(df, "bia", ["carros", "plantas"], ["livre", "paisagens"], hoje)
     assert vazio["resumo"]["fotos"] == 0 and len(vazio["por_semana"]) == 7 and vazio["top_achados"] == []
+
+
+def test_competicao_varias_vitorias_no_dia_e_sem_tela_nem_celular():
+    from src.reconhecimento import frases_captura
+    linhas = [{**cap("ana", "vitória", tema="competicao", hora=h), "mesmo_objeto": "seu"} for h in (10, 11)]
+    linhas.append(cap("ana", "derrota", tema="competicao", hora=12))
+    p = jogo.pontos_modo(pd.DataFrame(linhas), "competicao")
+    assert list(p["aceita"]) == [True, True, True] and list(p["pontos"]) == [jogo.VITORIA, jogo.VITORIA, jogo.DERROTA]
+    grupos = {g for g, _, _ in frases_captura("competicao")}
+    frases = [f for _, f, _ in frases_captura("competicao")]
+    assert "tela" not in grupos and not any("smartphone" in f for f in frases)
+    assert "outro:competicao" in {g for g, _, _ in frases_captura("livre")}

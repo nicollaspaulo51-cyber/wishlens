@@ -6,7 +6,7 @@ import { useSyncExternalStore } from 'react';
 import type { Modo } from './api';
 
 const CHAVE = 'wl_aba';
-const MODOS: Modo[] = ['livre', 'paisagens', 'treino', 'academia'];
+const MODOS: Modo[] = ['livre', 'paisagens', 'treino', 'academia', 'competicao'];
 let atual: Modo = 'livre';
 const ouvintes = new Set<() => void>();
 

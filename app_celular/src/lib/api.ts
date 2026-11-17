@@ -10,13 +10,14 @@ export const SERVIDOR = (process.env.EXPO_PUBLIC_SERVIDOR_URL ?? 'http://localho
 export type Tema = { id: string; nome: string; emoji: string; cor: string; onde: string };
 // Aba do jogo além do Mapa livre (Paisagens, Treino ao ar livre, Academias): conta = o que vale nela
 export type Aba = Tema & { conta: string };
-export type Modo = 'livre' | 'paisagens' | 'treino' | 'academia';
+export type Modo = 'livre' | 'paisagens' | 'treino' | 'academia' | 'competicao';
 export type Desafio = { texto: string; feito: number; alvo: number; ok: boolean };
 export type Estado = {
   apelido: string;
   pontos_hoje: number;
   posicao: number | null;
   pontos_abas?: Partial<Record<Modo, number>>;
+  espera_competicao?: number; // segundos até a próxima foto de partida na Competição
   tema_do_dia: Tema;
   dia: { lupa: number; lupa_cheia: boolean; desafios: Desafio[] };
   corrente: number;

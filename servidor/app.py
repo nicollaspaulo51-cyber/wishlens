@@ -256,6 +256,7 @@ def estado(s=Depends(sessao)):
     # pontos de hoje em cada aba, para o seletor de abas do app
     abas = {"livre": pontos, **{m: _hoje(_pontuadas_aba(s, m, todas), s.apelido)[0] for m in ABAS}}
     return {"apelido": s.apelido, "pontos_hoje": pontos, "posicao": posicao, "pontos_abas": abas,
+            "espera_competicao": jogo.espera_competicao(todas, s.apelido),
             "tema_do_dia": _tema(tema_do_dia()),
             "dia": jogo.estado_do_dia(p, s.apelido), "corrente": jogo.corrente_atual(p, s.apelido),
             "meta": {**meta, "tema": meta["tema"].id}}
@@ -447,6 +448,11 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
 
     gps = (lat, lon) if lat is not None and lon is not None else None
     livre = modo == "livre"
+    if modo == "competicao" and (falta := jogo.espera_competicao(_capturas(s), s.apelido)):
+        minutos = -(-falta // 60)
+        return {"status": "borrada", "titulo": "Espere a próxima partida",
+                "mensagem": f"Na Competição vale uma foto de partida a cada {jogo.ESPERA_COMPETICAO_MIN} minutos. "
+                            f"Faltam {minutos} min.", "espera": falta}
     if not gps and modo in jogo.NO_LUGAR_EXIGIDO:  # não julga nem salva: nesta aba a foto só vale no lugar
         return {"status": "borrada", "titulo": "Ligue a localização",
                 "mensagem": f"Na aba {ABAS[modo].nome} a foto só vale {jogo.NO_LUGAR_EXIGIDO[modo].replace('fora de', 'dentro de')}. "
@@ -498,7 +504,7 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
         _ultima_foto[s.apelido] = (round(lat, 3), round(lon, 3), agora)
 
     mesmo = None
-    if captura.tema:
+    if captura.tema and modo != "competicao":  # telas de vitória do mesmo jogo são quase iguais
         try:  # o banco compara o vetor sem devolver quem, quando nem onde
             mesmo = s.objeto_visto(captura.tema, celula, clip["vetor"])
         except Exception:  # banco sem a função objeto_visto (schema.sql antigo)

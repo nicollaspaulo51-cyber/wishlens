@@ -1,6 +1,7 @@
 """Servidor do juiz (servidor/app.py), em memória e com um CLIP falso: sem rede e sem baixar o modelo."""
 
 import io
+from datetime import timedelta
 
 import pytest
 
@@ -9,6 +10,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 from PIL import Image, ImageDraw  # noqa: E402
 
 from servidor import app as srv  # noqa: E402
+from src import jogo  # noqa: E402
 
 
 def _clip_falso(tema="carros", achado="volkswagen gol", borrada=False, vetor=None):
@@ -175,3 +177,24 @@ def test_dono_da_academia_aparece_com_duas_pessoas(cliente, monkeypatch):
     podio = cliente.get("/podio", params={"modo": "academia"}, headers={"X-Apelido": "ana"}).json()
     assert podio["donos"] == [{"apelido": "ana", "quadrados": 1}] and podio["guardioes"] == []
     assert podio["ranking"][0]["apelido"] == "ana"
+
+
+def test_competicao_espera_15_minutos_e_vitoria_vale_mais(cliente, monkeypatch):
+    chamadas = []
+    def clip(tema, achado):
+        falso = _clip_falso(tema=tema, achado=achado)
+        return lambda img, modo="livre": (chamadas.append(1), falso(img, modo))[1]
+    monkeypatch.setattr(srv, "_clip", clip(None, ""))
+    assert not _enviar(cliente, modo="competicao")["cartao"]["aceita"]  # não é tela de jogo: não trava a espera
+    monkeypatch.setattr(srv, "_clip", clip("competicao", "vitória"))
+    venceu = _enviar(cliente, _jpeg(deslocar=30), modo="competicao")
+    assert venceu["cartao"]["aceita"] and venceu["cartao"]["pontos"] == jogo.VITORIA
+    antes = len(chamadas)
+    espera = _enviar(cliente, _jpeg(deslocar=60), modo="competicao")
+    assert espera["status"] == "borrada" and "Espere" in espera["titulo"] and len(chamadas) == antes  # nem chama o CLIP
+    assert cliente.get("/estado", headers={"X-Apelido": "ana"}).json()["espera_competicao"] > 14 * 60
+    for linha in srv._memoria:  # 16 minutos depois
+        linha["criado_em"] = linha["criado_em"] - timedelta(minutes=16)
+    monkeypatch.setattr(srv, "_clip", clip("competicao", "derrota"))
+    perdeu = _enviar(cliente, _jpeg(deslocar=90), modo="competicao")
+    assert perdeu["cartao"]["aceita"] and perdeu["cartao"]["pontos"] == jogo.DERROTA

@@ -77,15 +77,19 @@ def frases_captura(modo: str = "livre") -> list[tuple[str, str, str]]:
     "nenhum" mas diz onde a foto pontuaria: no Mapa livre uma paisagem perde para "a wide landscape" e vai
     para Paisagens; em Paisagens, "a tree" de perto ganha da vista e manda para o Mapa livre.
     """
-    from src.temas import FRASES_NENHUM, FRASES_TELA, MODOS, TEMAS
+    from src.temas import FRASES_NENHUM, FRASES_TELA, MODOS, TELAS_SEM_JOGO, TEMAS
     abas = {"livre": TEMAS, **{m: [t] for m, t in MODOS.items()}}
     validos = abas[modo]
     outros = [(aba, t) for aba, ts in abas.items() if aba != modo for t in ts]
     # numa academia, "uma sala por dentro" é o próprio lugar do jogo
     nenhum = [f for f in FRASES_NENHUM if not (modo == "academia" and "room interior" in f)]
+    tela = list(FRASES_TELA)
+    if modo == "competicao":  # o resultado da partida é uma tela, muitas vezes no celular na mão
+        tela = []
+        nenhum = [f for f in nenhum if "smartphone" not in f and "phone" not in f] + [f"a photo of {t}" for t in TELAS_SEM_JOGO]
     return ([(t.id, f"a photo of {o}", nome) for t in validos for o, nome in t.objetos_clip]
             + [(f"outro:{aba}", f"a photo of {o}", "") for aba, t in outros for o, _ in t.objetos_clip]
-            + [("tela", f, "") for f in FRASES_TELA] + [("nenhum", f, "") for f in nenhum])
+            + [("tela", f, "") for f in tela] + [("nenhum", f, "") for f in nenhum])
 
 
 @lru_cache(maxsize=4)

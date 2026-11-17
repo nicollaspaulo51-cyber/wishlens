@@ -131,6 +131,21 @@ MODOS: dict[str, Tema] = {t.id: t for t in [
          ('leisure="fitness_centre"',), "academias de ginástica",
          "aparelhos de musculação ou ginástica dentro da academia. Foto com uma pessoa em destaque não vale",
          "#E54666"),
+    # Fim de partida de videogame ou jogo de celular: a foto É de uma tela, então aqui a tela não é trapaça
+    Tema("competicao", "Competição", "🎮", "partida", "vitória ou derrota",
+         (("a video game screen showing the word VICTORY", "vitória"), ("a video game screen showing you won the match", "vitória"),
+          ("a mobile game screen showing first place, number one", "vitória"),
+          ("a game screen with a winner trophy and celebration", "vitória"),
+          ("a video game screen showing the word DEFEAT", "derrota"), ("a video game GAME OVER screen", "derrota"),
+          ("a video game screen showing you lost the match", "derrota"),
+          ("a mobile game screen showing a bad final ranking", "derrota"),
+          # o CLIP lê palavras grandes: medido em telas desenhadas, estas separam vitória de derrota
+          ('a screen with the text "VICTORY"', "vitória"), ('a screen with the text "YOU WIN"', "vitória"),
+          ('a screen with the text "WINNER"', "vitória"), ('a screen with the text "VITÓRIA"', "vitória"),
+          ('a screen with the text "DEFEAT"', "derrota"), ('a screen with the text "GAME OVER"', "derrota"),
+          ('a screen with the text "YOU LOSE"', "derrota"), ('a screen with the text "DERROTA"', "derrota")),
+         ('leisure="amusement_arcade"', 'amenity="internet_cafe"'), "fliperamas e lan houses",
+         "a tela do fim de uma partida de videogame ou jogo de celular, mostrando se você ganhou ou perdeu", "#3E63DD"),
 ]}
 TODOS = {**POR_ID, **MODOS}  # o tema de qualquer captura, de qualquer aba
 
@@ -143,6 +158,10 @@ FRASES_TELA = (("a photo of a computer screen showing a picture", "a photo of a 
                + tuple(dict.fromkeys(m.format(o) for t in TEMAS if t.id != "pecas"
                                      for o, _ in t.objetos_clip for m in MODELOS_TELA)))
 # "nenhum" não pode ter frases genéricas ("um objeto do dia a dia"): elas roubavam o mouse do tema de peças.
+# Competição: telas que não são fim de partida (sem estas, um celular com o teclado aberto virava "vitória")
+TELAS_SEM_JOGO = ("a phone screen showing a keyboard and a text field", "a phone screen with a chat app",
+                  "a computer screen with code and text windows", "a computer desktop with open windows",
+                  "a phone home screen with app icons", "a web page in a browser", "a video playing on a screen")
 FRASES_NENHUM = ("a photo of a person", "a selfie", "a photo of a room interior", "a photo of food on a plate",
                  "a photo of a building", "a photo of an empty sky", "a photo of a document with text",
                  # celular não é periférico (e a tela dele mostrando um teclado não é um teclado)

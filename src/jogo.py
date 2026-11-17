@@ -643,6 +643,8 @@ def avaliar_juizes(pontuadas: pd.DataFrame) -> dict:
 # um mirante (Paisagens, bônus), de um aparelho de praça ou dentro de uma academia (Treino e Academias, exigido).
 NO_LUGAR_EXIGIDO = {"treino": "fora de uma praça ou parque com aparelhos de ginástica",
                     "academia": "fora de uma academia de ginástica"}
+VITORIA, DERROTA = 20, 3                               # competição: vitória vale 20; derrota, 3 por ter jogado
+ESPERA_COMPETICAO_MIN = 15                             # uma foto de partida a cada 15 min
 HORA_DOURADA, APARELHO_NOVO, LUGAR_NOVO = 5, 2, 5      # paisagem até 1 h do nascer ou do pôr do sol: +5
 DONO_DIA, DONO_SEGUIDOS, DONO_DIAS = 5, 10, 3           # dono da academia: +5 por dia, +10 a cada 3 dias seguidos
 
@@ -718,9 +720,10 @@ def pontos_modo(capturas: pd.DataFrame, modo: str) -> pd.DataFrame:
             motivo = NO_LUGAR_EXIGIDO[modo]
         elif repetida(h, hashes.get(chave, [])):
             motivo = "foto repetida"
-        elif _valor(getattr(c, "mesmo_objeto", None)) == "seu":
+        # competição: telas de vitória do mesmo jogo são quase iguais e dá para ganhar várias vezes no dia
+        elif modo != "competicao" and _valor(getattr(c, "mesmo_objeto", None)) == "seu":
             motivo = "você já fotografou este mesmo objeto"
-        elif not generico and (c.usuario, chave, dia) in vistos_dia:
+        elif modo != "competicao" and not generico and (c.usuario, chave, dia) in vistos_dia:
             motivo = "você já achou isso hoje"
         if motivo:
             linhas.append({"pontos": 0, "base": 0, "novidade": 0, "raridade": 0, "do_dia": False, "extra": 0,
@@ -728,6 +731,14 @@ def pontos_modo(capturas: pd.DataFrame, modo: str) -> pd.DataFrame:
             continue
         detalhes: list[str] = []
         novidade = raridade = extra = 0
+        if modo == "competicao":
+            venceu = chave == normalizar("vitória")
+            linhas.append({"pontos": VITORIA if venceu else DERROTA, "base": VITORIA if venceu else DERROTA, "novidade": 0,
+                           "raridade": 0, "do_dia": False, "extra": 0, "lupa": 0, "meta": 0,
+                           "detalhes": "vitória!" if venceu else "derrota: +3 por ter jogado", "aceita": True, "motivo": None})
+            if h:
+                hashes.setdefault(chave, []).append(h)
+            continue
         if modo == "paisagens":
             novidade = 0 if generico or (c.usuario, chave) in vistos else NOVIDADE
             raridade = 0 if generico else round(RARIDADE / (1 + contagem[chave]))
@@ -829,3 +840,16 @@ def estatisticas(pontuadas: pd.DataFrame, usuario: str, temas: list[str], abas: 
         "top_achados": [] if top is None else [{"chave": str(r.nome), "valor": int(r.vezes)}
                                                for r in top.sort_values("vezes", ascending=False).head(5).itertuples()],
     }
+
+
+def espera_competicao(capturas: pd.DataFrame, usuario: str, agora: datetime | None = None) -> int:
+    """Segundos que faltam para a próxima foto de partida (0 = pode mandar). Conta só fotos que o juiz reconheceu
+    como resultado de partida: foto borrada ou que não é de jogo não trava ninguém."""
+    if capturas.empty:
+        return 0
+    minhas = capturas[(capturas["usuario"] == usuario) & (capturas["tema"] == "competicao")]
+    if minhas.empty:
+        return 0
+    ultima = pd.Timestamp(minhas["criado_em"].max()).to_pydatetime().replace(tzinfo=None)
+    falta = timedelta(minutes=ESPERA_COMPETICAO_MIN) - ((agora or agora_naive()) - ultima)
+    return max(0, math.ceil(falta.total_seconds()))

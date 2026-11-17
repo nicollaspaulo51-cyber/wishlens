@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -42,6 +42,7 @@ export default function Camera() {
   const [era, setEra] = useState<string>('');
   const temas = useDados(api.temas);
   const modo = useModo();
+  const falta = useEsperaPartida(modo === 'competicao' && !foto); // volta a perguntar ao juiz depois de cada foto
 
   async function fotografar() {
     if (!camera.current) return;
@@ -171,12 +172,36 @@ export default function Camera() {
           </Pressable>
           <SeletorAba escuro />
         </View>
-        <View style={{ alignItems: 'center', paddingBottom: Platform.OS === 'web' ? 24 : 12 }}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Tirar a foto" disabled={!pronta} onPress={fotografar}
+        <View style={{ alignItems: 'center', gap: 12, paddingBottom: Platform.OS === 'web' ? 24 : 12 }}>
+          {modo === 'competicao' ? (
+            <Text accessibilityLiveRegion="polite" style={{ color: '#fff', fontSize: 15, fontWeight: '700', backgroundColor: 'rgba(0,0,0,0.55)',
+              paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, overflow: 'hidden', textAlign: 'center' }}>
+              {falta > 0 ? `🎮 Próxima partida em ${Math.floor(falta / 60)}:${String(falta % 60).padStart(2, '0')}`
+                : '🎮 Fotografe a tela do fim da partida'}
+            </Text>
+          ) : null}
+          <Pressable accessibilityRole="button" accessibilityLabel={falta > 0 ? 'Tirar a foto (espere a próxima partida)' : 'Tirar a foto'}
+            disabled={!pronta || falta > 0} onPress={fotografar}
             style={({ pressed }) => ({ width: 78, height: 78, borderRadius: 39, borderWidth: 5, borderColor: '#fff',
-              backgroundColor: pressed ? '#FFC83D' : 'rgba(255,255,255,0.25)', opacity: pronta ? 1 : 0.4 })} />
+              backgroundColor: pressed ? '#FFC83D' : 'rgba(255,255,255,0.25)', opacity: pronta && falta <= 0 ? 1 : 0.4 })} />
         </View>
       </SafeAreaView>
     </View>
   );
+}
+
+// Competição: segundos até poder mandar a próxima foto de partida (o juiz manda o número; aqui só conta para baixo)
+function useEsperaPartida(ativa: boolean) {
+  const [fim, setFim] = useState(0);
+  const [agora, setAgora] = useState(Date.now());
+  useEffect(() => {
+    if (!ativa) return;
+    api.estado().then((e) => setFim(Date.now() + (e.espera_competicao ?? 0) * 1000)).catch(() => {});
+  }, [ativa]);
+  useEffect(() => {
+    if (!ativa || fim <= Date.now()) return;
+    const id = setInterval(() => setAgora(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [ativa, fim]);
+  return ativa ? Math.max(0, Math.ceil((fim - agora) / 1000)) : 0;
 }
