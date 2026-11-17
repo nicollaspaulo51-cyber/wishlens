@@ -34,6 +34,7 @@ export default function Camera() {
   const c = useCores();
   const [permissao, pedirPermissao] = useCameraPermissions();
   const camera = useRef<CameraView>(null);
+  const [apertado, setApertado] = useState(false);
   const [pronta, setPronta] = useState(false);
   const [foto, setFoto] = useState<string | null>(null);
   const [enviada, setEnviada] = useState<string | null>(null); // a versão menor, que foi ao juiz
@@ -184,8 +185,12 @@ export default function Camera() {
           ) : null}
           <Pressable accessibilityRole="button" accessibilityLabel={falta > 0 ? 'Tirar a foto (espere a próxima partida)' : 'Tirar a foto'}
             disabled={!pronta || falta > 0} onPress={fotografar}
-            className="w-[78px] h-[78px] rounded-full border-[5px] border-white bg-white/25 active:bg-[#FFC83D]"
-            style={{ opacity: pronta && falta <= 0 ? 1 : 0.4 }} />
+            onPressIn={() => setApertado(true)} onPressOut={() => setApertado(false)}
+            // estilo fixo e sem className: no celular um Pressable só com classes ficava sem tamanho (botão invisível)
+            style={{ width: 78, height: 78, borderRadius: 39, borderWidth: 5, borderColor: '#fff', alignItems: 'center', justifyContent: 'center',
+              backgroundColor: apertado ? '#FFC83D' : 'rgba(255,255,255,0.25)', opacity: pronta && falta <= 0 ? 1 : 0.4 }}>
+            <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#fff' }} />
+          </Pressable>
         </View>
       </SafeAreaView>
     </View>
