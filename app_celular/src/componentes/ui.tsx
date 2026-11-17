@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View, type TextStyle, type ViewStyle } from 'react-native';
 
 import { graoDePapel } from './efeitos/grao';
+import { IconeTema } from './icones/Icone';
 
 import { useCores } from '../lib/cores';
 
@@ -77,17 +78,21 @@ export function Botao({ titulo, aoTocar, tipo = 'primario', desativado, carregan
 }
 
 // Escolha de uma opção (períodos, temas): etiquetas que rolam de lado quando não cabem
+// `icone` é o id de um tema/aba: a etiqueta mostra o desenho do caderno antes do texto
 export function Fichas<T extends string>({ opcoes, valor, aoEscolher, rotulo }: {
-  opcoes: { valor: T; texto: string }[]; valor: T; aoEscolher: (v: T) => void; rotulo: string;
+  opcoes: { valor: T; texto: string; icone?: { id: string; emoji?: string; cor: string } }[]; valor: T; aoEscolher: (v: T) => void; rotulo: string;
 }) {
+  const c = useCores();
   return (
+    // alignItems: as etiquetas não esticam até a altura da rolagem (no Android ficavam enormes)
     <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityLabel={rotulo}
-      contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+      contentContainerStyle={{ gap: 8, paddingVertical: 4, alignItems: 'center' }}>
       {opcoes.map((o) => {
         const ativa = o.valor === valor;
         return (
           <Pressable key={o.valor} accessibilityRole="radio" accessibilityState={{ selected: ativa }} onPress={() => aoEscolher(o.valor)}
-            className={`min-h-[40px] px-3.5 rounded-full justify-center border ${ativa ? 'bg-tinta border-tinta' : 'bg-ficha border-linha'}`}>
+            className={`min-h-[40px] px-3.5 rounded-full flex-row items-center gap-1.5 border ${ativa ? 'bg-tinta border-tinta' : 'bg-ficha border-linha'}`}>
+            {o.icone ? <IconeTema id={o.icone.id} emoji={o.icone.emoji} tamanho={18} cor={ativa ? c.fundo : o.icone.cor} /> : null}
             <Text className={`text-[15px] ${ativa ? 'font-texto-forte text-papel' : 'font-texto text-tinta'}`}>{o.texto}</Text>
           </Pressable>
         );

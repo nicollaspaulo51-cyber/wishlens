@@ -6,6 +6,10 @@ import { type LinhaPodio } from '../lib/api';
 import { FONTE_TITULO, useCores } from '../lib/cores';
 import { useEntrada } from '../lib/movimento';
 import { Holografico as Brilho } from './efeitos/Holografico';
+import { Icone } from './icones/Icone';
+
+// ouro, prata e bronze em tinta: legíveis no papel claro e no escuro
+const MEDALHAS = { 1: '#D19A00', 2: '#8E9AA3', 3: '#B8692E' } as const;
 
 export function Degraus({ ranking, chave }: { ranking: LinhaPodio[]; chave: string }) {
   const c = useCores();
@@ -19,7 +23,7 @@ export function Degraus({ ranking, chave }: { ranking: LinhaPodio[]; chave: stri
             rotulo={r ? `${pos}º lugar: ${r.apelido}, ${r.pontos} pontos` : `${pos}º lugar vazio`}>
             {r ? (
               <>
-                <Text className="font-texto text-[26px]" >{pos === 1 ? '🥇' : pos === 2 ? '🥈' : '🥉'}</Text>
+                <Icone nome="medalha" tamanho={34} cor={MEDALHAS[pos]} traco={2.2} ativo />
                 <Text className="font-texto-forte text-tinta text-[15px]" numberOfLines={1} >{r.apelido}{r.voce ? ' (você)' : ''}</Text>
                 <Text className="font-texto text-apagado text-[13px]" >{r.pontos} pts</Text>
               </>

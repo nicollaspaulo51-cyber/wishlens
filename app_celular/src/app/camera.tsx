@@ -136,7 +136,7 @@ export default function Camera() {
                   <View className="gap-[8px]">
                     <Text className="font-texto-forte text-tinta text-[15px]" >O juiz errou? Era…</Text>
                     <Fichas rotulo="Tema da foto" valor={era} aoEscolher={setEra}
-                      opcoes={(temas.dados?.temas ?? []).map((t) => ({ valor: t.id, texto: `${t.emoji} ${t.nome}` }))} />
+                      opcoes={(temas.dados?.temas ?? []).map((t) => ({ valor: t.id, texto: t.nome, icone: t }))} />
                     <Botao titulo="Contestar" tipo="secundario" desativado={!era} aoTocar={() => contestar(resposta.id)} />
                   </View>
                 )
@@ -184,8 +184,8 @@ export default function Camera() {
           ) : null}
           <Pressable accessibilityRole="button" accessibilityLabel={falta > 0 ? 'Tirar a foto (espere a próxima partida)' : 'Tirar a foto'}
             disabled={!pronta || falta > 0} onPress={fotografar}
-            style={({ pressed }) => ({ width: 78, height: 78, borderRadius: 39, borderWidth: 5, borderColor: '#fff',
-              backgroundColor: pressed ? '#FFC83D' : 'rgba(255,255,255,0.25)', opacity: pronta && falta <= 0 ? 1 : 0.4 })} />
+            className="w-[78px] h-[78px] rounded-full border-[5px] border-white bg-white/25 active:bg-[#FFC83D]"
+            style={{ opacity: pronta && falta <= 0 ? 1 : 0.4 }} />
         </View>
       </SafeAreaView>
     </View>

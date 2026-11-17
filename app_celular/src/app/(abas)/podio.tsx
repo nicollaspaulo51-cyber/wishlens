@@ -34,7 +34,7 @@ export default function Podio() {
         <SeletorAba />
         {modo === 'livre' ? (
           <Fichas rotulo="Tema" valor={tema} aoEscolher={setTema}
-            opcoes={[{ valor: 'todos', texto: 'Todos' }, ...(temas.dados?.temas ?? []).map((t) => ({ valor: t.id, texto: `${t.emoji} ${t.nome}` }))]} />
+            opcoes={[{ valor: 'todos', texto: 'Todos' }, ...(temas.dados?.temas ?? []).map((t) => ({ valor: t.id, texto: t.nome, icone: t }))]} />
         ) : null}
         {podio.erro && !podio.dados ? <Aviso texto={podio.erro} aoTentar={podio.recarregar} /> : null}
         {podio.dados && ranking.length === 0 ? <Aviso texto="Ninguém pontuou neste período ainda. Tire a primeira foto em Jogar." /> : null}

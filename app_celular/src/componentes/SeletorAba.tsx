@@ -49,9 +49,9 @@ export function SeletorAba({ pontos, estilo, escuro }: { pontos?: Partial<Record
               return (
                 <Pressable key={a.id} accessibilityRole="radio" accessibilityState={{ selected: ativa }}
                   onPress={() => { escolherModo(a.id as Modo); setAberta(false); }}
-                  style={({ pressed }) => ({ backgroundColor: c.superficie, borderRadius: 14, padding: 14, gap: 4,
-                    borderWidth: 2, borderColor: ativa ? a.cor : c.linha, borderLeftWidth: 6, borderLeftColor: a.cor,
-                    opacity: pressed ? 0.8 : 1 })}>
+                  className="active:opacity-80"
+                  style={{ backgroundColor: c.superficie, borderRadius: 14, padding: 14, gap: 4,
+                    borderWidth: 2, borderColor: ativa ? a.cor : c.linha, borderLeftWidth: 6, borderLeftColor: a.cor }}>
                   <View className="flex-row items-center gap-[8px]">
                     <IconeTema id={a.id} emoji={a.emoji} tamanho={24} cor={a.cor} />
                     <Text className="flex-1 font-titulo text-[18px] text-tinta">{a.nome}</Text>

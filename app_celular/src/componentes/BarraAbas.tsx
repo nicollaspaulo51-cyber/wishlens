@@ -94,9 +94,11 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
             Haptics.selectionAsync().catch(() => {});
             router.push('/camera');
           }}
-          style={({ pressed }) => ({ width: 68, height: 68, borderRadius: 34, marginTop: -30, alignItems: 'center', justifyContent: 'center',
-            backgroundColor: c.sol, borderWidth: 5, borderColor: c.superficie, transform: [{ scale: pressed ? 0.94 : 1 }],
-            shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 8 })}>
+          // estilo fixo, sem função: com o NativeWind um style em função some e o botão fica sem tamanho (não dá para tocar)
+          className="active:scale-[0.94]"
+          style={{ width: 68, height: 68, borderRadius: 34, marginTop: -30, alignItems: 'center', justifyContent: 'center',
+            backgroundColor: c.sol, borderWidth: 5, borderColor: c.superficie,
+            shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 8 }}>
           <Icone nome="camera" tamanho={30} cor={c.solTinta} traco={2.2} />
         </Pressable>
       </View>

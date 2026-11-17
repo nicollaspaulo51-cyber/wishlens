@@ -35,8 +35,7 @@ export default function Chat() {
           <Surge key={a.apelido} ordem={i} chave={visita}><Pressable accessibilityRole="button"
             accessibilityLabel={`Conversa com ${a.apelido}${a.nao_lidas ? `, ${a.nao_lidas} não lidas` : ''}`}
             onPress={() => router.push({ pathname: '/conversa/[apelido]', params: { apelido: a.apelido } })}
-            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14,
-              backgroundColor: pressed ? c.suave : c.superficie, borderWidth: 1, borderColor: c.linha })}>
+            className="flex-row items-center gap-3 p-3 rounded-[14px] bg-ficha active:bg-suave border border-linha">
             <View className="w-[44px] h-[44px] rounded-[22px] bg-suave items-center justify-center">
               <Text className="font-texto-forte text-destaque text-[18px]" >{a.apelido.slice(0, 1).toUpperCase()}</Text>
             </View>

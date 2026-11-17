@@ -109,8 +109,7 @@ export default function Amigos() {
               <Pressable key={r.apelido} disabled={r.voce} accessibilityRole={r.voce ? undefined : 'button'}
                 accessibilityLabel={`${r.posicao}º, ${r.apelido}${r.voce ? ' (você)' : ''}, ${r.pontos} pontos, ${r.achados} achados${r.voce ? '' : '. Abrir a conversa'}`}
                 onPress={() => router.push({ pathname: '/conversa/[apelido]', params: { apelido: r.apelido } })}
-                style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12,
-                  borderBottomWidth: i < ranking.length - 1 ? 1 : 0, borderBottomColor: c.linha, backgroundColor: r.voce || pressed ? c.suave : 'transparent' })}>
+                className={`flex-row items-center py-3 px-4 gap-3 border-linha active:bg-suave ${r.voce ? 'bg-suave' : ''} ${i < ranking.length - 1 ? 'border-b' : ''}`}>
                 <Text className="font-texto-forte w-[32px] text-apagado" >{r.posicao}º</Text>
                 <View className="flex-1">
                   <Text className="font-texto text-tinta text-[16px]" >{r.apelido}{r.voce ? ' (você)' : ''}</Text>

@@ -117,8 +117,8 @@ export function CompartilharFoto({ foto, enviada, captura, aceita, placa }: {
             {amigos?.map((a) => (
               <Pressable key={a.apelido} accessibilityRole="button" accessibilityLabel={`Enviar para ${a.apelido}`} disabled={ocupado}
                 onPress={() => mandar(a.apelido)}
-                style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14,
-                  backgroundColor: pressed ? c.suave : c.superficie, borderWidth: 1, borderColor: c.linha, opacity: ocupado ? 0.6 : 1 })}>
+                className="flex-row items-center gap-3 p-3 rounded-[14px] bg-ficha active:bg-suave border border-linha"
+                style={{ opacity: ocupado ? 0.6 : 1 }}>
                 <View className="w-[40px] h-[40px] rounded-[20px] bg-suave items-center justify-center">
                   <Text className="font-texto-forte text-destaque text-[17px]" >{a.apelido.slice(0, 1).toUpperCase()}</Text>
                 </View>
