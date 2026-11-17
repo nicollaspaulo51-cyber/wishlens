@@ -51,10 +51,12 @@ def test_captura_do_jogo():
     assert r.tema is None and r.achado == ""
     r = visao.interpretar_captura({"tema": "pets", "achado": "gato <b>", "foto_real": "false"})
     assert r.foto_real is False and r.achado == ""  # texto perigoso descartado
-    texto = '```json\n{"tema": "passaros", "achado": "bem-te-vi", "foto_real": false, "certeza": 0.9}\n```'
+    texto = '```json\n{"tema": "comidas", "achado": "manga", "foto_real": false, "certeza": 0.9}\n```'
     with patch("src.visao.requests.post", return_value=_api(texto)) as post:
         r = visao.identificar_captura(b"jpeg", URL + "/", "mistral-small-latest", chave="segredo")
-    assert r.tema == "passaros" and r.foto_real is False
+    assert r.tema == "comidas" and r.foto_real is False
+    # tema que saiu do jogo não é mais oferecido pela IA
+    assert visao.interpretar_captura({"tema": "passaros", "achado": "sabiá", "foto_real": True}).tema is None
     assert post.call_args.args[0] == URL + "/chat/completions"
     assert post.call_args.kwargs["headers"] == {"Authorization": "Bearer segredo"}
     corpo = post.call_args.kwargs["json"]

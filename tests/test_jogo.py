@@ -328,13 +328,18 @@ def test_meta_da_turma_da_bonus_a_todos_quando_bate():
 
 
 def test_medalhas_lacunas_e_pistas():
-    r = pts(*[cap("ana", n, tema="passaros", hora=8 + k) for k, n in enumerate(["sabiá", "bem-te-vi", "tucano"])],
-            cap("bia", "garça", tema="passaros", hora=12), {**cap("bia", "beija-flor", tema="passaros", hora=13),
-                                                            "mirante": True, "tipo_lugar": "park"})
-    olho = next(m for m in jogo.medalhas(r, "ana") if m["id"] == "passaros")
-    assert olho["nivel"] == "bronze" and olho["valor"] == 3 and olho["proximo"] == 5
-    assert dict(jogo.lacunas(r, "ana", "passaros")) == {"G…": 1, "B…": 1}
-    assert jogo.pistas_por_tipo(r) == {"park": ["beija-flor"]}
+    r = pts(*[cap("ana", n, tema="comidas", hora=8 + k) for k, n in enumerate(["manga", "banana", "açaí"])],
+            cap("bia", "goiaba", tema="comidas", hora=12), {**cap("bia", "pastel", tema="comidas", hora=13),
+                                                            "mirante": True, "tipo_lugar": "marketplace"})
+    garfo = next(m for m in jogo.medalhas(r, "ana") if m["id"] == "comidas")
+    assert garfo["nivel"] == "bronze" and garfo["valor"] == 3 and garfo["proximo"] == 5
+    assert dict(jogo.lacunas(r, "ana", "comidas")) == {"G…": 1, "P…": 1}
+    assert jogo.pistas_por_tipo(r) == {"marketplace": ["pastel"]}
+
+
+def test_captura_antiga_de_passaros_continua_pontuando():
+    r = pts(cap("ana", "bem-te-vi", tema="passaros"))
+    assert bool(r.iloc[0]["aceita"]) and r.iloc[0]["pontos"] > 0
 
 
 def test_guardiao_so_com_2_pessoas_e_empate_para_quem_chegou_antes():

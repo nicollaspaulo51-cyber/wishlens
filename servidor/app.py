@@ -35,7 +35,7 @@ from src.cartao import linha_juizes, partes_e_destaque
 from src.categorias import nome_valido
 from src.fotos import preparar_para_salvar
 from src.lugares import buscar_pontos_temas, distancia_km
-from src.temas import MODOS as ABAS, POR_ID, TEMAS, TODOS, agora, tema_do_dia
+from src.temas import MODOS as ABAS, POR_ID, TEMAS, TEMAS_ANTIGOS, TODOS, agora, tema_do_dia
 
 MODOS = ("livre", *ABAS)
 # Até onde a foto conta como "no lugar" da aba, pelo tipo do lugar do OpenStreetMap. GPS dentro de prédio erra mais;
@@ -298,7 +298,9 @@ def colecao(s=Depends(sessao)):
     turma = (p[p["aceita"]].assign(chave=lambda d: d["achado"].map(jogo.normalizar)).groupby(["tema", "chave"]).size()
              if not p.empty else pd.Series(dtype=int))
     album = []
-    for t in TEMAS:
+    # temas que saíram do jogo (Pássaros) só aparecem para quem tem achados neles
+    antigos = [t for t in TEMAS_ANTIGOS.values() if not aceitas.empty and (aceitas["tema"] == t.id).any()]
+    for t in [*TEMAS, *antigos]:
         meus = aceitas[aceitas["tema"] == t.id] if not aceitas.empty else aceitas
         unicos = meus.assign(chave=meus["achado"].map(jogo.normalizar)).drop_duplicates("chave") if not meus.empty else meus
         colados = [{"achado": str(r.achado), "turma": int(turma.get((t.id, r.chave), 1))} for r in unicos.itertuples()]

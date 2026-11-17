@@ -151,9 +151,20 @@ def outra_aba(grupos: list[str], probs: list[float]) -> str | None:
     return grupos[melhor].removeprefix("outro:") if grupos[melhor].startswith("outro:") else None
 
 
-def julgar_clip(imagem: Image.Image, modo: str = "livre") -> dict:
+@lru_cache(maxsize=1)
+def sonda():
+    """Camada treinada em cima do CLIP (src/treino_juiz.py, modelos/juiz_clip.npz), ou None se não houver."""
+    from src.treino_juiz import carregar
+
+    return carregar()
+
+
+def julgar_clip(imagem: Image.Image, modo: str = "livre", treinado: bool = True) -> dict:
     """Opinião do CLIP: tema (ou None), achado, foto_real, confiança, a chance de cada grupo e o vetor da foto
-    (512 números normalizados: o "retrato" usado para saber se o mesmo objeto já foi fotografado)."""
+    (512 números normalizados: o "retrato" usado para saber se o mesmo objeto já foi fotografado).
+
+    No Mapa livre, se houver a camada treinada, ela decide tema e foto_real (misturada ao zero-shot) e
+    "treinado" vem True; nas outras abas, ou sem o arquivo, vale só o zero-shot."""
     import torch
 
     modelo, processador = _carregar()
@@ -168,13 +179,19 @@ def julgar_clip(imagem: Image.Image, modo: str = "livre") -> dict:
     peca = achado_do_tema(frases, probs, "pecas") if "pecas" in grupos else ""
     tema, real, conf = decidir_captura(["nenhum" if g.startswith("outro:") else g for g in grupos], probs, peca)
     por_grupo = probs_por_grupo(grupos, probs)
+    vetor = vet_img[0].tolist()
+    s = sonda() if treinado and modo == "livre" else None
+    if s is not None:
+        from src.treino_juiz import aplicar_sonda
+
+        por_grupo, tema, real, conf = aplicar_sonda(vetor, por_grupo, s)
     valor_nitidez = nitidez(imagem)
     return {"nitidez": round(valor_nitidez, 1),
             "nao_identificou": nao_identificou(valor_nitidez, max(por_grupo.values())),
             "tema": tema, "achado": achado_do_tema(frases, probs, tema) if tema else "",
             "foto_real": real, "confianca": conf, "probs": por_grupo,
-            "outra_aba": None if tema else outra_aba(grupos, probs),
-            "vetor": [round(x, 4) for x in vet_img[0].tolist()]}
+            "outra_aba": None if tema else outra_aba(grupos, probs), "treinado": s is not None,
+            "vetor": [round(x, 4) for x in vetor]}
 
 
 def capturar(imagem: Image.Image):

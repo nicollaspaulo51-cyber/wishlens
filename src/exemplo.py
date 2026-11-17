@@ -76,15 +76,15 @@ ACHADOS_EXEMPLO = {
                "Jeep Renegade", "Honda Civic", "Volkswagen Fusca", "Ford Mustang", "Porsche 911"],
     "plantas": ["costela-de-adão", "espada-de-são-jorge", "girassol", "ipê-amarelo", "hibisco", "orquídea",
                 "bromélia", "ipê-roxo", "pau-brasil"],
-    "passaros": ["pombo", "bem-te-vi", "sabiá-laranjeira", "pardal", "quero-quero", "rolinha", "beija-flor",
-                 "tucano", "garça-branca", "gavião-carijó"],
+    "comidas": ["banana", "manga", "abacaxi", "pão francês", "coxinha", "açaí", "pastel", "mamão",
+                "jabuticaba", "pão de queijo"],
     "pets": ["cachorro vira-lata caramelo", "gato vira-lata", "cachorro shih-tzu", "cachorro poodle",
              "gato siamês", "cachorro golden retriever", "gato persa", "cachorro husky siberiano"],
     "pecas": ["mouse", "teclado mecânico", "memória RAM", "SSD", "placa de vídeo", "processador",
               "placa-mãe", "fonte de alimentação", "cooler de processador"],
 }
 # Estilo de jogador: peso de cada tema
-ESTILOS_JOGO = {"carros": {"carros": 6, "pecas": 2}, "natureza": {"plantas": 4, "passaros": 4},
+ESTILOS_JOGO = {"carros": {"carros": 6, "pecas": 2}, "natureza": {"plantas": 4, "comidas": 4},
                 "pets": {"pets": 6, "plantas": 1}, "tech": {"pecas": 5, "carros": 2}}
 JOGADORES_EXEMPLO = {
     "exemplo:ana": "natureza", "exemplo:bia": "pets", "exemplo:caio": "carros", "exemplo:bruno": "tech",
@@ -94,7 +94,7 @@ JOGADORES_EXEMPLO = {
 CENTRO_EXEMPLO = (-20.2905, -40.2930)  # Vitória - ES
 # Tipo de lugar do OSM onde cada tema costuma aparecer (para o mirante e a pista do mapa)
 TIPOS_EXEMPLO = {"carros": ["parking", "fuel", "car"], "plantas": ["park", "garden", "garden_centre"],
-                 "passaros": ["park", "wood", "water"], "pets": ["pet", "veterinary", "park"],
+                 "comidas": ["marketplace", "greengrocer", "bakery"], "pets": ["pet", "veterinary", "park"],
                  "pecas": ["computer", "electronics"]}
 CLIMAS_EXEMPLO = ["sol", "sol", "nublado", "nublado", "chuva"]
 

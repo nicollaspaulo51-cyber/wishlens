@@ -52,29 +52,35 @@ TEMAS: list[Tema] = [
          "parques, praças, jardins e floriculturas",
          "qualquer planta viva: árvore, flor, folha, arbusto, planta em vaso, suculenta, cacto. Planta de plástico NÃO conta",
          "#30A46C"),
-    Tema("passaros", "Pássaros", "🐦", "pássaro",
-         "nome popular do pássaro em português (ex.: bem-te-vi, sabiá-laranjeira, pombo, quero-quero)",
-         (("a bird", "pássaro"), ("a bird on a tree branch", "pássaro"), ("a bird flying", "pássaro"),
-          ("a pigeon", "pombo"), ("a small bird on the ground", "pássaro"), ("a bird on a wire", "pássaro"),
-          ("a parakeet", "periquito")),
-         ('leisure="park"', 'natural~"wood|water|beach"'),
-         "parques, matas, lagoas e praias",
-         "qualquer ave viva, mesmo pequena na foto: pombo, pardal, galinha, pato, papagaio de estimação",
-         "#0091FF"),
+    Tema("comidas", "Frutas e comidas", "🍎", "comida",
+         "nome da fruta, legume ou comida em português (ex.: manga, banana, abacaxi, pão francês, coxinha, açaí, pastel)",
+         (("fruit", "fruta"), ("a fruit stand at a street market", "fruta"), ("bananas", "banana"),
+          ("apples", "maçã"), ("oranges", "laranja"), ("a pineapple", "abacaxi"), ("a mango", "manga"),
+          ("vegetables", "legumes"), ("a plate of food", "prato de comida"), ("bread at a bakery", "pão"),
+          ("a savory snack, like a pastry or a fried snack", "salgado"), ("a slice of cake", "bolo"),
+          ("a bowl of açaí", "açaí"), ("a sandwich", "sanduíche"), ("a pizza", "pizza")),
+         ('shop~"greengrocer|bakery|supermarket|pastry"', 'amenity="marketplace"'),
+         "feiras, fruteiras, padarias e mercados",
+         "fruta, legume ou comida de verdade: na feira, na fruteira, na padaria, no prato. Comida de plástico, "
+         "foto de cardápio ou desenho na embalagem NÃO conta",
+         "#E8A317"),
     # id "pets" mantido: as capturas antigas de cachorros e gatos continuam no mesmo tema
     Tema("pets", "Animais", "🐾", "animal",
-         "nome popular do animal em português, com a raça quando der (ex.: cachorro vira-lata caramelo, gato siamês, "
-         "cavalo, vaca, lagartixa, borboleta, capivara, sagui)",
+         "nome popular do animal em português, com a raça ou espécie quando der (ex.: cachorro vira-lata caramelo, "
+         "gato siamês, bem-te-vi, sabiá-laranjeira, pombo, cavalo, lagartixa, borboleta, capivara, sagui)",
          (("a dog", "cachorro"), ("a cat", "gato"), ("a puppy", "filhote de cachorro"), ("a kitten", "filhote de gato"),
           ("a horse", "cavalo"), ("a cow", "vaca"), ("a goat", "cabra"), ("a pig", "porco"),
           ("a lizard", "lagarto"), ("a gecko on a wall", "lagartixa"), ("a turtle", "tartaruga"),
           ("a butterfly", "borboleta"), ("a bee", "abelha"), ("a spider", "aranha"), ("an ant", "formiga"),
           ("a fish in the water", "peixe"), ("a frog", "sapo"), ("a squirrel", "esquilo"),
-          # sem "an animal" genérico: ele roubaria as fotos de pássaros
-          ("a small monkey on a tree", "sagui"), ("a capybara", "capivara"), ("a rabbit", "coelho")),
+          ("a small monkey on a tree", "sagui"), ("a capybara", "capivara"), ("a rabbit", "coelho"),
+          # as aves eram o tema Pássaros e agora são animais
+          ("a bird", "pássaro"), ("a bird on a tree branch", "pássaro"), ("a pigeon", "pombo"),
+          ("a small bird on the ground", "pássaro"), ("a bird on a wire", "pássaro"), ("a parakeet", "periquito"),
+          ("a chicken", "galinha"), ("a duck", "pato")),
          ('leisure="dog_park"', 'shop="pet"', 'amenity="veterinary"', 'tourism="zoo"'),
          "parcões, pet shops, veterinários e zoológicos",
-         "qualquer animal vivo que não seja ave (as aves são do tema Pássaros): cachorro, gato, cavalo, vaca, "
+         "qualquer animal vivo, aves inclusive: cachorro, gato, pássaro, pombo, galinha, cavalo, vaca, "
          "lagarto, inseto, peixe, sapo, sagui, capivara... Bicho de pelúcia ou de brinquedo NÃO conta",
          "#F76B15"),
     Tema("pecas", "Peças e periféricos de computador", "🖥️", "peça de computador",
@@ -98,6 +104,13 @@ TEMAS: list[Tema] = [
          "Um monitor ou notebook de verdade conta (a tela dele ligada não é trapaça)",
          "#8E4EC6"),
 ]
+# Temas que saíram do jogo: as capturas antigas continuam pontuando e aparecendo na coleção e no Museu,
+# mas o juiz, o mapa e o tema do dia não oferecem mais.
+TEMAS_ANTIGOS: dict[str, Tema] = {t.id: t for t in [
+    Tema("passaros", "Pássaros", "🐦", "pássaro", "nome popular do pássaro em português",
+         (("a bird", "pássaro"),), ('leisure="park"',), "parques, matas, lagoas e praias",
+         "qualquer ave viva (tema antigo: as aves agora são do tema Animais)", "#0091FF"),
+]}
 POR_ID = {t.id: t for t in TEMAS}
 
 # Modos (cada um numa aba do app, com o seu juiz e o seu pódio). O tema da captura é o id do modo e o achado é
@@ -147,7 +160,7 @@ MODOS: dict[str, Tema] = {t.id: t for t in [
          ('leisure="amusement_arcade"', 'amenity="internet_cafe"'), "fliperamas e lan houses",
          "a tela do fim de uma partida de videogame ou jogo de celular, mostrando se você ganhou ou perdeu", "#3E63DD"),
 ]}
-TODOS = {**POR_ID, **MODOS}  # o tema de qualquer captura, de qualquer aba
+TODOS = {**TEMAS_ANTIGOS, **POR_ID, **MODOS}  # o tema de qualquer captura, de qualquer aba
 
 # "Não vale": frases genéricas de tela/impressão + frases GÊMEAS de cada objeto dos temas
 # ("um pássaro numa tela de computador"), para "pássaro de verdade" disputar com "pássaro na tela".
@@ -162,7 +175,7 @@ FRASES_TELA = (("a photo of a computer screen showing a picture", "a photo of a 
 TELAS_SEM_JOGO = ("a phone screen showing a keyboard and a text field", "a phone screen with a chat app",
                   "a computer screen with code and text windows", "a computer desktop with open windows",
                   "a phone home screen with app icons", "a web page in a browser", "a video playing on a screen")
-FRASES_NENHUM = ("a photo of a person", "a selfie", "a photo of a room interior", "a photo of food on a plate",
+FRASES_NENHUM = ("a photo of a person", "a selfie", "a photo of a room interior",
                  "a photo of a building", "a photo of an empty sky", "a photo of a document with text",
                  # celular não é periférico (e a tela dele mostrando um teclado não é um teclado)
                  "a photo of a smartphone", "a person holding a smartphone",
@@ -175,7 +188,7 @@ FRASES_NENHUM = ("a photo of a person", "a selfie", "a photo of a room interior"
                      "a water bottle", "a cup or mug", "a chair", "a table", "a backpack", "a shoe", "clothes",
                      "a set of keys", "a wallet", "a pen", "a book", "a TV remote control", "eyeglasses",
                      "a wristwatch", "a power bank", "a door", "a bed", "a sofa", "a lamp", "an electric fan",
-                     "a cardboard box", "a bicycle", "a motorcycle", "a plastic bag", "a toothbrush", "a bowl")))
+                     "a cardboard box", "a bicycle", "a motorcycle", "a plastic bag", "a toothbrush", "an empty bowl")))
 
 
 def agora() -> datetime:

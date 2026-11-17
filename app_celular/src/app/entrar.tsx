@@ -29,7 +29,7 @@ function Lupa() {
 
 // Os temas do jogo flutuando em volta da marca, como alfinetes num mapa
 const ALFINETES = [
-  { id: 'carros', x: '8%', y: '14%' }, { id: 'plantas', x: '82%', y: '10%' }, { id: 'passaros', x: '88%', y: '58%' },
+  { id: 'carros', x: '8%', y: '14%' }, { id: 'plantas', x: '82%', y: '10%' }, { id: 'comidas', x: '88%', y: '58%' },
   { id: 'pets', x: '4%', y: '66%' }, { id: 'pecas', x: '70%', y: '82%' },
 ] as const;
 

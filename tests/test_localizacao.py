@@ -120,13 +120,14 @@ def test_pontos_por_tema_numa_consulta_so():
         {"type": "way", "id": 1, "center": {"lat": -20.301, "lon": -40.30}, "tags": {"leisure": "park", "name": "Parque"}},
         {"type": "node", "id": 2, "lat": -20.302, "lon": -40.30, "tags": {"amenity": "parking"}},
         {"type": "node", "id": 3, "lat": -20.303, "lon": -40.30, "tags": {"shop": "car_repair"}},  # não é shop=car
+        {"type": "node", "id": 4, "lat": -20.304, "lon": -40.30, "tags": {"amenity": "marketplace", "name": "Feira"}},
     ]}
-    temas = [POR_ID["carros"], POR_ID["passaros"], POR_ID["plantas"]]
+    temas = [POR_ID["carros"], POR_ID["comidas"], POR_ID["plantas"]]
     with patch("src.lugares.requests.post", return_value=_resposta(el)) as post:
         pontos = lugares.buscar_pontos_temas(temas, -20.30, -40.30, raio_m=1000)
     assert post.call_count == 1
     por = {(p["tema"], p["nome"]) for p in pontos}
-    assert por == {("passaros", "Parque"), ("plantas", "Parque"), ("carros", "Estacionamentos")}
+    assert por == {("comidas", "Feira"), ("plantas", "Parque"), ("carros", "Estacionamentos")}
     with patch("src.lugares.requests.post", side_effect=requests.Timeout("x")):
         with pytest.raises(RuntimeError):
             lugares.buscar_pontos_temas(temas, 0, 0)

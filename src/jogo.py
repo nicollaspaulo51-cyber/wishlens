@@ -29,7 +29,10 @@ from datetime import date, datetime, timedelta
 import pandas as pd
 from PIL import Image, ImageOps
 
-from src.temas import POR_ID, TEMAS, dia_de, tema_do_dia
+from src.temas import POR_ID as _ATUAIS, TEMAS, TEMAS_ANTIGOS, dia_de, tema_do_dia
+
+# Na pontuação valem também os temas que saíram do jogo: as capturas antigas de Pássaros não perdem os pontos
+POR_ID = {**TEMAS_ANTIGOS, **_ATUAIS}
 
 BASE, NOVIDADE, RARIDADE, MULTIPLICADOR_DO_DIA = 10, 10, 20, 2
 LIMITE_HASH = 6  # bits diferentes no dHash de 64 bits: até isso é a mesma foto
@@ -153,7 +156,7 @@ def repetida(h: str | None, anteriores) -> bool:
 # Os campos de contexto (mirante, clima, km_anterior, min_anterior) são gravados pelo app na hora da foto,
 # sem a localização exata; os bônus saem daqui, recalculados como os pontos.
 MIRANTE, MIRANTES_DIA, MIRANTE_M = 5, 3, 40          # foto a até 40 m de um lugar do mapa: +5, até 3 por dia
-CHUVA, TEMAS_CHUVA = 5, ("plantas", "passaros")      # com chuva, plantas e pássaros dão +5 (fora do tema do dia)
+CHUVA, TEMAS_CHUVA = 5, ("plantas", "pets")          # com chuva, plantas e animais dão +5 (fora do tema do dia)
 LUPA_TEMAS, LUPA_BONUS = 3, 0.5                      # 3 temas diferentes no dia enchem a lupa: o próximo achado +50%
 DESAFIO = 15                                         # cada desafio do dia cumprido
 CORRENTE, CORRENTE_DIAS = 20, 7                      # 7 dias seguidos com foto aceita
@@ -451,7 +454,7 @@ def corrente_atual(pontuadas: pd.DataFrame, usuario: str, hoje: date | None = No
 
 
 # Medalhas: (id, nome, o que conta). Níveis pela quantidade.
-MEDALHAS = [("passaros", "Olho de águia", "pássaros diferentes"), ("plantas", "Mão verde", "plantas diferentes"),
+MEDALHAS = [("comidas", "Bom garfo", "comidas diferentes"), ("plantas", "Mão verde", "plantas diferentes"),
             ("carros", "Garagem cheia", "carros diferentes"), ("pets", "Amigo dos bichos", "animais diferentes"),
             ("pecas", "Garimpo tech", "peças diferentes"), ("mirantes", "Andarilho", "fotos em mirantes")]
 NIVEIS = [("bronze", 3), ("prata", 8), ("ouro", 15)]
@@ -576,7 +579,7 @@ def agora_naive() -> datetime:
 
 
 # Estilo de jogador (K-Means sobre a proporção de capturas por tema)
-NOMES_ESTILO = {"carros": "Caçador de carros", "plantas": "Naturalista", "passaros": "Observador de aves",
+NOMES_ESTILO = {"carros": "Caçador de carros", "plantas": "Naturalista", "comidas": "Provador de feira",
                 "pets": "Amigo dos bichos", "pecas": "Garimpeiro tech"}
 
 
