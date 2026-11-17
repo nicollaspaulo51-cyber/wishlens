@@ -1,9 +1,15 @@
+import '../../global.css';
+
+import { AtkinsonHyperlegible_400Regular, AtkinsonHyperlegible_700Bold } from '@expo-google-fonts/atkinson-hyperlegible';
 import { BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBold, useFonts } from '@expo-google-fonts/bricolage-grotesque';
+import { Caveat_700Bold } from '@expo-google-fonts/caveat';
+import { vars } from 'nativewind';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 
-import { useCores } from '../lib/cores';
+import { useCores, variaveis } from '../lib/cores';
 import { ProvedorSessao, useSessao } from '../lib/sessao';
 
 function Navegacao() {
@@ -27,12 +33,17 @@ function Navegacao() {
 }
 
 export default function Raiz() {
-  const [fontes] = useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBold });
+  const c = useCores();
+  const [fontes] = useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBold, AtkinsonHyperlegible_400Regular,
+    AtkinsonHyperlegible_700Bold, Caveat_700Bold });
   if (!fontes) return null;
   return (
-    <ProvedorSessao>
-      <StatusBar style="auto" />
-      <Navegacao />
-    </ProvedorSessao>
+    // vars(): as cores da PALETA viram variáveis CSS para as classes do NativeWind (tema claro/escuro)
+    <GestureHandlerRootView style={[{ flex: 1 }, vars(variaveis(c))]}>
+      <ProvedorSessao>
+        <StatusBar style="auto" />
+        <Navegacao />
+      </ProvedorSessao>
+    </GestureHandlerRootView>
   );
 }
