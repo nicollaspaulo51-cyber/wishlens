@@ -198,3 +198,17 @@ def test_competicao_espera_15_minutos_e_vitoria_vale_mais(cliente, monkeypatch):
     monkeypatch.setattr(srv, "_clip", clip("competicao", "derrota"))
     perdeu = _enviar(cliente, _jpeg(deslocar=90), modo="competicao")
     assert perdeu["cartao"]["aceita"] and perdeu["cartao"]["pontos"] == jogo.DERROTA
+
+
+def test_abas_procuram_mais_longe_quando_tem_pouco_lugar(monkeypatch):
+    raios = []
+    def busca(temas, lat, lon, raio_m=2000, por_tema=15):
+        raios.append(raio_m)
+        return [{"tema": temas[0].id}] * (0 if raio_m < 10000 else 4)
+    monkeypatch.setattr(srv, "buscar_pontos_temas", busca)
+    srv._lugares.cache_clear()
+    assert len(srv.lugares_perto(-20.3, -40.3, "academia")) == 4 and raios == [2000, 5000, 10000]
+    raios.clear()
+    srv.lugares_perto(-20.3, -40.3, "livre")
+    assert raios == [2000]
+    srv._lugares.cache_clear()

@@ -194,10 +194,18 @@ def _tema(t) -> dict:
 
 
 # ---------------------------------------------------------------- serviços de fora, com cache
+RAIOS_ABA_M = (2000, 5000, 10000)  # medido em pontos de teste: em 2 km muitas vezes não havia academia nem mirante
+LUGARES_MINIMOS = 3
 @lru_cache(maxsize=512)
 def _lugares(modo: str, lat2: float, lon2: float, hora: int) -> tuple:
-    temas = TEMAS if modo == "livre" else [ABAS[modo]]
-    return tuple(buscar_pontos_temas(temas, lat2, lon2))  # RuntimeError (Overpass fora) não fica em cache
+    if modo == "livre":
+        return tuple(buscar_pontos_temas(TEMAS, lat2, lon2))  # RuntimeError (Overpass fora) não fica em cache
+    # Academias, mirantes e lan houses são raros: com menos de LUGARES_MINIMOS em 2 km, procura mais longe
+    for raio in RAIOS_ABA_M:
+        achados = buscar_pontos_temas([ABAS[modo]], lat2, lon2, raio_m=raio)
+        if len(achados) >= LUGARES_MINIMOS:
+            break
+    return tuple(achados)
 
 
 def lugares_perto(lat: float, lon: float, modo: str = "livre") -> list[dict] | None:
