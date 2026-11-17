@@ -30,16 +30,16 @@ export function SeletorAba({ pontos, estilo, escuro }: { pontos?: Partial<Record
         style={[{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 14, borderRadius: 20,
           backgroundColor: escuro ? 'rgba(0,0,0,0.45)' : c.superficie, alignSelf: 'flex-start' }, estilo]}>
         <IconeTema id={atual.id} emoji={atual.emoji} tamanho={18} cor={escuro ? '#fff' : atual.cor} />
-        <Text style={{ color: escuro ? '#fff' : c.tinta, fontWeight: '700', fontSize: 15 }}>{atual.nome}</Text>
-        <Text style={{ color: escuro ? '#fff' : c.apagado, fontSize: 12 }}>▼</Text>
+        <Text className="font-texto-forte" style={{ color: escuro ? '#fff' : c.tinta, fontWeight: '700', fontSize: 15 }}>{atual.nome}</Text>
+        <Text className="font-texto" style={{ color: escuro ? '#fff' : c.apagado, fontSize: 12 }}>▼</Text>
       </Pressable>
 
       <Modal visible={aberta} transparent animationType="slide" onRequestClose={() => setAberta(false)}>
         <Pressable accessibilityLabel="Fechar" onPress={() => setAberta(false)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} />
         <View style={{ backgroundColor: c.fundo, borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '80%',
           paddingTop: 10, paddingBottom: baixo + 12 }}>
-          <View style={{ alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: c.linha }} />
-          <Text accessibilityRole="header" style={{ fontFamily: FONTE_TITULO, fontSize: 22, color: c.tinta, paddingHorizontal: 16, paddingVertical: 10 }}>
+          <View className="self-center w-[40px] h-[5px] rounded-[3px] bg-linha" />
+          <Text accessibilityRole="header" className="font-titulo text-[22px] text-tinta px-[16px] py-[10px]">
             Onde você quer jogar?
           </Text>
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
@@ -52,14 +52,14 @@ export function SeletorAba({ pontos, estilo, escuro }: { pontos?: Partial<Record
                   style={({ pressed }) => ({ backgroundColor: c.superficie, borderRadius: 14, padding: 14, gap: 4,
                     borderWidth: 2, borderColor: ativa ? a.cor : c.linha, borderLeftWidth: 6, borderLeftColor: a.cor,
                     opacity: pressed ? 0.8 : 1 })}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View className="flex-row items-center gap-[8px]">
                     <IconeTema id={a.id} emoji={a.emoji} tamanho={24} cor={a.cor} />
-                    <Text style={{ flex: 1, fontFamily: FONTE_TITULO, fontSize: 18, color: c.tinta }}>{a.nome}</Text>
-                    {pts !== undefined ? <Text style={{ color: c.apagado, fontWeight: '700' }}>{pts} pts hoje</Text> : null}
-                    {ativa ? <Text style={{ color: a.cor, fontWeight: '700' }}>✓</Text> : null}
+                    <Text className="flex-1 font-titulo text-[18px] text-tinta">{a.nome}</Text>
+                    {pts !== undefined ? <Text className="font-texto-forte text-apagado" >{pts} pts hoje</Text> : null}
+                    {ativa ? <Text className="font-texto-forte" style={{ color: a.cor, fontWeight: '700' }}>✓</Text> : null}
                   </View>
-                  <Text style={{ color: c.tinta, fontSize: 14, lineHeight: 19 }}>Vale: {a.conta}.</Text>
-                  <Text style={{ color: c.apagado, fontSize: 13 }}>No mapa: {a.onde} perto de você.</Text>
+                  <Text className="font-texto text-tinta text-[14px] leading-[19px]" >Vale: {a.conta}.</Text>
+                  <Text className="font-texto text-apagado text-[13px]" >No mapa: {a.onde} perto de você.</Text>
                 </Pressable>
               );
             })}

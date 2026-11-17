@@ -79,7 +79,7 @@ export function Brilho({ pausa = 3200, atraso = 0 }: { pausa?: number; atraso?: 
   if (parado) return null;
   const x = v.interpolate({ inputRange: [0, 1], outputRange: [-160, LARGURA + 40] });
   return (
-    <View pointerEvents="none" accessibilityElementsHidden style={{ position: 'absolute', top: -40, bottom: -40, left: 0, right: 0 }}>
+    <View pointerEvents="none" accessibilityElementsHidden className="absolute -top-[40px] -bottom-[40px] left-[0px] right-[0px]">
       <Animated.View style={{ position: 'absolute', top: 0, bottom: 0, width: 70, flexDirection: 'row',
         transform: [{ translateX: x }, { rotate: '18deg' }] }}>
         <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.18)' }} />

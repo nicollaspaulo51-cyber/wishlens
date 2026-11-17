@@ -45,9 +45,10 @@ export function Icone({ nome, tamanho = 24, cor, traco = 2, ativo = false }: {
 }) {
   return (
     <Svg width={tamanho} height={tamanho} viewBox="0 0 24 24" pointerEvents="none">
+      {/* marca-texto: o 1º traço preenchido bem claro, numa camada à parte */}
+      {ativo ? <Path d={TRACOS[nome][0]} fill={cor} opacity={0.2} /> : null}
       {TRACOS[nome].map((d, i) => (
-        <Path key={i} d={d} stroke={cor} strokeWidth={traco} strokeLinecap="round" strokeLinejoin="round"
-          fill={ativo && i === 0 ? cor : 'none'} fillOpacity={ativo && i === 0 ? 0.18 : 0} />
+        <Path key={i} d={d} stroke={cor} strokeWidth={traco} strokeLinecap="round" strokeLinejoin="round" fill="none" />
       ))}
     </Svg>
   );

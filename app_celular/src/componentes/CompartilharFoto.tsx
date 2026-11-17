@@ -80,25 +80,25 @@ export function CompartilharFoto({ foto, enviada, captura, aceita, placa }: {
   }
 
   return (
-    <View style={{ gap: 10 }}>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+    <View className="gap-[10px]">
+      <View className="flex-row gap-[8px]">
         <Botao titulo={aceita ? 'Enviar com o cartão' : 'Enviar a um amigo'} estilo={{ flex: 1 }} aoTocar={abrir}
           rotulo={aceita ? 'Enviar a foto e o cartão do achado a um amigo' : 'Enviar a foto a um amigo'} />
         <Botao titulo="Salvar" tipo="secundario" aoTocar={salvar} rotulo="Salvar a foto no seu museu" />
       </View>
       {msg ? (
-        <Text accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>
+        <Text className="font-texto" accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>
           {msg.texto}
           {msg.para ? (
-            <Text style={{ fontWeight: '700', textDecorationLine: 'underline' }}
+            <Text className="font-texto-forte underline" 
               onPress={() => router.push({ pathname: '/conversa/[apelido]', params: { apelido: msg.para! } })}> Abrir a conversa</Text>
           ) : null}
           {msg.galeria ? (
             <>
-              <Text accessibilityRole="link" style={{ fontWeight: '700', textDecorationLine: 'underline' }}
+              <Text className="font-texto-forte underline" accessibilityRole="link" 
                 onPress={() => router.navigate('/colecao')}> Ver no museu</Text>
               {Platform.OS !== 'web' ? (
-                <Text accessibilityRole="link" style={{ fontWeight: '700', textDecorationLine: 'underline' }}
+                <Text className="font-texto-forte underline" accessibilityRole="link" 
                   onPress={salvarNoCelular}>{'\n'}Também salvar no celular</Text>
               ) : null}
             </>
@@ -110,7 +110,7 @@ export function CompartilharFoto({ foto, enviada, captura, aceita, placa }: {
         <Pressable accessibilityLabel="Fechar" onPress={() => setAberto(false)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} />
         <View style={{ backgroundColor: c.fundo, borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '70%',
           padding: 16, paddingBottom: baixo + 16, gap: 10 }}>
-          <Text accessibilityRole="header" style={{ fontFamily: FONTE_TITULO, fontSize: 22, color: c.tinta }}>Enviar para quem?</Text>
+          <Text accessibilityRole="header" className="font-titulo text-[22px] text-tinta">Enviar para quem?</Text>
           {amigos === null ? <ActivityIndicator color={c.destaque} /> : null}
           {amigos?.length === 0 ? <Apagado>Você ainda não tem amigos no WishLens. Adicione alguém na aba Amigos.</Apagado> : null}
           <ScrollView contentContainerStyle={{ gap: 8 }}>
@@ -119,10 +119,10 @@ export function CompartilharFoto({ foto, enviada, captura, aceita, placa }: {
                 onPress={() => mandar(a.apelido)}
                 style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14,
                   backgroundColor: pressed ? c.suave : c.superficie, borderWidth: 1, borderColor: c.linha, opacity: ocupado ? 0.6 : 1 })}>
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.suave, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: c.destaque, fontSize: 17, fontWeight: '800' }}>{a.apelido.slice(0, 1).toUpperCase()}</Text>
+                <View className="w-[40px] h-[40px] rounded-[20px] bg-suave items-center justify-center">
+                  <Text className="font-texto-forte text-destaque text-[17px]" >{a.apelido.slice(0, 1).toUpperCase()}</Text>
                 </View>
-                <Text style={{ flex: 1, color: c.tinta, fontSize: 16, fontWeight: '700' }}>{a.apelido}</Text>
+                <Text className="font-texto-forte flex-1 text-tinta text-[16px]" >{a.apelido}</Text>
               </Pressable>
             ))}
           </ScrollView>

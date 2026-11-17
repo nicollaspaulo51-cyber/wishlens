@@ -51,10 +51,10 @@ function Rosca({ fatias, cores, tamanho, destaque }: {
         <Circle cx={r} cy={r} r={r * 0.55} fill={c.superficie} />
       </Svg>
       <View pointerEvents="none" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: c.tinta, fontSize: 15, fontWeight: '800' }}>
+        <Text className="font-texto-forte text-tinta text-[15px]" >
           {destaque !== null && total ? `${pct(fatias[destaque].valor, total)}%` : total}
         </Text>
-        <Text style={{ color: c.apagado, fontSize: 10 }}>{destaque !== null && total ? 'da pizza' : 'total'}</Text>
+        <Text className="font-texto text-apagado text-[10px]" >{destaque !== null && total ? 'da pizza' : 'total'}</Text>
       </View>
     </View>
   );
@@ -66,36 +66,36 @@ export function Pizza({ pessoas }: { pessoas: Pessoa[] }) {
   const cores = useColorScheme() === 'dark' ? CORES.escuro : CORES.claro;
   const [destaque, setDestaque] = useState<number | null>(null);
   const totais = pessoas.map((p) => p.fatias.reduce((s, f) => s + f.valor, 0));
-  if (totais.every((t) => t === 0)) return <Text style={{ color: c.apagado }}>Ainda sem fotos para mostrar aqui.</Text>;
+  if (totais.every((t) => t === 0)) return <Text className="font-texto text-apagado" >Ainda sem fotos para mostrar aqui.</Text>;
   const nomes = pessoas[0].fatias.map((f) => f.nome);
   const tocar = (i: number) => setDestaque(destaque === i ? null : i);
   const resumo = pessoas.map((p, k) => `${p.nome}: ${p.fatias.map((f) => `${f.nome} ${pct(f.valor, totais[k])}%`).join(', ')}`).join('. ');
   return (
-    <View style={{ gap: 12 }} accessible accessibilityLabel={resumo}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+    <View className="gap-[12px]" accessible accessibilityLabel={resumo}>
+      <View className="flex-row justify-around">
         {pessoas.map((p) => (
-          <View key={p.nome} style={{ alignItems: 'center', gap: 6 }}>
+          <View key={p.nome} className="items-center gap-[6px]">
             <Rosca fatias={p.fatias} cores={cores} tamanho={pessoas.length > 1 ? 130 : 150} destaque={destaque} />
-            {pessoas.length > 1 ? <Text style={{ color: c.tinta, fontSize: 13, fontWeight: '700' }}>{p.nome}</Text> : null}
+            {pessoas.length > 1 ? <Text className="font-texto-forte text-tinta text-[13px]" >{p.nome}</Text> : null}
           </View>
         ))}
       </View>
       {/* Legenda: a mesma ordem e a mesma cor para as duas pessoas */}
-      <View style={{ gap: 4 }}>
+      <View className="gap-[4px]">
         {pessoas.length > 1 ? (
-          <View style={{ flexDirection: 'row', paddingHorizontal: 6, gap: 8 }}>
-            <View style={{ width: 12 }} />
-            <Text style={{ flex: 1 }} />
-            {pessoas.map((p) => <Text key={p.nome} numberOfLines={1} style={{ width: 64, textAlign: 'right', color: c.apagado, fontSize: 11, fontWeight: '700' }}>{p.nome}</Text>)}
+          <View className="flex-row px-[6px] gap-[8px]">
+            <View className="w-[12px]" />
+            <Text className="font-texto flex-1"  />
+            {pessoas.map((p) => <Text className="font-texto-forte w-[64px] text-right text-apagado text-[11px]" key={p.nome} numberOfLines={1} >{p.nome}</Text>)}
           </View>
         ) : null}
         {nomes.map((n, i) => (
           <Pressable key={n} onPress={() => tocar(i)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4,
             paddingHorizontal: 6, borderRadius: 8, backgroundColor: destaque === i ? c.suave : 'transparent' }}>
             <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: cores[i] }} />
-            <Text numberOfLines={1} style={{ flex: 1, color: c.tinta, fontSize: 13 }}>{n}</Text>
+            <Text className="font-texto flex-1 text-tinta text-[13px]" numberOfLines={1} >{n}</Text>
             {pessoas.map((p, k) => (
-              <Text key={p.nome} style={{ width: 64, textAlign: 'right', color: c.apagado, fontSize: 12 }}>
+              <Text className="font-texto w-[64px] text-right text-apagado text-[12px]" key={p.nome} >
                 {pct(p.fatias[i].valor, totais[k])}%{pessoas.length > 1 ? '' : ` · ${p.fatias[i].valor}`}
               </Text>
             ))}

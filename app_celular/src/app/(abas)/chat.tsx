@@ -17,7 +17,7 @@ export default function Chat() {
   const visita = useVisita();
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.fundo }}>
+    <SafeAreaView edges={['top']} className="flex-1 bg-papel">
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }} keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={amigos.carregando} onRefresh={amigos.recarregar} tintColor={c.destaque} />}>
         <Titulo>Chat</Titulo>
@@ -37,21 +37,20 @@ export default function Chat() {
             onPress={() => router.push({ pathname: '/conversa/[apelido]', params: { apelido: a.apelido } })}
             style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14,
               backgroundColor: pressed ? c.suave : c.superficie, borderWidth: 1, borderColor: c.linha })}>
-            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.suave, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: c.destaque, fontSize: 18, fontWeight: '800' }}>{a.apelido.slice(0, 1).toUpperCase()}</Text>
+            <View className="w-[44px] h-[44px] rounded-[22px] bg-suave items-center justify-center">
+              <Text className="font-texto-forte text-destaque text-[18px]" >{a.apelido.slice(0, 1).toUpperCase()}</Text>
             </View>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>{a.apelido}</Text>
-              <Text numberOfLines={1} style={{ color: c.apagado, fontSize: 14 }}>
+            <View className="flex-1 gap-[2px]">
+              <Text className="font-texto-forte text-tinta text-[16px]" >{a.apelido}</Text>
+              <Text className="font-texto text-apagado text-[14px]" numberOfLines={1} >
                 {a.ultima ? `${a.ultima.minha ? 'Você: ' : ''}${a.ultima.texto}` : 'Diga oi!'}
               </Text>
             </View>
-            <View style={{ alignItems: 'flex-end', gap: 4 }}>
-              {a.ultima ? <Text style={{ color: c.apagado, fontSize: 12 }}>{quandoFoi(a.ultima.criado_em)}</Text> : null}
+            <View className="items-end gap-[4px]">
+              {a.ultima ? <Text className="font-texto text-apagado text-[12px]" >{quandoFoi(a.ultima.criado_em)}</Text> : null}
               {a.nao_lidas ? (
-                <View style={{ minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: c.destaque,
-                  alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: c.fundo, fontSize: 12, fontWeight: '800' }}>{a.nao_lidas}</Text>
+                <View className="min-w-[22px] h-[22px] rounded-[11px] px-[6px] bg-destaque items-center justify-center">
+                  <Text className="font-texto-forte text-papel text-[12px]" >{a.nao_lidas}</Text>
                 </View>
               ) : null}
             </View>

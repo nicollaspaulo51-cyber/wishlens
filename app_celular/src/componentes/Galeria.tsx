@@ -58,7 +58,7 @@ export function Galeria({ visita }: { visita: number }) {
 
   if (!fotos.length) {
     return (
-      <View style={{ alignItems: 'center', gap: 8, paddingVertical: 8 }}>
+      <View className="items-center gap-[8px] py-[8px]">
         <Totem tipo="camera" chave={visita} />
         <Apagado estilo={{ textAlign: 'center' }}>Tire uma foto e toque em Salvar para ela aparecer aqui.</Apagado>
       </View>
@@ -67,7 +67,7 @@ export function Galeria({ visita }: { visita: number }) {
 
   const fotoNoCentro = fila[centro]?.tipo === 'foto' ? (fila[centro] as { n: number }).n : -1;
   return (
-    <View style={{ marginHorizontal: -16, gap: 10 }}>
+    <View className="-mx-[16px] gap-[10px]">
       <Animated.FlatList data={fila} horizontal showsHorizontalScrollIndicator={false}
         keyExtractor={(it) => (it.tipo === 'foto' ? it.foto.id : it.chave)}
         snapToInterval={item} decelerationRate="fast" contentContainerStyle={{ paddingHorizontal: lado }}
@@ -98,7 +98,7 @@ export function Galeria({ visita }: { visita: number }) {
         }} />
 
       {/* Uma bolinha por foto: a acesa é a do centro */}
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6 }} accessible
+      <View className="flex-row justify-center gap-[6px]" accessible
         accessibilityLabel={fotoNoCentro >= 0 ? `Foto ${fotoNoCentro + 1} de ${fotos.length}` : `${fotos.length} fotos`}>
         {fotos.map((f, n) => (
           <View key={f.id} style={{ width: n === fotoNoCentro ? 18 : 7, height: 7, borderRadius: 4,
@@ -120,7 +120,7 @@ function Quadro({ foto, lado, centro, chave, aoTocar, aoSegurar }: {
   const c = useCores();
   const cai = useEntrada(120, chave);
   return (
-    <View style={{ alignItems: 'center' }}>
+    <View className="items-center">
       <Animated.View style={{ opacity: cai, transform: [{ translateY: cai.interpolate({ inputRange: [0, 1], outputRange: [-40, 0] }) }] }}>
         <Pressable onPress={aoTocar} onLongPress={aoSegurar} delayLongPress={350} accessibilityRole="imagebutton"
           accessibilityLabel={`${foto.achado}, ${foto.tema}${foto.pontos ? `, ${foto.pontos} pontos` : ''}, salva em ${quando(foto.criado_em)}`}
@@ -128,14 +128,14 @@ function Quadro({ foto, lado, centro, chave, aoTocar, aoSegurar }: {
           style={{ width: lado, height: lado, borderWidth: 6, borderColor: '#FFFFFF', borderRadius: 6, overflow: 'hidden',
             backgroundColor: c.superficie, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 6 },
             elevation: 6 }}>
-          <Image source={{ uri: enderecoDa(foto) }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+          <Image source={{ uri: enderecoDa(foto) }} className="w-full h-full" resizeMode="cover" />
           {centro ? <Brilho pausa={3800} /> : null}
         </Pressable>
       </Animated.View>
       <Pedestal altura={78}>
         <View style={{ backgroundColor: c.sol, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 3, maxWidth: lado * 0.62, alignItems: 'center' }}>
-          <Text numberOfLines={1} style={{ color: c.solTinta, fontSize: 12, fontWeight: '800' }}>{foto.emoji} {foto.achado}</Text>
-          <Text style={{ color: c.solTinta, fontSize: 10 }}>{foto.pontos ? `+${foto.pontos} · ` : ''}{quando(foto.criado_em)}</Text>
+          <Text className="font-texto-forte text-sol-tinta text-[12px]" numberOfLines={1} >{foto.emoji} {foto.achado}</Text>
+          <Text className="font-texto text-sol-tinta text-[10px]" >{foto.pontos ? `+${foto.pontos} · ` : ''}{quando(foto.criado_em)}</Text>
         </View>
       </Pedestal>
     </View>
@@ -166,13 +166,13 @@ export function Totem({ tipo, chave }: { tipo: 'camera' | 'trofeu'; chave: unkno
 function Pedestal({ altura, children }: { altura: number; children?: ReactNode }) {
   const c = useCores();
   return (
-    <View style={{ alignItems: 'center' }}>
-      <View style={{ width: 130, height: 10, borderRadius: 3, backgroundColor: c.linha }} />
+    <View className="items-center">
+      <View className="w-[130px] h-[10px] rounded-[3px] bg-linha" />
       <View style={{ width: 104, height: altura, backgroundColor: c.superficie, borderLeftWidth: 1, borderRightWidth: 1,
         borderColor: c.linha, alignItems: 'center', justifyContent: 'center' }}>
         {children}
       </View>
-      <View style={{ width: 150, height: 14, borderRadius: 3, backgroundColor: c.linha }} />
+      <View className="w-[150px] h-[14px] rounded-[3px] bg-linha" />
     </View>
   );
 }
@@ -191,7 +191,7 @@ function TelaCheia({ fotos, inicio, aoFechar }: { fotos: FotoGaleria[]; inicio: 
                 <Image source={{ uri: enderecoDa(f) }} style={{ width, height: height * 0.62 }} resizeMode="contain"
                   accessibilityLabel={`Foto: ${f.achado}`} />
                 <Text style={{ color: '#fff', textAlign: 'center', fontFamily: FONTE_TITULO, fontSize: 20 }}>{f.emoji} {f.achado}</Text>
-                <Text style={{ color: '#ccc', textAlign: 'center' }}>{f.tema}{f.pontos ? ` · +${f.pontos} pontos` : ''} · {quando(f.criado_em)}</Text>
+                <Text className="font-texto" style={{ color: '#ccc', textAlign: 'center' }}>{f.tema}{f.pontos ? ` · +${f.pontos} pontos` : ''} · {quando(f.criado_em)}</Text>
               </View>
             )} />
         ) : null}
@@ -212,7 +212,7 @@ function Opcoes({ foto, aoFechar }: { foto: FotoGaleria | null; aoFechar: () => 
       <Pressable accessibilityLabel="Fechar" onPress={aoFechar} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} />
       {foto ? (
         <View style={{ backgroundColor: c.fundo, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 16, paddingBottom: baixo + 16, gap: 12 }}>
-          <Text accessibilityRole="header" style={{ fontFamily: FONTE_TITULO, fontSize: 20, color: c.tinta }}>{foto.emoji} {foto.achado}</Text>
+          <Text accessibilityRole="header" className="font-titulo text-[20px] text-tinta">{foto.emoji} {foto.achado}</Text>
           <CompartilharFoto foto={enderecoDa(foto)} enviada={enderecoDa(foto)} captura={foto.id} aceita={foto.pontos > 0} placa={foto} />
           <Botao titulo="Apagar da galeria" tipo="secundario" aoTocar={() => { apagarDaGaleria(foto.id); aoFechar(); }} />
         </View>

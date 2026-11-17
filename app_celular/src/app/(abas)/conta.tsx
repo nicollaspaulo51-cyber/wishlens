@@ -27,15 +27,15 @@ export default function Conta() {
   const apelido = estado.dados?.apelido;
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.fundo }}>
+    <SafeAreaView edges={['top']} className="flex-1 bg-papel">
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}>
         <Titulo>Conta</Titulo>
         <Cartaz estilo={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: c.sol, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontFamily: FONTE_TITULO, fontSize: 26, color: c.solTinta }}>{(apelido ?? '?').charAt(0).toUpperCase()}</Text>
+          <View className="w-[56px] h-[56px] rounded-[28px] bg-sol items-center justify-center">
+            <Text className="font-titulo text-[26px] text-sol-tinta">{(apelido ?? '?').charAt(0).toUpperCase()}</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: FONTE_TITULO, fontSize: 22, color: c.tinta }}>{apelido ?? '...'}</Text>
+          <View className="flex-1">
+            <Text className="font-titulo text-[22px] text-tinta">{apelido ?? '...'}</Text>
             <Apagado>{comConta ? 'É assim que a turma vê você no pódio.' : 'Modo de teste, sem conta.'}</Apagado>
           </View>
         </Cartaz>
@@ -43,9 +43,9 @@ export default function Conta() {
         <Subtitulo>Como pontuar</Subtitulo>
         <Cartaz estilo={{ paddingVertical: 6 }}>
           {REGRAS.map(([valor, texto]) => (
-            <View key={texto} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }}>
-              <Text style={{ width: 68, fontFamily: FONTE_TITULO, fontSize: 17, color: c.destaque }}>{valor}</Text>
-              <Text style={{ flex: 1, color: c.tinta, fontSize: 15, lineHeight: 20 }}>{texto}</Text>
+            <View key={texto} className="flex-row items-center gap-[12px] py-[8px]">
+              <Text className="w-[68px] font-titulo text-[17px] text-destaque">{valor}</Text>
+              <Text className="font-texto flex-1 text-tinta text-[15px] leading-[20px]" >{texto}</Text>
             </View>
           ))}
         </Cartaz>

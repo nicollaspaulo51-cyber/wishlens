@@ -38,13 +38,13 @@ export default function Avisar() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: c.fundo }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-papel">
+      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }} keyboardShouldPersistTaps="handled">
           <Titulo>Avisar um problema</Titulo>
           <Fichas<TipoAviso> rotulo="Tipo de problema" valor={tipo} aoEscolher={setTipo}
             opcoes={TIPOS.map(({ valor, texto: t }) => ({ valor, texto: t }))} />
-          <View style={{ gap: 6 }}>
+          <View className="gap-[6px]">
             <TextInput value={texto} onChangeText={setTexto} multiline maxLength={500} placeholder={dica}
               placeholderTextColor={c.apagado} accessibilityLabel="O que aconteceu"
               style={{ minHeight: 140, textAlignVertical: 'top', borderWidth: 1.5, borderColor: c.linha, borderRadius: 14,
@@ -56,7 +56,7 @@ export default function Avisar() {
             A foto e a sua localização não vão.
           </Apagado>
           {msg ? (
-            <Text accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>{msg.texto}</Text>
+            <Text className="font-texto" accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>{msg.texto}</Text>
           ) : null}
           <Botao titulo="Enviar aviso" aoTocar={enviar} carregando={enviando} desativado={texto.trim().length < 3} />
           <Botao titulo="Cancelar" tipo="secundario" aoTocar={() => router.back()} />

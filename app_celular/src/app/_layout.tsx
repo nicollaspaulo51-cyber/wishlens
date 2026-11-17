@@ -1,4 +1,5 @@
 import '../../global.css';
+import '../lib/estilo';
 
 import { AtkinsonHyperlegible_400Regular, AtkinsonHyperlegible_700Bold } from '@expo-google-fonts/atkinson-hyperlegible';
 import { BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBold, useFonts } from '@expo-google-fonts/bricolage-grotesque';
@@ -17,7 +18,7 @@ function Navegacao() {
   const { pronto, entrou } = useSessao();
   const segmentos = useSegments();
   if (!pronto) {
-    return <View style={{ flex: 1, backgroundColor: c.fundo, justifyContent: 'center' }}><ActivityIndicator color={c.destaque} /></View>;
+    return <View className="flex-1 bg-papel justify-center"><ActivityIndicator color={c.destaque} /></View>;
   }
   const naEntrada = segmentos[0] === 'entrar';
   if (!entrou && !naEntrada) return <Redirect href="/entrar" />;

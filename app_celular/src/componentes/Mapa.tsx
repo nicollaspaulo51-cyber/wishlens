@@ -60,8 +60,8 @@ export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar }: Props
         ))}
         {manchas.filter((m) => m.guardiao).map((m) => (
           <Marker key={`g-${m.celula}-${m.tema}`} coordinate={{ latitude: m.lat, longitude: m.lon }} opacity={0.9} tracksViewChanges={false}>
-            <Text style={{ fontSize: 20 }}>🛡️</Text>
-            <Callout><Text>Guardião da semana: {m.guardiao}</Text></Callout>
+            <Text className="font-texto" style={{ fontSize: 20 }}>🛡️</Text>
+            <Callout><Text className="font-texto">Guardião da semana: {m.guardiao}</Text></Callout>
           </Marker>
         ))}
         <Lugares lugares={lugares} temas={temas} cor={c.destaque} regiao={regiao} />

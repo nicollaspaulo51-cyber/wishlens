@@ -45,16 +45,16 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
 
   // Os achados mais fotografados não se alinham entre duas pessoas: cada um tem a sua lista
   const Top = ({ e, nome }: { e: Estatisticas; nome: string }) => (
-    <View style={{ flex: 1, gap: 6 }}>
-      <Text style={{ color: c.apagado, fontSize: 13 }}>{nome}</Text>
+    <View className="flex-1 gap-[6px]">
+      <Text className="font-texto text-apagado text-[13px]" >{nome}</Text>
       {e.top_achados.length ? e.top_achados.map((t, i) => (
-        <Text key={t.chave} numberOfLines={1} style={{ color: c.tinta, fontSize: 14 }}>{i + 1}. {t.chave} <Text style={{ color: c.apagado }}>×{t.valor}</Text></Text>
+        <Text className="font-texto text-tinta text-[14px]" key={t.chave} numberOfLines={1} >{i + 1}. {t.chave} <Text className="font-texto text-apagado" >×{t.valor}</Text></Text>
       )) : <Apagado>Nada ainda.</Apagado>}
     </View>
   );
 
   return (
-    <View style={{ gap: 12 }}>
+    <View className="gap-[12px]">
       <Subtitulo>Análises</Subtitulo>
       <Fichas rotulo="Comparar com" valor={com} aoEscolher={setCom}
         opcoes={[{ valor: '', texto: 'Só você' }, ...amigos.map((a) => ({ valor: a, texto: `vs ${a}` }))]} />
@@ -65,7 +65,7 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
         <>
           {/* Números lado a lado, com a coroa em quem ganha (em texto, não só na cor) */}
           <Legenda series={series((e) => e.por_dia)} />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <View className="flex-row flex-wrap gap-[8px]">
             {NUMEROS.map((n) => {
               const a = eu.resumo[n.id];
               const b = outro?.resumo[n.id];
@@ -75,58 +75,58 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
                 <View key={n.id} accessible accessibilityLabel={`${n.nome}: você ${f(a)}${outro ? `, ${outro.apelido} ${f(b!)}` : ''}${ganha ? `. Ganha: ${ganha === 'voce' ? 'você' : outro!.apelido}` : ''}`}
                   style={{ width: '48%', flexGrow: 1, backgroundColor: c.superficie, borderRadius: 12, padding: 10, gap: 2,
                     borderWidth: 1, borderColor: c.linha }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <View className="flex-row items-center gap-[10px] flex-wrap">
                     {[[f(a), cor.voce, ganha === 'voce'], ...(outro ? [[f(b!), cor.amigo, ganha === 'amigo']] : [])].map(([v, tom, coroa], i) => (
-                      <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <View key={i} className="flex-row items-center gap-[5px]">
                         <View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: tom as string }} />
-                        <Text style={{ color: c.tinta, fontSize: 20, fontWeight: '800' }}>{coroa ? '👑 ' : ''}{v as string}</Text>
+                        <Text className="font-texto-forte text-tinta text-[20px]" >{coroa ? '👑 ' : ''}{v as string}</Text>
                       </View>
                     ))}
                   </View>
-                  <Text style={{ color: c.apagado, fontSize: 12 }}>{n.nome}</Text>
+                  <Text className="font-texto text-apagado text-[12px]" >{n.nome}</Text>
                 </View>
               );
             })}
           </View>
 
           <Cartaz estilo={{ gap: 10 }}>
-            <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Pontos por dia (últimas 2 semanas)</Text>
+            <Text className="font-texto-forte text-tinta text-[16px]" >Pontos por dia (últimas 2 semanas)</Text>
             <Colunas chave={chave} prefixo="melhor dia" rotulos={eu.por_dia.map((d) => d.chave.slice(8, 10))} series={series((e) => e.por_dia)} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
-            <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Pontos por tema</Text>
+            <Text className="font-texto-forte text-tinta text-[16px]" >Pontos por tema</Text>
             <Barras chave={chave} rotulos={eu.por_tema.map((t) => nomeTema[t.chave] ?? t.chave)} series={series((e) => e.por_tema)} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
-            <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Pontos divididos por tema</Text>
+            <Text className="font-texto-forte text-tinta text-[16px]" >Pontos divididos por tema</Text>
             <Pizza pessoas={pizza((e) => fatias(e.por_tema, (k) => nomeTema[k] ?? k))} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
-            <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Pontos por aba do jogo</Text>
+            <Text className="font-texto-forte text-tinta text-[16px]" >Pontos por aba do jogo</Text>
             <Pizza pessoas={pizza((e) => fatias(e.por_aba, (k) => nomeAba[k] ?? k))} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
-            <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Fotos aceitas e recusadas</Text>
+            <Text className="font-texto-forte text-tinta text-[16px]" >Fotos aceitas e recusadas</Text>
             <Pizza pessoas={pizza((e) => {
               const aceitas = Math.round(e.resumo.fotos * e.resumo.aceitas);
               return [{ nome: '✔ aceitas', valor: aceitas }, { nome: '✖ recusadas', valor: e.resumo.fotos - aceitas }];
             })} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
-            <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Que horas você fotografa</Text>
+            <Text className="font-texto-forte text-tinta text-[16px]" >Que horas você fotografa</Text>
             <Colunas chave={chave} prefixo="mais às" rotulos={eu.por_hora.map((h) => h.chave)} series={series((e) => e.por_hora)} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
-            <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Fotos por dia da semana</Text>
+            <Text className="font-texto-forte text-tinta text-[16px]" >Fotos por dia da semana</Text>
             <Colunas chave={chave} prefixo="mais na" rotulos={eu.por_semana.map((d) => d.chave)} series={series((e) => e.por_semana)} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
-            <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Fotos por clima</Text>
+            <Text className="font-texto-forte text-tinta text-[16px]" >Fotos por clima</Text>
             <Pizza pessoas={pizza((e) => fatias(e.por_clima, (k) => ({ sol: '☀️ sol', nublado: '☁️ nublado', chuva: '🌧️ chuva' })[k] ?? 'sem dado'))} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
-            <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Achados mais fotografados</Text>
-            <View style={{ flexDirection: 'row', gap: 16 }}>
+            <Text className="font-texto-forte text-tinta text-[16px]" >Achados mais fotografados</Text>
+            <View className="flex-row gap-[16px]">
               <Top e={eu} nome="Você" />
               {outro ? <Top e={outro} nome={outro.apelido} /> : null}
             </View>

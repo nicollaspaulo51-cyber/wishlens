@@ -57,20 +57,19 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
       <Pressable key={rota.key} accessibilityRole="tab" accessibilityState={{ selected: ativa }}
         accessibilityLabel={contador ? `${titulo}, ${contador} mensagens não lidas` : titulo}
         onPress={() => navigateToTab(rota.key)} onLayout={(e) => medir(indice, 'aba', e.nativeEvent.layout)}
-        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 56, gap: 2 }}>
+        className="flex-1 items-center justify-center min-h-[56px] gap-[2px]">
         <View onLayout={(e) => medir(indice, 'pilula', e.nativeEvent.layout)}
           style={{ paddingHorizontal: 12, paddingVertical: 3, borderRadius: 14, backgroundColor: ativa && !pronta ? c.suave : 'transparent' }}>
           <IconePula ativa={ativa} parado={parado}>
             <Icone nome={nomeIcone} tamanho={23} cor={ativa ? c.destaque : c.apagado} ativo={ativa} />
           </IconePula>
           {contador ? (
-            <View style={{ position: 'absolute', top: -2, right: 6, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4,
-              backgroundColor: c.recusa, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{contador > 99 ? '99+' : contador}</Text>
+            <View className="absolute -top-[2px] right-[6px] min-w-[18px] h-[18px] rounded-[9px] px-[4px] bg-carimbo items-center justify-center">
+              <Text className="font-texto-forte" style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{contador > 99 ? '99+' : contador}</Text>
             </View>
           ) : null}
         </View>
-        <Text style={{ fontSize: 11, fontWeight: ativa ? '700' : '500', color: ativa ? c.destaque : c.apagado }}>{titulo}</Text>
+        <Text className="font-texto-forte" style={{ fontSize: 11, fontWeight: ativa ? '700' : '500', color: ativa ? c.destaque : c.apagado }}>{titulo}</Text>
       </Pressable>
     );
   };
@@ -84,7 +83,7 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
           height: alvo!.pilula!.height, borderRadius: 14, backgroundColor: c.suave, transform: pilula.getTranslateTransform() }} />
       ) : null}
       {state.routes.slice(0, meio).map((r, i) => aba(r, i))}
-      <View style={{ width: 84, alignItems: 'center' }}>
+      <View className="w-[84px] items-center">
         {/* Halo de lente: chama para a câmera sem tampar nada */}
         <Animated.View pointerEvents="none" accessibilityElementsHidden style={{ position: 'absolute', top: -30, width: 68, height: 68,
           borderRadius: 34, borderWidth: 3, borderColor: c.sol,

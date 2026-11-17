@@ -55,20 +55,19 @@ export default function Amigos() {
   }
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.fundo }}>
+    <SafeAreaView edges={['top']} className="flex-1 bg-papel">
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }} keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={placar.carregando} onRefresh={() => fazer(async () => {})} tintColor={c.destaque} />}>
         <Titulo>Amigos</Titulo>
 
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View className="flex-row gap-[8px]">
           <TextInput value={novo} onChangeText={setNovo} placeholder="Apelido do amigo" placeholderTextColor={c.apagado}
             autoCapitalize="none" autoCorrect={false} maxLength={30} accessibilityLabel="Apelido do amigo para adicionar"
             onSubmitEditing={adicionar} returnKeyType="send"
-            style={{ flex: 1, minHeight: 48, borderWidth: 1.5, borderColor: c.linha, borderRadius: 14, paddingHorizontal: 14,
-              fontSize: 16, color: c.tinta, backgroundColor: c.superficie }} />
+            className="flex-1 min-h-[48px] border-[1.5px] border-linha rounded-[14px] px-[14px] text-[16px] text-tinta bg-ficha" />
           <Botao titulo="Adicionar" aoTocar={adicionar} desativado={novo.trim().length < 2 || ocupado} estilo={{ paddingHorizontal: 16 }} />
         </View>
-        {msg ? <Text accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>{msg.texto}</Text> : null}
+        {msg ? <Text className="font-texto" accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>{msg.texto}</Text> : null}
         {amigos.erro && !d ? <Aviso texto={amigos.erro} aoTentar={amigos.recarregar} /> : null}
 
         {d?.recebidos.length ? (
@@ -76,8 +75,8 @@ export default function Amigos() {
             <Subtitulo>Pedidos de amizade</Subtitulo>
             {d.recebidos.map((a) => (
               <Cartaz key={a} estilo={{ gap: 10 }}>
-                <Text style={{ color: c.tinta, fontSize: 16 }}><Text style={{ fontWeight: '700' }}>{a}</Text> quer ser seu amigo.</Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Text className="font-texto text-tinta text-[16px]" ><Text className="font-texto-forte" >{a}</Text> quer ser seu amigo.</Text>
+                <View className="flex-row gap-[8px]">
                   <Botao titulo="Aceitar" estilo={{ flex: 1 }} desativado={ocupado} aoTocar={() => fazer(() => api.responderAmizade(a, true))} />
                   <Botao titulo="Recusar" tipo="secundario" estilo={{ flex: 1 }} desativado={ocupado}
                     aoTocar={() => fazer(() => api.responderAmizade(a, false))} />
@@ -98,9 +97,9 @@ export default function Amigos() {
         ) : null}
         {ranking.length > 1 && ranking[0].pontos > 0 ? <Degraus ranking={ranking} chave={`amigos-${modo}-${periodo}-${visita}`} /> : null}
         {eu && ranking.length > 1 ? (
-          <Text style={{ color: c.tinta, fontSize: 16 }}>
+          <Text className="font-texto text-tinta text-[16px]" >
             {ranking[0].pontos === 0 ? 'Ninguém pontuou ainda. Tire a primeira foto!'
-              : acima ? <>Faltam <Text style={{ fontWeight: '700' }}>{falta} {falta === 1 ? 'ponto' : 'pontos'}</Text> para passar {acima.apelido}.</>
+              : acima ? <>Faltam <Text className="font-texto-forte" >{falta} {falta === 1 ? 'ponto' : 'pontos'}</Text> para passar {acima.apelido}.</>
               : 'Você lidera entre seus amigos.'}
           </Text>
         ) : null}
@@ -112,12 +111,12 @@ export default function Amigos() {
                 onPress={() => router.push({ pathname: '/conversa/[apelido]', params: { apelido: r.apelido } })}
                 style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12,
                   borderBottomWidth: i < ranking.length - 1 ? 1 : 0, borderBottomColor: c.linha, backgroundColor: r.voce || pressed ? c.suave : 'transparent' })}>
-                <Text style={{ width: 32, color: c.apagado, fontWeight: '700' }}>{r.posicao}º</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: c.tinta, fontSize: 16 }}>{r.apelido}{r.voce ? ' (você)' : ''}</Text>
-                  <Text style={{ color: c.apagado, fontSize: 13 }}>{r.achados} {r.achados === 1 ? 'achado' : 'achados'}</Text>
+                <Text className="font-texto-forte w-[32px] text-apagado" >{r.posicao}º</Text>
+                <View className="flex-1">
+                  <Text className="font-texto text-tinta text-[16px]" >{r.apelido}{r.voce ? ' (você)' : ''}</Text>
+                  <Text className="font-texto text-apagado text-[13px]" >{r.achados} {r.achados === 1 ? 'achado' : 'achados'}</Text>
                 </View>
-                <Text style={{ color: c.tinta, fontWeight: '700' }}>{r.pontos} pts</Text>
+                <Text className="font-texto-forte text-tinta" >{r.pontos} pts</Text>
               </Pressable>
             ))}
           </Cartaz>

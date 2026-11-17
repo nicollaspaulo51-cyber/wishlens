@@ -38,7 +38,7 @@ function Alfinete({ e, x, y, i }: { e: string; x: string; y: string; i: number }
       style={{ position: 'absolute', left: x as `${number}%`, top: y as `${number}%`, width: 46, height: 46, borderRadius: 23,
         backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center',
         justifyContent: 'center', transform: [{ translateY: v.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, -8, 0] }) }] }}>
-      <Text style={{ fontSize: 22 }}>{e}</Text>
+      <Text className="font-texto text-[22px]" >{e}</Text>
     </Animated.View>
   );
 }
@@ -81,7 +81,7 @@ export default function Entrar() {
 
   return (
     <View style={{ flex: 1, backgroundColor: PINHEIRO }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: larga ? 'center' : 'flex-start', paddingVertical: larga ? 32 : 0 }}
           keyboardShouldPersistTaps="handled" bounces={false}>
           <View style={{ flexGrow: larga ? 0 : 1, width: '100%', maxWidth: 460, alignSelf: 'center' }}>
@@ -95,7 +95,7 @@ export default function Entrar() {
                 WishLens
               </Text>
             </Surge>
-            <Surge ordem={4}><Text style={{ color: '#D6EDE2', fontSize: 18, textAlign: 'center' }}>Aponte. Fotografe. Descubra.</Text></Surge>
+            <Surge ordem={4}><Text className="font-texto" style={{ color: '#D6EDE2', fontSize: 18, textAlign: 'center' }}>Aponte. Fotografe. Descubra.</Text></Surge>
           </SafeAreaView>
 
           <SafeAreaView edges={larga ? [] : ['bottom']} style={{ backgroundColor: c.superficie, borderTopLeftRadius: 30, borderTopRightRadius: 30,
@@ -112,18 +112,18 @@ export default function Entrar() {
               </>
             ) : (
               <>
-                <Text style={{ fontFamily: FONTE_TITULO, fontSize: 24, color: c.tinta }}>Como quer ser chamado?</Text>
+                <Text className="font-titulo text-[24px] text-tinta">Como quer ser chamado?</Text>
                 <Apagado>Sem cadastro: escolha um apelido e comece a fotografar.</Apagado>
               </>
             )}
             {modo === 'criar' || !s.comConta ? (
-              <View style={{ gap: 4 }}>
+              <View className="gap-[4px]">
                 <TextInput style={campo} placeholder="Seu apelido" placeholderTextColor={c.apagado} value={apelido}
                   onChangeText={setApelido} maxLength={30} accessibilityLabel="Apelido" onSubmitEditing={enviar} returnKeyType="go" />
                 <Apagado estilo={{ fontSize: 13 }}>Ele aparece no pódio. Use um apelido, não o seu nome completo.</Apagado>
               </View>
             ) : null}
-            {msg ? <Text accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>{msg.texto}</Text> : null}
+            {msg ? <Text className="font-texto" accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>{msg.texto}</Text> : null}
             <Botao titulo={!s.comConta ? 'Começar a jogar' : modo === 'entrar' ? 'Entrar' : 'Criar conta'} aoTocar={enviar} carregando={ocupado} />
           </SafeAreaView>
           </View>

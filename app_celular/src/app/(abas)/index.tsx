@@ -25,7 +25,7 @@ function Pontos({ valor }: { valor: number }) {
   return (
     <Animated.Text style={{ fontFamily: FONTE_TITULO, fontSize: 20, color: c.tinta,
       transform: [{ scale: pulo.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.25, 1], extrapolate: 'clamp' }) }] }}>
-      {mostrado}<Text style={{ fontSize: 13, color: c.apagado }}> pts</Text>
+      {mostrado}<Text className="font-texto text-[13px] text-apagado" > pts</Text>
     </Animated.Text>
   );
 }
@@ -122,22 +122,22 @@ export default function Jogar() {
   const pontosAba = e ? e.pontos_abas?.[modo] ?? (modo === 'livre' ? e.pontos_hoje : 0) : 0;
   const sombra = { shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 5 };
   return (
-    <View style={{ flex: 1, backgroundColor: c.suave }}>
+    <View className="flex-1 bg-suave">
       {/* O mapa ocupa a tela toda; o resto flutua por cima */}
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+      <View className="absolute top-[0px] left-[0px] right-[0px] bottom-[0px]">
         {posicao ? (
           <Mapa posicao={posicao} dados={mapa} temas={porId} mostrar={ativos} />
         ) : (
-          <View style={{ flex: 1, justifyContent: 'flex-end', padding: 16, paddingBottom: 48, gap: 12 }}>
+          <View className="flex-1 justify-end p-[16px] pb-[48px] gap-[12px]">
             <Icone nome="bussola" tamanho={44} cor={c.destaque} />
-            <Text style={{ color: c.tinta, fontSize: 16, lineHeight: 22 }}>{semGps ?? 'Procurando você no mapa...'}</Text>
+            <Text className="font-texto text-tinta text-[16px] leading-[22px]" >{semGps ?? 'Procurando você no mapa...'}</Text>
             {semGps ? <Botao titulo="Ligar a localização" tipo="secundario" aoTocar={pedirGps} /> : null}
           </View>
         )}
       </View>
 
-      <SafeAreaView edges={['top']} pointerEvents="box-none" style={{ paddingHorizontal: 12, paddingTop: 8, gap: 8 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }} pointerEvents="box-none">
+      <SafeAreaView edges={['top']} pointerEvents="box-none" className="px-[12px] pt-[8px] gap-[8px]">
+        <View className="flex-row justify-between items-center" pointerEvents="box-none">
           <View style={[{ backgroundColor: c.superficie, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }, sombra]}>
             <Text accessibilityRole="header" style={{ fontFamily: FONTE_TITULO, fontSize: 20, color: c.tinta, letterSpacing: -0.5 }}>WishLens</Text>
           </View>
@@ -147,9 +147,9 @@ export default function Jogar() {
               <Pontos valor={pontosAba} />
               {modo === 'livre' ? (
                 <>
-                  <View style={{ width: 1, height: 18, backgroundColor: c.linha }} />
+                  <View className="w-[1px] h-[18px] bg-linha" />
                   <Icone nome="trofeu" tamanho={15} cor={c.destaque} />
-                  <Text style={{ fontFamily: FONTE_TITULO, fontSize: 18, color: c.tinta }}>{e.posicao ? `${e.posicao}º` : '—'}</Text>
+                  <Text className="font-titulo text-[18px] text-tinta">{e.posicao ? `${e.posicao}º` : '—'}</Text>
                 </>
               ) : null}
             </View>
@@ -160,8 +160,8 @@ export default function Jogar() {
         {aba && dica ? (
           <Surge chave={aba.id} estilo={[{ backgroundColor: c.superficie, borderRadius: 14, padding: 12, gap: 2,
             borderLeftWidth: 5, borderLeftColor: aba.cor }, sombra]}>
-            <Text accessibilityLiveRegion="polite" style={{ color: c.tinta, fontSize: 14, lineHeight: 19 }}>
-              <Text style={{ fontWeight: '700' }}>{aba.emoji} {aba.nome}:</Text> vale {aba.conta}.
+            <Text className="font-texto text-tinta text-[14px] leading-[19px]" accessibilityLiveRegion="polite" >
+              <Text className="font-texto-forte" >{aba.emoji} {aba.nome}:</Text> vale {aba.conta}.
             </Text>
           </Surge>
         ) : null}
@@ -170,14 +170,13 @@ export default function Jogar() {
             {/* O tema do dia é a figurinha holográfica: borda branca, um leve giro e o brilho que passa */}
             <Surge ordem={1}>
               <View style={[{ borderRadius: 12, borderWidth: 4, borderColor: '#FFFFFF', transform: [{ rotate: '-1.2deg' }] }, sombra]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.sol, borderRadius: 8,
-                  paddingHorizontal: 12, paddingVertical: 8, overflow: 'hidden' }}>
+                <View className="flex-row items-center gap-[10px] bg-sol rounded-[8px] px-[12px] py-[8px] overflow-hidden">
                   <IconeTema id={e.tema_do_dia.id} emoji={e.tema_do_dia.emoji} tamanho={32} cor={c.solTinta} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: c.solTinta, fontSize: 12, fontWeight: '600' }}>Tema de hoje</Text>
-                    <Text style={{ color: c.solTinta, fontFamily: FONTE_TITULO, fontSize: 19, lineHeight: 22 }}>{e.tema_do_dia.nome}</Text>
+                  <View className="flex-1">
+                    <Text className="font-texto-forte text-sol-tinta text-[12px]" >Tema de hoje</Text>
+                    <Text className="text-sol-tinta font-titulo text-[19px] leading-[22px]">{e.tema_do_dia.nome}</Text>
                   </View>
-                  <Text accessibilityLabel="vale o dobro" style={{ fontFamily: FONTE_TITULO, fontSize: 26, color: c.solTinta }}>×2</Text>
+                  <Text accessibilityLabel="vale o dobro" className="font-titulo text-[26px] text-sol-tinta">×2</Text>
                   <Brilho />
                 </View>
               </View>
@@ -187,13 +186,13 @@ export default function Jogar() {
         ) : null}
         {mudou ? (
           <Surge chave={mudou} estilo={[{ alignSelf: 'center', backgroundColor: c.tinta, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8 }, sombra]}>
-            <Text accessibilityLiveRegion="polite" style={{ color: c.fundo, fontWeight: '700' }}>{mudou}</Text>
+            <Text className="font-texto-forte text-papel" accessibilityLiveRegion="polite" >{mudou}</Text>
           </Surge>
         ) : null}
       </SafeAreaView>
 
       {posicao && temas.dados && modo === 'livre' ? (
-        <View style={{ position: 'absolute', left: 12, right: 12, bottom: 40, flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}
+        <View className="absolute left-[12px] right-[12px] bottom-[40px] flex-row flex-wrap gap-[6px]"
           accessibilityLabel="Mostrar no mapa" pointerEvents="box-none">
           {temas.dados.temas.map((t) => {
             const ligado = ativos.includes(t.id);

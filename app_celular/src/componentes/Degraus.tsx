@@ -10,7 +10,7 @@ export function Degraus({ ranking, chave }: { ranking: LinhaPodio[]; chave: stri
   const c = useCores();
   const alturas = { 1: 96, 2: 70, 3: 52 } as const;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 8 }}>
+    <View className="flex-row items-end gap-[8px] mt-[8px]">
       {([2, 1, 3] as const).map((pos) => {
         const r = ranking.find((x) => x.posicao === pos);
         return (
@@ -18,9 +18,9 @@ export function Degraus({ ranking, chave }: { ranking: LinhaPodio[]; chave: stri
             rotulo={r ? `${pos}º lugar: ${r.apelido}, ${r.pontos} pontos` : `${pos}º lugar vazio`}>
             {r ? (
               <>
-                <Text style={{ fontSize: 26 }}>{pos === 1 ? '🥇' : pos === 2 ? '🥈' : '🥉'}</Text>
-                <Text numberOfLines={1} style={{ color: c.tinta, fontWeight: '700', fontSize: 15 }}>{r.apelido}{r.voce ? ' (você)' : ''}</Text>
-                <Text style={{ color: c.apagado, fontSize: 13 }}>{r.pontos} pts</Text>
+                <Text className="font-texto text-[26px]" >{pos === 1 ? '🥇' : pos === 2 ? '🥈' : '🥉'}</Text>
+                <Text className="font-texto-forte text-tinta text-[15px]" numberOfLines={1} >{r.apelido}{r.voce ? ' (você)' : ''}</Text>
+                <Text className="font-texto text-apagado text-[13px]" >{r.pontos} pts</Text>
               </>
             ) : null}
           </Degrau>
@@ -36,7 +36,7 @@ function Degrau({ pos, chave, altura, rotulo, children }: { pos: 1 | 2 | 3; chav
   const sobe = useEntrada({ 3: 0, 2: 150, 1: 300 }[pos], chave);
   const cai = useEntrada({ 3: 250, 2: 400, 1: 550 }[pos], chave);
   return (
-    <View style={{ flex: 1, alignItems: 'center', gap: 4 }} accessible accessibilityLabel={rotulo}>
+    <View className="flex-1 items-center gap-[4px]" accessible accessibilityLabel={rotulo}>
       <Animated.View style={{ alignItems: 'center', gap: 4, opacity: cai,
         transform: [{ translateY: cai.interpolate({ inputRange: [0, 1], outputRange: [-24, 0] }) }] }}>
         {children}

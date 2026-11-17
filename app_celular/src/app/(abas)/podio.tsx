@@ -25,7 +25,7 @@ export default function Podio() {
   const visita = useVisita();
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.fundo }}>
+    <SafeAreaView edges={['top']} className="flex-1 bg-papel">
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={podio.carregando} onRefresh={podio.recarregar} tintColor={c.destaque} />}>
         <Titulo>Pódio</Titulo>
@@ -39,15 +39,15 @@ export default function Podio() {
         {podio.erro && !podio.dados ? <Aviso texto={podio.erro} aoTentar={podio.recarregar} /> : null}
         {podio.dados && ranking.length === 0 ? <Aviso texto="Ninguém pontuou neste período ainda. Tire a primeira foto em Jogar." /> : null}
         {ranking.length ? <Degraus ranking={ranking} chave={`${modo}-${periodo}-${tema}-${visita}`} /> : null}
-        {eu ? <Text style={{ color: c.tinta, fontSize: 16 }}>Você está em <Text style={{ fontWeight: '700' }}>{eu.posicao}º</Text> de {ranking.length}.</Text> : null}
+        {eu ? <Text className="font-texto text-tinta text-[16px]" >Você está em <Text className="font-texto-forte" >{eu.posicao}º</Text> de {ranking.length}.</Text> : null}
         {ranking.length > 3 ? (
           <Cartaz estilo={{ padding: 0, overflow: 'hidden' }}>
             {ranking.slice(3).map((r, i) => (
               <Surge key={r.apelido} ordem={i + 3} chave={visita}><View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12,
                 borderBottomWidth: i < ranking.length - 4 ? 1 : 0, borderBottomColor: c.linha, backgroundColor: r.voce ? c.suave : 'transparent' }}>
-                <Text style={{ width: 32, color: c.apagado, fontWeight: '700' }}>{r.posicao}º</Text>
-                <Text style={{ flex: 1, color: c.tinta, fontSize: 16 }}>{r.apelido}{r.voce ? ' (você)' : ''}</Text>
-                <Text style={{ color: c.tinta, fontWeight: '700' }}>{r.pontos} pts</Text>
+                <Text className="font-texto-forte w-[32px] text-apagado" >{r.posicao}º</Text>
+                <Text className="font-texto flex-1 text-tinta text-[16px]" >{r.apelido}{r.voce ? ' (você)' : ''}</Text>
+                <Text className="font-texto-forte text-tinta" >{r.pontos} pts</Text>
               </View></Surge>
             ))}
           </Cartaz>
@@ -60,9 +60,9 @@ export default function Podio() {
             {podio.dados?.donos?.length ? (
               <Cartaz estilo={{ paddingVertical: 4 }}>
                 {podio.dados.donos.map((d) => (
-                  <View key={d.apelido} style={{ flexDirection: 'row', paddingVertical: 10 }}>
-                    <Text style={{ flex: 1, color: c.tinta, fontSize: 16 }}>🏋️ {d.apelido}</Text>
-                    <Text style={{ color: c.apagado }}>{d.quadrados} {d.quadrados === 1 ? 'academia' : 'academias'}</Text>
+                  <View key={d.apelido} className="flex-row py-[10px]">
+                    <Text className="font-texto flex-1 text-tinta text-[16px]" >🏋️ {d.apelido}</Text>
+                    <Text className="font-texto text-apagado" >{d.quadrados} {d.quadrados === 1 ? 'academia' : 'academias'}</Text>
                   </View>
                 ))}
               </Cartaz>
@@ -75,9 +75,9 @@ export default function Podio() {
         {podio.dados?.guardioes.length ? (
           <Cartaz estilo={{ paddingVertical: 4 }}>
             {podio.dados.guardioes.map((g) => (
-              <View key={g.apelido} style={{ flexDirection: 'row', paddingVertical: 10 }}>
-                <Text style={{ flex: 1, color: c.tinta, fontSize: 16 }}>🛡️ {g.apelido}</Text>
-                <Text style={{ color: c.apagado }}>{g.quadrados} {g.quadrados === 1 ? 'quadrado' : 'quadrados'}</Text>
+              <View key={g.apelido} className="flex-row py-[10px]">
+                <Text className="font-texto flex-1 text-tinta text-[16px]" >🛡️ {g.apelido}</Text>
+                <Text className="font-texto text-apagado" >{g.quadrados} {g.quadrados === 1 ? 'quadrado' : 'quadrados'}</Text>
               </View>
             ))}
           </Cartaz>
