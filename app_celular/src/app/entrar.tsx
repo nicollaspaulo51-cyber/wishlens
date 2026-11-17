@@ -1,8 +1,10 @@
-// Entrada: a marca em cima, no verde do mapa de trilha, e o formulário numa folha que sobe de baixo.
+// Entrada: a marca no verde do mapa de trilha, com o Zum e os temas do jogo em volta, e o formulário embaixo.
+// No celular o formulário é uma folha que sobe de baixo; em tela larga, tudo vira uma coluna centralizada.
 import { useState } from 'react';
-import { Animated, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
+import { Animated, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Corredor } from '../componentes/Corredor';
 import { Apagado, Botao, Fichas } from '../componentes/ui';
 import { FONTE_TITULO, useCores } from '../lib/cores';
 import { Surge, useLaco } from '../lib/movimento';
@@ -24,8 +26,28 @@ function Lupa() {
   );
 }
 
+// Os temas do jogo flutuando em volta da marca, como alfinetes num mapa
+const ALFINETES = [
+  { e: '🚗', x: '8%', y: '14%' }, { e: '🌿', x: '82%', y: '10%' }, { e: '🐦', x: '88%', y: '58%' },
+  { e: '🐾', x: '4%', y: '66%' }, { e: '🖥️', x: '70%', y: '82%' },
+] as const;
+
+function Alfinete({ e, x, y, i }: { e: string; x: string; y: string; i: number }) {
+  const { v } = useLaco(2400 + i * 300, 200);
+  return (
+    <Animated.View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+      style={{ position: 'absolute', left: x as `${number}%`, top: y as `${number}%`, width: 46, height: 46, borderRadius: 23,
+        backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center',
+        justifyContent: 'center', transform: [{ translateY: v.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, -8, 0] }) }] }}>
+      <Text style={{ fontSize: 22 }}>{e}</Text>
+    </Animated.View>
+  );
+}
+
 export default function Entrar() {
   const c = useCores();
+  const { width } = useWindowDimensions();
+  const larga = width >= 640;
   const s = useSessao();
   const [modo, setModo] = useState<'entrar' | 'criar'>('entrar');
   const [email, setEmail] = useState('');
@@ -61,18 +83,25 @@ export default function Entrar() {
   return (
     <View style={{ flex: 1, backgroundColor: PINHEIRO }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" bounces={false}>
-          <SafeAreaView edges={['top']} style={{ flex: 1, minHeight: 280, justifyContent: 'center', paddingHorizontal: 28, paddingVertical: 24, gap: 8 }}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: larga ? 'center' : 'flex-start', paddingVertical: larga ? 32 : 0 }}
+          keyboardShouldPersistTaps="handled" bounces={false}>
+          <View style={{ flexGrow: larga ? 0 : 1, width: '100%', maxWidth: 460, alignSelf: 'center' }}>
+          <SafeAreaView edges={['top']} style={{ flexGrow: 1, minHeight: 320, justifyContent: 'center', alignItems: 'center',
+            paddingHorizontal: 28, paddingVertical: 32, gap: 6 }}>
+            {ALFINETES.map((a, i) => <Alfinete key={a.e} {...a} i={i} />)}
             <Surge><Lupa /></Surge>
             <Surge ordem={2}>
-              <Text accessibilityRole="header" style={{ fontFamily: FONTE_TITULO, fontSize: 52, color: '#FFFFFF', letterSpacing: -1.5, lineHeight: 56 }}>
+              <Text accessibilityRole="header" style={{ fontFamily: FONTE_TITULO, fontSize: 52, color: '#FFFFFF', letterSpacing: -1.5,
+                lineHeight: 56, textAlign: 'center' }}>
                 WishLens
               </Text>
             </Surge>
-            <Surge ordem={4}><Text style={{ color: '#D6EDE2', fontSize: 19 }}>Aponte. Fotografe. Descubra.</Text></Surge>
+            <Surge ordem={4}><Text style={{ color: '#D6EDE2', fontSize: 18, textAlign: 'center' }}>Aponte. Fotografe. Descubra.</Text></Surge>
+            <Surge ordem={6} estilo={{ marginTop: 10 }}><Corredor passo="parado" direcao={1} /></Surge>
           </SafeAreaView>
 
-          <SafeAreaView edges={['bottom']} style={{ backgroundColor: c.superficie, borderTopLeftRadius: 30, borderTopRightRadius: 30,
+          <SafeAreaView edges={larga ? [] : ['bottom']} style={{ backgroundColor: c.superficie, borderTopLeftRadius: 30, borderTopRightRadius: 30,
+            ...(larga ? { borderRadius: 28, marginHorizontal: 16 } : null),
             paddingHorizontal: 24, paddingTop: 26, paddingBottom: 24, gap: 14 }}>
             {s.comConta ? (
               <>
@@ -85,20 +114,21 @@ export default function Entrar() {
               </>
             ) : (
               <>
-                <Text style={{ fontFamily: FONTE_TITULO, fontSize: 22, color: c.tinta }}>Qual é o seu apelido?</Text>
-                <Apagado>Modo de teste: sem conta, só um apelido. Os pontos ficam no servidor até ele reiniciar.</Apagado>
+                <Text style={{ fontFamily: FONTE_TITULO, fontSize: 24, color: c.tinta }}>Como quer ser chamado?</Text>
+                <Apagado>Sem cadastro: escolha um apelido e comece a fotografar.</Apagado>
               </>
             )}
             {modo === 'criar' || !s.comConta ? (
               <View style={{ gap: 4 }}>
-                <TextInput style={campo} placeholder="Apelido (aparece no pódio)" placeholderTextColor={c.apagado} value={apelido}
+                <TextInput style={campo} placeholder="Seu apelido" placeholderTextColor={c.apagado} value={apelido}
                   onChangeText={setApelido} maxLength={30} accessibilityLabel="Apelido" onSubmitEditing={enviar} returnKeyType="go" />
-                <Apagado estilo={{ fontSize: 13 }}>Use um apelido, não o seu nome completo.</Apagado>
+                <Apagado estilo={{ fontSize: 13 }}>Ele aparece no pódio. Use um apelido, não o seu nome completo.</Apagado>
               </View>
             ) : null}
             {msg ? <Text accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>{msg.texto}</Text> : null}
             <Botao titulo={!s.comConta ? 'Começar a jogar' : modo === 'entrar' ? 'Entrar' : 'Criar conta'} aoTocar={enviar} carregando={ocupado} />
           </SafeAreaView>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
