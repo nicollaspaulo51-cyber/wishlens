@@ -7,7 +7,7 @@
 | `id` | uuid | banco | `3f2a…` | removida |
 | `usuario` | texto | apelido de quem fotografou | `ana` | vira `u01`, `u02`… |
 | `criado_em` | data e hora | hora da captura (Brasília) | `2026-11-12 15:40` | arredondada para a hora |
-| `tema` | texto | juiz (IA open source ou CLIP): `carros`, `plantas`, `passaros`, `pets`, `pecas` ou `nenhum` | `carros` | mantida |
+| `tema` | texto | juiz (IA open source ou CLIP): `carros`, `plantas`, `comidas`, `pets`, `pecas` ou `nenhum` (capturas antigas podem ter `passaros`, tema que saiu do jogo) | `carros` | mantida |
 | `achado` | texto | juiz | `Volkswagen Fusca` | mantida |
 | `confianca` | 0–1 | certeza do juiz | `0.9` | mantida |
 | `foto_real` | sim/não | juiz: falso se for tela, impressão, desenho ou brinquedo | `true` | mantida |
@@ -56,7 +56,7 @@
 | Coluna | Significado |
 |---|---|
 | `usuario` | código anonimizado |
-| `carros`, `plantas`, `passaros`, `pets`, `pecas` | proporção das fotos aceitas da pessoa em cada tema; cada linha soma 1 |
+| `carros`, `plantas`, `comidas`, `pets`, `pecas` | proporção das fotos aceitas da pessoa em cada tema; cada linha soma 1 |
 
 Só entra quem tem pelo menos 5 fotos aceitas. Esse vetor alimenta o **K-Means** (estilo de jogador) e a
 **similaridade do cosseno** entre jogadores (notebook 03).

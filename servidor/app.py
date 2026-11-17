@@ -208,12 +208,62 @@ def _lugares(modo: str, lat2: float, lon2: float, hora: int) -> tuple:
     return tuple(achados)
 
 
+# Últimos lugares bons de cada quadrado de ~1 km, em disco (volume "dados"): o Overpass vive fora do ar ou
+# devolvendo lista vazia, e os ícones sumiam do mapa. Lojas e parques mudam devagar, então guardar é seguro.
+RESERVA_LUGARES = Path(os.environ.get("DADOS_DIR", "/home/user/dados")) / "lugares.json"
+_reserva: dict[str, list] | None = None
+_trava_reserva = threading.Lock()
+
+
+def _ler_reserva() -> dict[str, list]:
+    global _reserva
+    if _reserva is None:
+        try:
+            _reserva = json.loads(RESERVA_LUGARES.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            _reserva = {}
+    return _reserva
+
+
+def _guardar_reserva(chave: str, lugares: list[dict]) -> None:
+    with _trava_reserva:
+        reserva = _ler_reserva()
+        if reserva.get(chave) == lugares:
+            return
+        reserva[chave] = lugares
+        try:
+            RESERVA_LUGARES.parent.mkdir(parents=True, exist_ok=True)
+            temporario = RESERVA_LUGARES.with_suffix(".tmp")
+            temporario.write_text(json.dumps(reserva, ensure_ascii=False), encoding="utf-8")
+            temporario.replace(RESERVA_LUGARES)
+        except OSError:  # sem disco: fica só na memória
+            pass
+
+
+def _da_reserva(modo: str, lat2: float, lon2: float) -> list[dict] | None:
+    """Os últimos lugares bons deste quadrado ou de um vizinho (andou um pouco desde a última vez)."""
+    reserva = _ler_reserva()
+    for dl in (0.0, -0.01, 0.01):
+        for dn in (0.0, -0.01, 0.01):
+            achados = reserva.get(f"{modo}:{round(lat2 + dl, 2)}:{round(lon2 + dn, 2)}")
+            if achados:
+                return achados
+    return None
+
+
 def lugares_perto(lat: float, lon: float, modo: str = "livre") -> list[dict] | None:
-    """Lugares da aba perto de você. None quando o OpenStreetMap (Overpass) não respondeu: diferente de "nada por perto"."""
+    """Lugares da aba perto de você. Se o OpenStreetMap (Overpass) não respondeu ou veio vazio, usa os últimos
+    lugares bons guardados. None só quando não respondeu e não há nada guardado."""
+    lat2, lon2 = round(lat, 2), round(lon, 2)
     try:
-        return list(_lugares(modo, round(lat, 2), round(lon, 2), int(time.time() // 3600)))
+        achados = list(_lugares(modo, lat2, lon2, int(time.time() // 3600)))
     except RuntimeError:
-        return None
+        achados = None
+    if achados:
+        _guardar_reserva(f"{modo}:{lat2}:{lon2}", achados)
+        return achados
+    guardados = _da_reserva(modo, lat2, lon2)
+    return guardados if guardados else achados
 
 
 @lru_cache(maxsize=2048)

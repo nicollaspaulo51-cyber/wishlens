@@ -107,9 +107,17 @@ def main() -> None:
                 "por_parte": df.groupby("parte").size().to_dict(),
                 "teste": {"clip_zero_shot": tj.resumo(teste, *tj.decisoes(teste, None)[["tema", "real"]].T.to_numpy()),
                           "clip_treinado": tj.resumo(teste, *tj.decisoes(teste, sonda)[["tema", "real"]].T.to_numpy())}}
+    # previsões do teste, linha a linha, para o notebook 06 (matriz de confusão, erros com miniatura)
+    zs, tr = tj.decisoes(teste, None), tj.decisoes(teste, sonda)
+    prev = teste[["id", "grupo", "classe", "tema", "variante", "real"]].assign(
+        zs_tema=zs["tema"].fillna("nenhum"), zs_real=zs["real"], tr_tema=tr["tema"].fillna("nenhum"), tr_real=tr["real"],
+        tr_falsa=[c["tela"] for c in tr["chances"]])
     if a.com_ia:
         ia = com_ia(df, a.dados, a.com_ia, a.dados / "respostas_ia.csv")
         metricas["com_ia"] = {p: regras_com_ia(df[df["parte"] == p], ia, sonda) for p in ("validacao", "teste")}
+        prev = prev.merge(ia, on=["id", "variante"], how="left")
+    fotos = pd.read_csv(a.dados / "fotos.csv")[["id", "autor", "licenca", "url"]]
+    prev.merge(fotos, on="id", how="left").to_csv(a.dados / "previsoes_teste.csv", index=False)
     METRICAS.write_text(json.dumps(metricas, indent=2, ensure_ascii=False), encoding="utf-8")
     print(json.dumps(metricas["teste"], indent=2, ensure_ascii=False))
     if "com_ia" in metricas:

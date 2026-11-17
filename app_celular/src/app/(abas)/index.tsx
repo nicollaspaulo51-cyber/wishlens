@@ -1,4 +1,5 @@
 // Jogar: placar e tema do dia em cima, o mapa no meio e o botão Fotografar sempre à mão, embaixo.
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, Text, View } from 'react-native';
@@ -35,6 +36,23 @@ function distanciaKm(a: { lat: number; lon: number }, b: { lat: number; lon: num
   const r = Math.PI / 180;
   const x = (b.lon - a.lon) * r * Math.cos(((a.lat + b.lat) / 2) * r);
   return Math.hypot(x, (b.lat - a.lat) * r) * 6371;
+}
+
+// Últimos lugares de cada aba no celular. Só valem perto de onde foram buscados (até 3 km).
+type Guardados = { lat: number; lon: number; lugares: DadosMapa['lugares'] };
+const chaveLugares = (modo: string) => `wl_lugares_${modo}`;
+
+async function lerLugares(modo: string, aqui: { lat: number; lon: number }) {
+  try {
+    const g = JSON.parse((await AsyncStorage.getItem(chaveLugares(modo))) ?? 'null') as Guardados | null;
+    return g && g.lugares?.length && distanciaKm(g, aqui) < 3 ? g.lugares : null;
+  } catch {
+    return null;
+  }
+}
+
+function guardarLugares(modo: string, aqui: { lat: number; lon: number }, lugares: DadosMapa['lugares']) {
+  AsyncStorage.setItem(chaveLugares(modo), JSON.stringify({ lat: aqui.lat, lon: aqui.lon, lugares })).catch(() => {});
 }
 
 export default function Jogar() {
@@ -100,10 +118,17 @@ export default function Jogar() {
       setTimeout(() => setTentativa((n) => n + 1), 20000);
     };
     const pedida = modo;
+    const aqui = posicao;
+    // Os últimos ícones desta aba, guardados no celular: aparecem na hora e ficam se a busca falhar
+    lerLugares(modo, aqui).then((guardados) => {
+      if (guardados && pedida === modoAgora.current) setMapa((antes) => (antes?.lugares.length ? antes : { lugares: guardados, manchas: antes?.manchas ?? [] }));
+    });
     api.mapa(posicao.lat, posicao.lon, modo)
       .then((m) => {
         if (pedida !== modoAgora.current) return; // resposta de outra aba, que chegou atrasada
-        setMapa((antes) => (m.lugares_ok === false && antes?.lugares.length ? { ...m, lugares: antes.lugares } : m));
+        if (m.lugares.length) guardarLugares(pedida, aqui, m.lugares);
+        // sem lugares na resposta (OpenStreetMap fora ou vazio): os ícones que já estão no mapa continuam
+        setMapa((antes) => (!m.lugares.length && antes?.lugares.length ? { ...m, lugares: antes.lugares } : m));
         if (m.lugares_ok === false) deNovo();
       })
       .catch(deNovo);

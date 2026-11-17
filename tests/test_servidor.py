@@ -232,3 +232,28 @@ def test_competicao_nao_chama_a_ia(cliente, monkeypatch):
     monkeypatch.setattr(visao, "identificar_captura", nao_chama)
     monkeypatch.setattr(srv, "_clip", _clip_falso(tema="competicao", achado="vitória"))
     assert _enviar(cliente, modo="competicao")["status"] == "ok"
+
+
+def test_lugares_guardados_quando_o_mapa_nao_responde(monkeypatch, tmp_path):
+    monkeypatch.setattr(srv, "RESERVA_LUGARES", tmp_path / "lugares.json")
+    monkeypatch.setattr(srv, "_reserva", None)
+    parque = [{"tema": "plantas", "nome": "Parque", "lat": -20.3, "lon": -40.3, "distancia_km": 0.1}]
+    srv._lugares.cache_clear()
+    monkeypatch.setattr(srv, "buscar_pontos_temas", lambda *a, **k: parque)
+    assert srv.lugares_perto(-20.301, -40.301) == parque
+    srv._lugares.cache_clear()
+
+    def fora(*a, **k):
+        raise RuntimeError("Overpass fora")
+    monkeypatch.setattr(srv, "buscar_pontos_temas", fora)
+    assert srv.lugares_perto(-20.302, -40.299) == parque          # mesmo quadrado: usa o guardado
+    srv._lugares.cache_clear()
+    assert srv.lugares_perto(-20.31, -40.30) == parque            # quadrado vizinho também
+    srv._lugares.cache_clear()
+    monkeypatch.setattr(srv, "buscar_pontos_temas", lambda *a, **k: [])
+    assert srv.lugares_perto(-20.301, -40.301) == parque          # Overpass vazio não apaga os ícones
+    monkeypatch.setattr(srv, "_reserva", None)                     # reinício do servidor: lê do disco
+    srv._lugares.cache_clear()
+    assert srv.lugares_perto(-20.301, -40.301) == parque
+    assert srv.lugares_perto(-23.5, -46.6) == []                  # lugar novo e vazio: nada a mostrar
+    srv._lugares.cache_clear()
