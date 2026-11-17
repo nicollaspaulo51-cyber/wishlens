@@ -37,6 +37,17 @@ class Sonda:
     beta: float          # peso da sonda de falsa
     limiar: float        # chance de falsa a partir da qual a foto não é real
     versao: str = ""
+    # Junção com a IA (Qwen): ela só derruba o "é real" se a chance de falsa do CLIP passar deste limite
+    # (sozinha ela recusava 1 em cada 3 fotos reais). 1.0 = a IA nunca derruba sozinha.
+    limiar_ia: float = 0.0
+    tema_da_ia: bool = True  # o tema vem da IA (com o achado detalhado) ou do CLIP treinado
+
+
+def juntar(ia_tema: str | None, ia_real: bool, clip_tema: str | None, clip_real: bool, falsa: float,
+           s: Sonda) -> tuple[str | None, bool]:
+    """Decisão final no Mapa livre com a IA e o CLIP treinado: (tema, foto_real)."""
+    real = clip_real and not (not ia_real and falsa >= s.limiar_ia)
+    return (ia_tema if s.tema_da_ia else clip_tema), real
 
 
 def _softmax(z: np.ndarray) -> np.ndarray:
@@ -67,7 +78,8 @@ def salvar(s: Sonda, caminho: Path = CAMINHO) -> None:
     caminho.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(caminho, w_tema=s.w_tema.astype(np.float32), b_tema=s.b_tema.astype(np.float32),
                         w_falsa=s.w_falsa.astype(np.float32), b_falsa=np.float32(s.b_falsa), alfa=np.float32(s.alfa),
-                        beta=np.float32(s.beta), limiar=np.float32(s.limiar), ordem=np.array(ORDEM), versao=np.array(s.versao))
+                        beta=np.float32(s.beta), limiar=np.float32(s.limiar), ordem=np.array(ORDEM), versao=np.array(s.versao),
+                        limiar_ia=np.float32(s.limiar_ia), tema_da_ia=np.array(s.tema_da_ia))
 
 
 def carregar(caminho: Path = CAMINHO) -> Sonda | None:
@@ -78,7 +90,8 @@ def carregar(caminho: Path = CAMINHO) -> Sonda | None:
     if tuple(str(x) for x in d["ordem"]) != ORDEM:
         return None
     return Sonda(d["w_tema"], d["b_tema"], d["w_falsa"], float(d["b_falsa"]), float(d["alfa"]), float(d["beta"]),
-                 float(d["limiar"]), str(d["versao"]))
+                 float(d["limiar"]), str(d["versao"]), float(d["limiar_ia"]) if "limiar_ia" in d else 0.0,
+                 bool(d["tema_da_ia"]) if "tema_da_ia" in d else True)
 
 
 # ---------------------------------------------------------------- dados
@@ -168,7 +181,8 @@ def treinar(df: pd.DataFrame, versao: str = "") -> tuple[Sonda, dict]:
     _, C_tema, m_tema = melhor
     p_sonda = m_tema.predict_proba(X)  # colunas na ordem das classes = 0..5 (todas presentes)
 
-    # sonda de falsa: todas as versões
+    # sonda de falsa: todas as versões. Testado: dar o mesmo peso a cada tipo de falsa (para os poucos desenhos
+    # pesarem mais) baixou o acerto geral no teste de 87% para 83% sem quase melhorar os desenhos; ficou o simples.
     melhor = None
     for C in (0.1, 0.3, 1.0, 3.0, 10.0):
         m = LogisticRegression(C=C, max_iter=3000, class_weight="balanced").fit(X[tr], y_falsa[tr])

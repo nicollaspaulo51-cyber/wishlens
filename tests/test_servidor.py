@@ -257,3 +257,27 @@ def test_lugares_guardados_quando_o_mapa_nao_responde(monkeypatch, tmp_path):
     assert srv.lugares_perto(-20.301, -40.301) == parque
     assert srv.lugares_perto(-23.5, -46.6) == []                  # lugar novo e vazio: nada a mostrar
     srv._lugares.cache_clear()
+
+
+def test_clip_treinado_decide_e_ia_so_barra_quando_ele_desconfia(cliente, monkeypatch):
+    import numpy as np
+
+    from src import treino_juiz as tj, visao
+
+    s = tj.Sonda(np.zeros((6, 512)), np.zeros(6), np.zeros(512), 0.0, 1.0, 1.0, 0.75, "t", limiar_ia=0.6, tema_da_ia=False)
+    monkeypatch.setattr("src.reconhecimento.sonda", lambda: s)
+    monkeypatch.setattr(srv, "VISAO", ("http://ia", None, "m"))
+    monkeypatch.setattr(visao, "identificar_captura", lambda *a: visao.Captura("carros", "fiat uno", False, 0.9))
+
+    def clip(tela):
+        def julgar(_imagem, _modo="livre"):
+            return {"nitidez": 80.0, "nao_identificou": False, "tema": "carros", "achado": "carro", "foto_real": True,
+                    "confianca": 0.9, "treinado": True, "vetor": [1.0] + [0.0] * 511,
+                    "probs": {"carros": 0.9 - tela, "nenhum": 0.1, "tela": tela}}
+        return julgar
+    monkeypatch.setattr(srv, "_clip", clip(0.05))   # IA diz falsa, CLIP treinado está tranquilo: vale
+    r = _enviar(cliente)
+    assert r["cartao"]["aceita"] and r["cartao"]["achado"] == "fiat uno"
+    monkeypatch.setattr(srv, "_clip", clip(0.65))   # CLIP também desconfia: a IA derruba
+    r = _enviar(cliente, _jpeg(cor=(10, 200, 10)), apelido="bia")
+    assert not r["cartao"]["aceita"] and "não é foto real" in r["cartao"]["motivo"]

@@ -85,3 +85,11 @@ def test_acerto_do_jogo():
     assert certo.tolist() == [True, False, False, False]
     r = tj.resumo(df, ["carros", None, None, "carros"], [True, True, False, True])
     assert r["acerto_geral"] == 1.0 and r["falsa_aceita"] == 0.0
+
+
+def test_juntar_ia_so_derruba_com_o_clip_desconfiado():
+    s = _sonda()
+    s = tj.Sonda(s.w_tema, s.b_tema, s.w_falsa, s.b_falsa, 1, 1, 0.75, "t", limiar_ia=0.6, tema_da_ia=False)
+    assert tj.juntar("pets", False, "carros", True, 0.1, s) == ("carros", True)
+    assert tj.juntar("pets", False, "carros", True, 0.7, s) == ("carros", False)
+    assert tj.juntar("pets", True, "carros", False, 0.9, s) == ("carros", False)  # o CLIP sozinho já barra

@@ -68,10 +68,41 @@ def com_ia(df: pd.DataFrame, pasta: Path, n: int, cache: Path) -> pd.DataFrame:
     return feitas
 
 
+def _juncao(d: pd.DataFrame, sonda) -> tuple[list, list]:
+    """A regra nova do servidor (tj.juntar) + o veto de tema do CLIP (jogo.veto_clip), linha a linha."""
+    clip = tj.decisoes(d, sonda)
+    temas, reais = [], []
+    for (_, r), ct, cr, p in zip(d.iterrows(), clip["tema"], clip["real"], clip["chances"]):
+        ia_tema = r.ia_tema if isinstance(r.ia_tema, str) and r.ia_tema != "nenhum" else None
+        ct = ct if isinstance(ct, str) else None  # o pandas 3 guarda o None da coluna de texto como NaN
+        tema, real = tj.juntar(ia_tema, bool(r.ia_real), ct, cr, p["tela"], sonda)
+        if tema and real and jogo.veto_clip(tema, "ia+clip", ct, p.get(tema, 0.0), p["tela"], jogo.posicao(p, tema), cr):
+            real = False
+        temas.append(tema)
+        reais.append(real)
+    return temas, reais
+
+
+def calibrar_juncao(df: pd.DataFrame, ia: pd.DataFrame, sonda):
+    """Escolhe na validação quando a IA pode derrubar o "é real" e de quem vem o tema."""
+    from dataclasses import replace
+
+    d = df[df["parte"] == "validacao"].merge(ia, on=["id", "variante"])
+    opcoes = []
+    for limiar_ia in (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 1.01):
+        for tema_da_ia in (True, False):
+            s = replace(sonda, limiar_ia=limiar_ia, tema_da_ia=tema_da_ia)
+            r = tj.resumo(d, *_juncao(d, s))
+            opcoes.append((r["foto_real_recusada"] <= 0.05, r["acerto_geral"], -r["foto_real_recusada"], s, r))
+    melhor = max(opcoes, key=lambda o: o[:3])
+    print("junção escolhida:", melhor[3].limiar_ia, "tema da IA" if melhor[3].tema_da_ia else "tema do CLIP", melhor[4], flush=True)
+    return melhor[3]
+
+
 def regras_com_ia(df: pd.DataFrame, ia: pd.DataFrame, sonda) -> dict:
-    """Mesma regra do servidor: a IA decide no Mapa livre e o CLIP pode vetar (jogo.veto_clip)."""
+    """Regra antiga do servidor (a IA decide no Mapa livre e o CLIP pode vetar) x a junção nova."""
     d = df.merge(ia, on=["id", "variante"])
-    res = {}
+    res = {"ia+clip_juncao_nova": tj.resumo(d, *_juncao(d, sonda))}
     for nome, s in (("zero_shot", None), ("treinado", sonda)):
         clip = tj.decisoes(d, s)
         probs = clip["chances"] if s is not None else d["probs"]
@@ -101,6 +132,10 @@ def main() -> None:
     df = tj.extrair(a.dados, a.dados / "vetores.pkl")
     print(f"{len(df)} exemplos ({df['id'].nunique()} fotos)", flush=True)
     sonda, info = tj.treinar(df, versao=f"{date.today()} {df['id'].nunique()} fotos Open Images")
+    ia = com_ia(df, a.dados, a.com_ia, a.dados / "respostas_ia.csv") if a.com_ia else None
+    if ia is not None:
+        sonda = calibrar_juncao(df, ia, sonda)
+        info |= {"limiar_ia": sonda.limiar_ia, "tema_da_ia": sonda.tema_da_ia}
     tj.salvar(sonda)
     teste = df[df["parte"] == "teste"]
     metricas = {"treino": info, "fotos": int(df["id"].nunique()), "exemplos": int(len(df)),
@@ -112,8 +147,7 @@ def main() -> None:
     prev = teste[["id", "grupo", "classe", "tema", "variante", "real"]].assign(
         zs_tema=zs["tema"].fillna("nenhum"), zs_real=zs["real"], tr_tema=tr["tema"].fillna("nenhum"), tr_real=tr["real"],
         tr_falsa=[c["tela"] for c in tr["chances"]])
-    if a.com_ia:
-        ia = com_ia(df, a.dados, a.com_ia, a.dados / "respostas_ia.csv")
+    if ia is not None:
         metricas["com_ia"] = {p: regras_com_ia(df[df["parte"] == p], ia, sonda) for p in ("validacao", "teste")}
         prev = prev.merge(ia, on=["id", "variante"], how="left")
     fotos = pd.read_csv(a.dados / "fotos.csv")[["id", "autor", "licenca", "url"]]

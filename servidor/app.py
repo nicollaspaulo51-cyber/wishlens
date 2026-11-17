@@ -546,6 +546,16 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
         captura = visao.Captura(clip["tema"], clip["achado"], clip["foto_real"], clip["confianca"])
     elif not livre:  # nas outras abas o CLIP diz o que é; a IA só pode marcar a foto como falsa
         captura = visao.Captura(clip["tema"], clip["achado"], clip["foto_real"] and captura.foto_real, clip["confianca"])
+    elif clip.get("treinado"):
+        # CLIP treinado (src/treino_juiz.py): medido em fotos que ele nunca viu, ele erra menos o tema e recusa
+        # bem menos fotos reais que a IA. A IA só derruba o "é real" quando o CLIP também desconfia.
+        from src.treino_juiz import juntar
+        from src.reconhecimento import sonda
+
+        tema, real = juntar(captura.tema, captura.foto_real, clip["tema"], clip["foto_real"], clip["probs"].get("tela", 0.0), sonda())
+        # o achado detalhado da IA (modelo do carro, espécie) vale quando ela concorda com o tema
+        achado = captura.achado if tema == captura.tema else clip["achado"]
+        captura = visao.Captura(tema, achado, real, clip["confianca"] if tema == clip["tema"] else captura.confianca)
 
     celula, cidade = None, None
     contexto = {"mirante": None, "tipo_lugar": None, "clima": None, "km_anterior": None, "min_anterior": None}

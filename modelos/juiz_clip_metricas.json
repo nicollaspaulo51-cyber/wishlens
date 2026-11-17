@@ -1,0 +1,137 @@
+{
+  "treino": {
+    "C_tema": 3.0,
+    "C_falsa": 10.0,
+    "alfa": 0.9,
+    "beta": 0.9,
+    "limiar": 0.7485073241637589,
+    "acerto_tema_por_alfa": {
+      "0.0": 0.875,
+      "0.1": 0.8792016806722689,
+      "0.2": 0.8876050420168067,
+      "0.3": 0.8939075630252101,
+      "0.4": 0.898109243697479,
+      "0.5": 0.9180672268907563,
+      "0.6": 0.9422268907563025,
+      "0.7": 0.9506302521008403,
+      "0.8": 0.9516806722689075,
+      "0.9": 0.9537815126050421,
+      "1.0": 0.9516806722689075
+    },
+    "limiar_ia": 0.6,
+    "tema_da_ia": false
+  },
+  "fotos": 3898,
+  "exemplos": 14192,
+  "por_parte": {
+    "teste": 2078,
+    "treino": 10016,
+    "validacao": 2098
+  },
+  "teste": {
+    "clip_zero_shot": {
+      "acerto_geral": 0.7271414821944177,
+      "foto_real_recusada": 0.22075055187637968,
+      "falsa_aceita": 0.23122866894197952,
+      "tema_certo_nas_reais": 0.8462603878116344,
+      "n": 2078
+    },
+    "clip_treinado": {
+      "acerto_geral": 0.8734359961501443,
+      "foto_real_recusada": 0.03642384105960265,
+      "falsa_aceita": 0.1697952218430034,
+      "tema_certo_nas_reais": 0.9653739612188366,
+      "n": 2078
+    }
+  },
+  "com_ia": {
+    "validacao": {
+      "ia+clip_juncao_nova": {
+        "acerto_geral": 0.9105058365758755,
+        "foto_real_recusada": 0.04918032786885246,
+        "falsa_aceita": 0.1111111111111111,
+        "tema_certo_nas_reais": 0.9587628865979382,
+        "n": 257
+      },
+      "ia+clip_zero_shot": {
+        "acerto_geral": 0.8443579766536965,
+        "foto_real_recusada": 0.319672131147541,
+        "falsa_aceita": 0.1111111111111111,
+        "tema_certo_nas_reais": 0.9381443298969072,
+        "n": 257
+      },
+      "clip_zero_shot_sozinho": {
+        "acerto_geral": 0.8054474708171206,
+        "foto_real_recusada": 0.1557377049180328,
+        "falsa_aceita": 0.16296296296296298,
+        "tema_certo_nas_reais": 0.8762886597938144,
+        "n": 257
+      },
+      "ia+clip_treinado": {
+        "acerto_geral": 0.8949416342412452,
+        "foto_real_recusada": 0.26229508196721313,
+        "falsa_aceita": 0.06666666666666667,
+        "tema_certo_nas_reais": 0.9381443298969072,
+        "n": 257
+      },
+      "clip_treinado_sozinho": {
+        "acerto_geral": 0.8871595330739299,
+        "foto_real_recusada": 0.040983606557377046,
+        "falsa_aceita": 0.15555555555555556,
+        "tema_certo_nas_reais": 0.9587628865979382,
+        "n": 257
+      },
+      "ia_sozinha": {
+        "acerto_geral": 0.8365758754863813,
+        "foto_real_recusada": 0.20491803278688525,
+        "falsa_aceita": 0.15555555555555556,
+        "tema_certo_nas_reais": 0.9381443298969072,
+        "n": 257
+      }
+    },
+    "teste": {
+      "ia+clip_juncao_nova": {
+        "acerto_geral": 0.8683127572016461,
+        "foto_real_recusada": 0.03296703296703297,
+        "falsa_aceita": 0.17105263157894737,
+        "tema_certo_nas_reais": 0.9615384615384616,
+        "n": 243
+      },
+      "ia+clip_zero_shot": {
+        "acerto_geral": 0.7942386831275721,
+        "foto_real_recusada": 0.4065934065934066,
+        "falsa_aceita": 0.125,
+        "tema_certo_nas_reais": 0.9102564102564102,
+        "n": 243
+      },
+      "clip_zero_shot_sozinho": {
+        "acerto_geral": 0.720164609053498,
+        "foto_real_recusada": 0.21978021978021978,
+        "falsa_aceita": 0.25,
+        "tema_certo_nas_reais": 0.8589743589743589,
+        "n": 243
+      },
+      "ia+clip_treinado": {
+        "acerto_geral": 0.8189300411522634,
+        "foto_real_recusada": 0.34065934065934067,
+        "falsa_aceita": 0.08552631578947369,
+        "tema_certo_nas_reais": 0.9102564102564102,
+        "n": 243
+      },
+      "clip_treinado_sozinho": {
+        "acerto_geral": 0.8683127572016461,
+        "foto_real_recusada": 0.02197802197802198,
+        "falsa_aceita": 0.17763157894736842,
+        "tema_certo_nas_reais": 0.9615384615384616,
+        "n": 243
+      },
+      "ia_sozinha": {
+        "acerto_geral": 0.7695473251028807,
+        "foto_real_recusada": 0.3076923076923077,
+        "falsa_aceita": 0.1513157894736842,
+        "tema_certo_nas_reais": 0.9102564102564102,
+        "n": 243
+      }
+    }
+  }
+}
