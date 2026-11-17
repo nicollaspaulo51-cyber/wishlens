@@ -1,7 +1,7 @@
 // Mapa nativo do celular (Google no Android, Apple no iPhone): você, os lugares de cada tema e as manchas da turma.
 // Os blocos do tile.openstreetmap.org bloqueiam apps sem identificação ("Access blocked"), por isso o mapa do sistema.
 // shortcut: no Expo Go o Google Maps já vem com chave; num APK próprio, pôr a chave em app.json (android.config.googleMaps).
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { Text, View, useColorScheme } from 'react-native';
 import MapView, { Callout, Circle, Marker, type Region } from 'react-native-maps';
 
@@ -27,9 +27,21 @@ export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar }: Props
   const manchas = (dados?.manchas ?? []).filter((m) => mostrar.includes(m.tema));
   // A parte do mapa na tela: só os lugares dela piscam (atualiza quando você para de arrastar)
   const [regiao, setRegiao] = useState<Region>(() => ({ latitude: posicao.lat, longitude: posicao.lon, latitudeDelta: 0.02, longitudeDelta: 0.02 }));
+  const mapa = useRef<MapView>(null);
+  // Nas abas os lugares podem estar a 5 ou 10 km: se nenhum aparece na tela, afasta até mostrar os 3 mais perto
+  const chaveLugares = lugares.map((l) => l.mapa).join();
+  useEffect(() => {
+    if (!lugares.length || lugares.some((l) => Math.abs(l.lat - regiao.latitude) <= regiao.latitudeDelta / 2
+      && Math.abs(l.lon - regiao.longitude) <= regiao.longitudeDelta / 2)) return;
+    const perto = [...lugares].sort((a, b) => a.distancia_km - b.distancia_km).slice(0, 3);
+    mapa.current?.fitToCoordinates([{ latitude: posicao.lat, longitude: posicao.lon }, ...perto.map((l) => ({ latitude: l.lat, longitude: l.lon }))],
+      { edgePadding: { top: 120, right: 60, bottom: 160, left: 60 }, animated: true });
+    // só quando chegam lugares novos (troca de aba ou nova busca), não a cada arrastada
+  }, [chaveLugares]);
   return (
     <View style={{ flex: 1 }}>
       <MapView
+        ref={mapa}
         style={{ flex: 1 }}
         initialRegion={regiao}
         onRegionChangeComplete={setRegiao}
