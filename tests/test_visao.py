@@ -87,3 +87,13 @@ def test_capturas_antigas_do_gemma_continuam_valendo():
     assert jogo.normalizar_juiz("clip") == "clip" and jogo.normalizar_juiz(None) is None
     for juiz in ("gemma+clip", "ia+clip"):
         assert "discordaram" in jogo.veto_clip("carros", juiz, "plantas", 0.05, 0.1, 5)
+
+
+def test_foto_grande_vai_reduzida_para_a_ia():
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (2000, 1500), (90, 120, 60)).save(buf, "JPEG")
+    menor = Image.open(io.BytesIO(visao._reduzir(buf.getvalue())))
+    assert max(menor.size) == visao.LADO_MAX
+    assert visao._reduzir(b"nao-e-jpeg") == b"nao-e-jpeg"

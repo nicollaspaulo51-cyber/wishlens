@@ -17,17 +17,21 @@ Privacidade: a foto enviada é a de fotos.preparar_para_salvar (sem EXIF/GPS, no
 from __future__ import annotations
 
 import base64
+import io
 import json
 import re
 from dataclasses import dataclass
 
 import requests
+from PIL import Image, UnidentifiedImageError
 
 from src.categorias import nome_valido
 from src.temas import TEMAS
 
 MODELO_PADRAO = "qwen2.5vl:7b"
-TIMEOUT = 90  # no Ollama sem GPU um modelo de 7B leva dezenas de segundos por foto
+# O túnel da Cloudflare corta a resposta em 100 s: a IA tem até 75 s e, se passar, o CLIP julga sozinho
+TIMEOUT = 75
+LADO_MAX = 768  # foto menor para a IA: no Ollama sem GPU cada pixel a mais custa tempo (moiré ainda aparece)
 
 class ErroVisao(Exception):
     """Falha ao consultar o modelo (rede, chave, cota, modelo inexistente ou resposta fora do formato)."""
@@ -61,9 +65,24 @@ def _texto(valor, limite: int = 40) -> str:
     return v if v and nome_valido(v) else ""
 
 
+def _reduzir(jpeg: bytes) -> bytes:
+    """Lado maior até LADO_MAX px (a foto já chega sem EXIF/GPS). Se não abrir, manda como veio."""
+    try:
+        with Image.open(io.BytesIO(jpeg)) as img:
+            if max(img.size) <= LADO_MAX:
+                return jpeg
+            img = img.convert("RGB")
+            img.thumbnail((LADO_MAX, LADO_MAX))
+            saida = io.BytesIO()
+            img.save(saida, "JPEG", quality=88)
+            return saida.getvalue()
+    except (UnidentifiedImageError, OSError):
+        return jpeg
+
+
 def _chamar(jpeg: bytes, url: str, modelo: str, prompt: str, chave: str | None = None) -> str:
     """Envia texto + foto a /chat/completions e devolve o texto da resposta. Lança ErroVisao em falha."""
-    imagem = "data:image/jpeg;base64," + base64.b64encode(jpeg).decode()
+    imagem = "data:image/jpeg;base64," + base64.b64encode(_reduzir(jpeg)).decode()
     corpo = {
         "model": modelo,
         "messages": [{"role": "user", "content": [
@@ -113,6 +132,11 @@ Regras de foto_real (é a regra mais importante: o jogo é sobre achar coisas na
 - Sinais de foto de tela: borda ou moldura de monitor/celular/TV, padrão de pixels ou listras onduladas (moiré),
   reflexo ou brilho da tela, cores lavadas ou "chapadas", imagem plana sem profundidade, barras ou bordas de
   janela, de navegador ou de aplicativo. Se houver QUALQUER um desses sinais, foto_real = false.
+- false se a imagem parece GERADA POR IA ou EDITADA/MONTADA: textura lisa demais ou "de plástico", detalhes que
+  derretem ou não fazem sentido (letras sem sentido, dedos ou patas a mais, rodas tortas), luz e sombras que não
+  combinam, objeto recortado e colado no fundo, bordas borradas em volta do objeto, aparência de render 3D.
+- false se o objeto é BRINQUEDO, MINIATURA, PELÚCIA, MAQUETE, ESTÁTUA ou PLANTA ARTIFICIAL (de plástico ou tecido):
+  escala pequena perto de mãos/móveis, plástico brilhante, costuras, base de exposição.
 - true se o próprio objeto está na frente da câmera. Um monitor, notebook ou celular fotografado como objeto
   (tema pecas) é foto real, mesmo com a tela ligada.
 Não invente: se não der para ver o modelo, a espécie ou a raça, use o nome genérico (ex.: "carro", "planta", "pássaro", "mouse")."""

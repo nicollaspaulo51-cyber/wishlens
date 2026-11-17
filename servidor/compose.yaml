@@ -8,6 +8,9 @@ services:
     environment:  # vêm do servidor/.env (o compose lê sozinho); sem eles o jogo fica em memória
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_KEY: ${SUPABASE_KEY:-}
+      # 2º juiz: IA de visão open source no próprio PC (Ollama, MIT + Qwen2.5-VL 7B, Apache 2.0). VISAO_URL= desliga.
+      VISAO_URL: ${VISAO_URL-http://ollama:11434/v1}
+      VISAO_MODELO: ${VISAO_MODELO:-qwen2.5vl:7b}
     ports: ["7860:7860"]
     # avisos do suporte e dados do chat (conversas e fotos): sobrevivem a reinícios
     volumes: [avisos:/home/user/avisos, dados:/home/user/dados]
@@ -15,6 +18,15 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860/saude')"]
       interval: 30s
       start_period: 60s
+
+  # Roda a IA de visão. Sem placa de vídeo leva ~30-60 s por foto; o modelo (~6 GB) fica no volume ollama.
+  # Baixar o modelo uma vez: docker compose exec ollama ollama pull qwen2.5vl:7b
+  ollama:
+    image: ollama/ollama:0.12.6
+    restart: unless-stopped
+    environment:
+      OLLAMA_KEEP_ALIVE: 24h  # deixa o modelo na memória: carregar de novo custa ~20 s
+    volumes: [ollama:/root/.ollama]
 
   https:
     image: caddy:2
@@ -28,3 +40,4 @@ volumes:
   caddy: {}
   avisos: {}
   dados: {}
+  ollama: {}

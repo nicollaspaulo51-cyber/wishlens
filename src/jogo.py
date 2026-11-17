@@ -275,7 +275,7 @@ def calcular_pontos(capturas: pd.DataFrame) -> pd.DataFrame:
         motivo = None
         km, minutos = getattr(c, "km_anterior", None), getattr(c, "min_anterior", None)
         if real is not None and not pd.isna(real) and not bool(real):
-            motivo = "não é foto real (tela, impressão ou desenho)"
+            motivo = "não é foto real (tela, impressão, brinquedo ou imagem gerada/editada)"
         elif deslocamento_impossivel(km, minutos):
             motivo = (f"deslocamento impossível ({float(km):.0f} km em {max(float(minutos), 1):.0f} min "
                       "desde a foto anterior)")
@@ -711,7 +711,7 @@ def pontos_modo(capturas: pd.DataFrame, modo: str) -> pd.DataFrame:
         generico = chave == generico_
         motivo = None
         if real is not None and not pd.isna(real) and not bool(real):
-            motivo = "não é foto real (tela, impressão ou desenho)"
+            motivo = "não é foto real (tela, impressão, brinquedo ou imagem gerada/editada)"
         elif deslocamento_impossivel(getattr(c, "km_anterior", None), getattr(c, "min_anterior", None)):
             motivo = "deslocamento impossível desde a foto anterior"
         elif not chave:

@@ -465,7 +465,9 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
         return {"status": "borrada", "titulo": "Ligue a localização",
                 "mensagem": f"Na aba {ABAS[modo].nome} a foto só vale {jogo.NO_LUGAR_EXIGIDO[modo].replace('fora de', 'dentro de')}. "
                             "Ligue a localização e tire de novo."}
-    usar_ia = VISAO[0] and livre  # a IA conhece só os 5 temas do Mapa livre
+    # A IA confere se a foto é real em todas as abas; o tema dela só vale no Mapa livre (conhece só os 5 temas).
+    # Na Competição a foto É de uma tela, então ela fica de fora.
+    usar_ia = VISAO[0] and modo != "competicao"
     jpeg = preparar_para_salvar(imagem) if usar_ia else None  # sem EXIF/GPS: é o que vai para a IA
     f_ia = _fila.submit(visao.identificar_captura, jpeg, VISAO[0], VISAO[2], VISAO[1]) if usar_ia else None
     f_bairro = _fila.submit(_bairro_seguro, *gps) if gps else None
@@ -490,6 +492,8 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
     juiz = "ia+clip" if captura else "clip"
     if captura is None:
         captura = visao.Captura(clip["tema"], clip["achado"], clip["foto_real"], clip["confianca"])
+    elif not livre:  # nas outras abas o CLIP diz o que é; a IA só pode marcar a foto como falsa
+        captura = visao.Captura(clip["tema"], clip["achado"], clip["foto_real"] and captura.foto_real, clip["confianca"])
 
     celula, cidade = None, None
     contexto = {"mirante": None, "tipo_lugar": None, "clima": None, "km_anterior": None, "min_anterior": None}

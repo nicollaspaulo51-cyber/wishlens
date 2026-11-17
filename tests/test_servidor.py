@@ -212,3 +212,23 @@ def test_abas_procuram_mais_longe_quando_tem_pouco_lugar(monkeypatch):
     srv.lugares_perto(-20.3, -40.3, "livre")
     assert raios == [2000]
     srv._lugares.cache_clear()
+
+
+def test_ia_barra_foto_falsa_em_outra_aba_mas_nao_troca_o_tema(cliente, monkeypatch):
+    monkeypatch.setattr(srv, "VISAO", ("http://ia", None, "m"))
+    monkeypatch.setattr(srv, "_clip", _clip_falso(tema="paisagens", achado="pôr do sol"))
+    from src import visao
+    monkeypatch.setattr(visao, "identificar_captura", lambda *a: visao.Captura("carros", "gol", False, 0.9))
+    r = _enviar(cliente, modo="paisagens")
+    assert not r["cartao"]["aceita"] and r["cartao"]["tema"]["id"] == "paisagens"
+    assert "não é foto real" in r["cartao"]["motivo"]
+
+
+def test_competicao_nao_chama_a_ia(cliente, monkeypatch):
+    monkeypatch.setattr(srv, "VISAO", ("http://ia", None, "m"))
+    from src import visao
+    def nao_chama(*a):
+        raise AssertionError("a IA não deve julgar a Competição")
+    monkeypatch.setattr(visao, "identificar_captura", nao_chama)
+    monkeypatch.setattr(srv, "_clip", _clip_falso(tema="competicao", achado="vitória"))
+    assert _enviar(cliente, modo="competicao")["status"] == "ok"
