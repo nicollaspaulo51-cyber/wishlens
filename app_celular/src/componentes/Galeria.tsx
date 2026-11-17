@@ -1,7 +1,9 @@
 // Galeria do Museu, como um corredor de museu: cada foto salva fica num totem com plaquinha, e totens de câmera e
 // troféu decoram o caminho. Arrastar para o lado passa as fotos; a do centro fica grande e as dos lados viram de leve.
-import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Animated, FlatList, Image, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
+import Reanimated, { Extrapolation, interpolate, runOnJS, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue,
+  type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FONTE_TITULO, useCores } from '../lib/cores';
@@ -38,22 +40,22 @@ export function Galeria({ visita }: { visita: number }) {
   const fila = useMemo(() => montarFila(fotos), [fotos]);
   const item = Math.round(Math.min(width * 0.62, 300));
   const lado = (width - item) / 2;
-  const x = useRef(new Animated.Value(0)).current;
+  // Reanimated: a rolagem mexe a escala e o giro na thread de interface, sem passar pelo JavaScript a cada quadro
+  const x = useSharedValue(0);
+  const largura = useSharedValue(item);
+  useEffect(() => { largura.value = item; }, [item, largura]);
   const [centro, setCentro] = useState(1); // índice da fila no centro (começa na 1ª foto, depois do totem de entrada)
-  const centroRef = useRef(1);
-  const larguraRef = useRef(item);
-  larguraRef.current = item;
-  // Criado uma vez: um onScroll novo a cada render solta e religa a rolagem nativa no Android
-  const aoRolar = useRef(Animated.event([{ nativeEvent: { contentOffset: { x } } }], {
-    useNativeDriver: true,
-    listener: (e: { nativeEvent: { contentOffset: { x: number } } }) => {
-      const i = Math.round(e.nativeEvent.contentOffset.x / larguraRef.current);
-      if (i !== centroRef.current) {
-        centroRef.current = i;
-        setCentro(i);
+  const centroSV = useSharedValue(1);
+  const aoRolar = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      x.value = e.contentOffset.x;
+      const i = Math.round(e.contentOffset.x / largura.value);
+      if (i !== centroSV.value) {
+        centroSV.value = i;
+        runOnJS(setCentro)(i);
       }
     },
-  })).current;
+  });
   const [aberta, setAberta] = useState<number | null>(null); // índice em `fotos` na tela cheia
   const [opcoes, setOpcoes] = useState<FotoGaleria | null>(null);
 
@@ -69,34 +71,21 @@ export function Galeria({ visita }: { visita: number }) {
   const fotoNoCentro = fila[centro]?.tipo === 'foto' ? (fila[centro] as { n: number }).n : -1;
   return (
     <View className="-mx-[16px] gap-[10px]">
-      <Animated.FlatList data={fila} horizontal showsHorizontalScrollIndicator={false}
+      <Reanimated.FlatList data={fila} horizontal showsHorizontalScrollIndicator={false}
         keyExtractor={(it) => (it.tipo === 'foto' ? it.foto.id : it.chave)}
         snapToInterval={item} decelerationRate="fast" contentContainerStyle={{ paddingHorizontal: lado }}
         initialScrollIndex={1}
         getItemLayout={(_, i) => ({ length: item, offset: item * i, index: i })}
         onScroll={aoRolar} testID="galeria"
         scrollEventThrottle={16}
-        renderItem={({ item: it, index }) => {
-          // A do centro reta e inteira; as vizinhas menores, apagadas e viradas, como paredes de um corredor
-          const faixa = [(index - 1) * item, index * item, (index + 1) * item];
-          const estilo = {
-            width: item, alignItems: 'center' as const, justifyContent: 'flex-end' as const,
-            opacity: x.interpolate({ inputRange: faixa, outputRange: [0.5, 1, 0.5], extrapolate: 'clamp' }),
-            transform: [
-              { perspective: 800 },
-              { scale: x.interpolate({ inputRange: faixa, outputRange: [0.8, 1, 0.8], extrapolate: 'clamp' }) },
-              { rotateY: x.interpolate({ inputRange: faixa, outputRange: ['20deg', '0deg', '-20deg'], extrapolate: 'clamp' }) },
-            ],
-          };
-          return (
-            <Animated.View style={estilo}>
-              {it.tipo === 'foto' ? (
-                <Quadro foto={it.foto} lado={item - 28} centro={index === centro} chave={`${visita}-${it.foto.id}`}
-                  aoTocar={() => setAberta(it.n)} aoSegurar={() => setOpcoes(it.foto)} />
-              ) : <Totem tipo={it.tipo} chave={visita} />}
-            </Animated.View>
-          );
-        }} />
+        renderItem={({ item: it, index }) => (
+          <Vitrine x={x} index={index} largura={item}>
+            {it.tipo === 'foto' ? (
+              <Quadro foto={it.foto} lado={item - 28} centro={index === centro} chave={`${visita}-${it.foto.id}`}
+                aoTocar={() => setAberta(it.n)} aoSegurar={() => setOpcoes(it.foto)} />
+            ) : <Totem tipo={it.tipo} chave={visita} />}
+          </Vitrine>
+        )} />
 
       {/* Uma bolinha por foto: a acesa é a do centro */}
       <View className="flex-row justify-center gap-[6px]" accessible
@@ -112,6 +101,22 @@ export function Galeria({ visita }: { visita: number }) {
       <Opcoes foto={opcoes} aoFechar={() => setOpcoes(null)} />
     </View>
   );
+}
+
+// Cada lugar da fila: a do centro reta e inteira; as vizinhas menores, apagadas e viradas, como paredes de um corredor
+function Vitrine({ x, index, largura, children }: { x: SharedValue<number>; index: number; largura: number; children: ReactNode }) {
+  const estilo = useAnimatedStyle(() => {
+    const faixa = [(index - 1) * largura, index * largura, (index + 1) * largura];
+    return {
+      opacity: interpolate(x.value, faixa, [0.5, 1, 0.5], Extrapolation.CLAMP),
+      transform: [
+        { perspective: 800 },
+        { scale: interpolate(x.value, faixa, [0.8, 1, 0.8], Extrapolation.CLAMP) },
+        { rotateY: `${interpolate(x.value, faixa, [20, 0, -20], Extrapolation.CLAMP)}deg` },
+      ],
+    };
+  });
+  return <Reanimated.View style={[{ width: largura, alignItems: 'center', justifyContent: 'flex-end' }, estilo]}>{children}</Reanimated.View>;
 }
 
 // Foto emoldurada em cima do pedestal, com a plaquinha do achado. Entra caindo no pedestal.
