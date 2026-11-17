@@ -1,5 +1,4 @@
 // Jogar: placar e tema do dia em cima, o mapa no meio e o botão Fotografar sempre à mão, embaixo.
-import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, Text, View } from 'react-native';
@@ -14,6 +13,7 @@ import { FONTE_TITULO, useCores } from '../../lib/cores';
 import { useModo } from '../../lib/modo';
 import { Brilho, Surge, useContagem, useEntrada } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
+import { Icone, IconeTema } from '../../componentes/icones/Icone';
 
 const KM_PARA_ATUALIZAR = 0.3;
 
@@ -129,7 +129,7 @@ export default function Jogar() {
           <Mapa posicao={posicao} dados={mapa} temas={porId} mostrar={ativos} />
         ) : (
           <View style={{ flex: 1, justifyContent: 'flex-end', padding: 16, paddingBottom: 48, gap: 12 }}>
-            <Ionicons name="navigate-circle-outline" size={44} color={c.destaque} />
+            <Icone nome="bussola" tamanho={44} cor={c.destaque} />
             <Text style={{ color: c.tinta, fontSize: 16, lineHeight: 22 }}>{semGps ?? 'Procurando você no mapa...'}</Text>
             {semGps ? <Botao titulo="Ligar a localização" tipo="secundario" aoTocar={pedirGps} /> : null}
           </View>
@@ -148,7 +148,7 @@ export default function Jogar() {
               {modo === 'livre' ? (
                 <>
                   <View style={{ width: 1, height: 18, backgroundColor: c.linha }} />
-                  <Ionicons name="trophy" size={15} color={c.destaque} />
+                  <Icone nome="trofeu" tamanho={15} cor={c.destaque} />
                   <Text style={{ fontFamily: FONTE_TITULO, fontSize: 18, color: c.tinta }}>{e.posicao ? `${e.posicao}º` : '—'}</Text>
                 </>
               ) : null}
@@ -172,7 +172,7 @@ export default function Jogar() {
               <View style={[{ borderRadius: 12, borderWidth: 4, borderColor: '#FFFFFF', transform: [{ rotate: '-1.2deg' }] }, sombra]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.sol, borderRadius: 8,
                   paddingHorizontal: 12, paddingVertical: 8, overflow: 'hidden' }}>
-                  <Text style={{ fontSize: 30 }} accessibilityElementsHidden>{e.tema_do_dia.emoji}</Text>
+                  <IconeTema id={e.tema_do_dia.id} emoji={e.tema_do_dia.emoji} tamanho={32} cor={c.solTinta} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: c.solTinta, fontSize: 12, fontWeight: '600' }}>Tema de hoje</Text>
                     <Text style={{ color: c.solTinta, fontFamily: FONTE_TITULO, fontSize: 19, lineHeight: 22 }}>{e.tema_do_dia.nome}</Text>
@@ -203,7 +203,7 @@ export default function Jogar() {
                 onPress={() => setMostrar(ligado ? ativos.filter((x) => x !== t.id) : [...ativos, t.id])}
                 style={[{ width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center',
                   backgroundColor: c.superficie, borderWidth: 3, borderColor: ligado ? t.cor : c.linha, opacity: ligado ? 1 : 0.6 }, sombra]}>
-                <Text style={{ fontSize: 20, opacity: ligado ? 1 : 0.4 }}>{t.emoji}</Text>
+                <View style={{ opacity: ligado ? 1 : 0.4 }}><IconeTema id={t.id} emoji={t.emoji} tamanho={22} cor={t.cor} /></View>
               </Pressable>
             );
           })}

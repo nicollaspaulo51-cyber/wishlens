@@ -8,6 +8,7 @@ import { api, type Medalha } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
 import { Brilho, Surge, useVisita } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
+import { IconeTema } from '../../componentes/icones/Icone';
 
 const COR_NIVEL = { bronze: '#B87333', prata: '#9AA4AD', ouro: '#FFC83D' } as const;
 
@@ -47,7 +48,7 @@ export default function Colecao() {
             {d.album.map((p) => (
               <View key={p.tema.id} style={{ gap: 8, marginBottom: 12 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontSize: 22 }} accessibilityElementsHidden>{p.tema.emoji}</Text>
+                  <IconeTema id={p.tema.id} emoji={p.tema.emoji} tamanho={24} cor={p.tema.cor} />
                   <Text accessibilityRole="header" style={{ flex: 1, fontFamily: FONTE_TITULO, fontSize: 18, color: c.tinta }}>{p.tema.nome}</Text>
                   <Text style={{ color: c.apagado }}>{p.colados.length} de {p.total}</Text>
                   {p.medalha?.nivel ? <SeloMedalha m={p.medalha} /> : null}

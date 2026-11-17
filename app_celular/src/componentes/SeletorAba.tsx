@@ -8,6 +8,7 @@ import { api, type Modo } from '../lib/api';
 import { FONTE_TITULO, useCores } from '../lib/cores';
 import { escolherModo, NOME_LIVRE, useModo } from '../lib/modo';
 import { useDados } from '../lib/useDados';
+import { IconeTema } from './icones/Icone';
 
 export function useAbas() {
   const temas = useDados(api.temas);
@@ -28,7 +29,7 @@ export function SeletorAba({ pontos, estilo, escuro }: { pontos?: Partial<Record
         onPress={() => setAberta(true)}
         style={[{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 14, borderRadius: 20,
           backgroundColor: escuro ? 'rgba(0,0,0,0.45)' : c.superficie, alignSelf: 'flex-start' }, estilo]}>
-        <Text style={{ fontSize: 16 }}>{atual.emoji}</Text>
+        <IconeTema id={atual.id} emoji={atual.emoji} tamanho={18} cor={escuro ? '#fff' : atual.cor} />
         <Text style={{ color: escuro ? '#fff' : c.tinta, fontWeight: '700', fontSize: 15 }}>{atual.nome}</Text>
         <Text style={{ color: escuro ? '#fff' : c.apagado, fontSize: 12 }}>▼</Text>
       </Pressable>
@@ -52,7 +53,7 @@ export function SeletorAba({ pontos, estilo, escuro }: { pontos?: Partial<Record
                     borderWidth: 2, borderColor: ativa ? a.cor : c.linha, borderLeftWidth: 6, borderLeftColor: a.cor,
                     opacity: pressed ? 0.8 : 1 })}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={{ fontSize: 22 }}>{a.emoji}</Text>
+                    <IconeTema id={a.id} emoji={a.emoji} tamanho={24} cor={a.cor} />
                     <Text style={{ flex: 1, fontFamily: FONTE_TITULO, fontSize: 18, color: c.tinta }}>{a.nome}</Text>
                     {pts !== undefined ? <Text style={{ color: c.apagado, fontWeight: '700' }}>{pts} pts hoje</Text> : null}
                     {ativa ? <Text style={{ color: a.cor, fontWeight: '700' }}>✓</Text> : null}

@@ -1,5 +1,4 @@
 // Barra de baixo: metade das abas de cada lado e o botão da câmera no meio, mais alto que a barra.
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, type Tabs } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
@@ -8,17 +7,13 @@ import { Animated, Pressable, Text, View, type LayoutRectangle } from 'react-nat
 import { api } from '../lib/api';
 import { useCores } from '../lib/cores';
 import { useLaco, useMovimentoReduzido } from '../lib/movimento';
+import { Icone, type NomeIcone } from './icones/Icone';
 
 type Props = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
-type Icone = ComponentProps<typeof Ionicons>['name'];
 
-const ICONES: Record<string, [Icone, Icone]> = {
-  index: ['map', 'map-outline'],
-  podio: ['trophy', 'trophy-outline'],
-  amigos: ['people', 'people-outline'],
-  chat: ['chatbubbles', 'chatbubbles-outline'],
-  colecao: ['library', 'library-outline'],
-  conta: ['person-circle', 'person-circle-outline'],
+// Ícones próprios do caderno de campo (componentes/icones)
+const ICONES: Record<string, NomeIcone> = {
+  index: 'mapa', podio: 'trofeu', amigos: 'amigos', chat: 'chat', colecao: 'museu', conta: 'bussola',
 };
 
 export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) {
@@ -56,7 +51,7 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
   const aba = (rota: (typeof state.routes)[number], indice: number) => {
     const ativa = state.index === indice;
     const titulo = String(descriptors[rota.key].options.title ?? rota.name);
-    const [cheio, vazado] = ICONES[rota.name] ?? ['ellipse', 'ellipse-outline'];
+    const nomeIcone = ICONES[rota.name] ?? 'alfinete';
     const contador = rota.name === 'chat' ? naoLidas : 0;
     return (
       <Pressable key={rota.key} accessibilityRole="tab" accessibilityState={{ selected: ativa }}
@@ -66,7 +61,7 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
         <View onLayout={(e) => medir(indice, 'pilula', e.nativeEvent.layout)}
           style={{ paddingHorizontal: 12, paddingVertical: 3, borderRadius: 14, backgroundColor: ativa && !pronta ? c.suave : 'transparent' }}>
           <IconePula ativa={ativa} parado={parado}>
-            <Ionicons name={ativa ? cheio : vazado} size={22} color={ativa ? c.destaque : c.apagado} />
+            <Icone nome={nomeIcone} tamanho={23} cor={ativa ? c.destaque : c.apagado} ativo={ativa} />
           </IconePula>
           {contador ? (
             <View style={{ position: 'absolute', top: -2, right: 6, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4,
@@ -103,7 +98,7 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
           style={({ pressed }) => ({ width: 68, height: 68, borderRadius: 34, marginTop: -30, alignItems: 'center', justifyContent: 'center',
             backgroundColor: c.sol, borderWidth: 5, borderColor: c.superficie, transform: [{ scale: pressed ? 0.94 : 1 }],
             shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 8 })}>
-          <Ionicons name="camera" size={30} color={c.solTinta} />
+          <Icone nome="camera" tamanho={30} cor={c.solTinta} traco={2.2} />
         </Pressable>
       </View>
       {state.routes.slice(meio).map((r, i) => aba(r, i + meio))}

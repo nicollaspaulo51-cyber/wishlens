@@ -1,6 +1,5 @@
 // Galeria do Museu, como um corredor de museu: cada foto salva fica num totem com plaquinha, e totens de câmera e
 // troféu decoram o caminho. Arrastar para o lado passa as fotos; a do centro fica grande e as dos lados viram de leve.
-import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { Animated, FlatList, Image, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +9,7 @@ import { apagarDaGaleria, enderecoDa, useGaleria, type FotoGaleria } from '../li
 import { Brilho, useEntrada, useLaco } from '../lib/movimento';
 import { CompartilharFoto } from './CompartilharFoto';
 import { Apagado, Botao } from './ui';
+import { Icone } from './icones/Icone';
 
 type Item = { tipo: 'foto'; foto: FotoGaleria; n: number } | { tipo: 'camera' | 'trofeu'; chave: string };
 
@@ -154,7 +154,7 @@ export function Totem({ tipo, chave }: { tipo: 'camera' | 'trofeu'; chave: unkno
       <Animated.View style={{ width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
         backgroundColor: ouro ? c.sol : c.suave, marginBottom: 6,
         transform: [{ translateY: flutua.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, -6, 0] }) }] }}>
-        <Ionicons name={ouro ? 'trophy' : 'camera'} size={40} color={ouro ? c.solTinta : c.destaque} />
+        <Icone nome={ouro ? 'trofeu' : 'camera'} tamanho={42} cor={ouro ? c.solTinta : c.destaque} />
         {ouro ? <Brilho pausa={2600} /> : null}
       </Animated.View>
       <Pedestal altura={120} />
@@ -197,7 +197,7 @@ function TelaCheia({ fotos, inicio, aoFechar }: { fotos: FotoGaleria[]; inicio: 
         ) : null}
         <Pressable accessibilityRole="button" accessibilityLabel="Fechar a foto" onPress={aoFechar}
           style={{ position: 'absolute', top: topo + 8, right: 12, width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="close" size={30} color="#fff" />
+          <Icone nome="fechar" tamanho={28} cor="#fff" />
         </Pressable>
       </View>
     </Modal>

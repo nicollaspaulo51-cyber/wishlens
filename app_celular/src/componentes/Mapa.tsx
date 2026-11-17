@@ -11,6 +11,7 @@ const ESTILO_LIMPO = [{ featureType: 'poi.business', stylers: [{ visibility: 'of
 import type { Mapa as DadosMapa, Lugar, Tema } from '../lib/api';
 import { useCores } from '../lib/cores';
 import { useMovimentoReduzido } from '../lib/movimento';
+import { Icone, IconeTema } from './icones/Icone';
 
 export type PropsMapa = {
   posicao: { lat: number; lon: number };
@@ -111,7 +112,7 @@ function Lugares({ lugares, temas, cor, regiao }: { lugares: Lugar[]; temas: Rec
             title={`${t?.emoji ?? ''} ${l.nome}`} description={`${l.distancia_km.toFixed(1)} km · procure ${t?.nome.toLowerCase() ?? ''}`}>
             <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: t?.cor ?? cor,
               borderWidth: 3, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: 17 }}>{t?.emoji ?? '📍'}</Text>
+              {t ? <IconeTema id={t.id} emoji={t.emoji} tamanho={18} cor="#fff" /> : <Icone nome="alfinete" tamanho={18} cor="#fff" />}
             </View>
           </Marker>
         );

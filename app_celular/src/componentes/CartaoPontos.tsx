@@ -6,6 +6,7 @@ import type { Cartao } from '../lib/api';
 import { FONTE_TITULO, useCores } from '../lib/cores';
 import { Brilho } from '../lib/movimento';
 import { Apagado } from './ui';
+import { IconeTema } from './icones/Icone';
 
 export function CartaoPontos({ cartao }: { cartao: Cartao }) {
   const c = useCores();
@@ -44,7 +45,7 @@ export function CartaoPontos({ cartao }: { cartao: Cartao }) {
         shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 }}>
       <View style={{ padding: 16, borderRadius: 2, overflow: 'hidden' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Text style={{ fontSize: 36 }} accessibilityElementsHidden>{tema.emoji}</Text>
+          <IconeTema id={tema.id} emoji={tema.emoji} tamanho={40} cor={tema.cor} />
           <View style={{ backgroundColor: c.sol, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 4 }}>
             <Text style={{ fontFamily: FONTE_TITULO, fontSize: 30, color: c.solTinta }}>+{cartao.pontos}</Text>
           </View>
