@@ -40,11 +40,14 @@ export default function Raiz() {
   if (!fontes) return null;
   return (
     // vars(): as cores da PALETA viram variáveis CSS para as classes do NativeWind (tema claro/escuro)
-    <GestureHandlerRootView style={[{ flex: 1 }, vars(variaveis(c))]}>
-      <ProvedorSessao>
-        <StatusBar style="auto" />
-        <Navegacao />
-      </ProvedorSessao>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* View comum: o NativeWind registra as variáveis por componentes do React Native */}
+      <View style={[{ flex: 1 }, vars(variaveis(c))]}>
+        <ProvedorSessao>
+          <StatusBar style="auto" />
+          <Navegacao />
+        </ProvedorSessao>
+      </View>
     </GestureHandlerRootView>
   );
 }
