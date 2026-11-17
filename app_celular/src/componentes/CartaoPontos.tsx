@@ -4,7 +4,8 @@ import { AccessibilityInfo, Animated, Text, View } from 'react-native';
 
 import type { Cartao } from '../lib/api';
 import { FONTE_TITULO, useCores } from '../lib/cores';
-import { Brilho } from '../lib/movimento';
+import { Carimbo } from './efeitos/Carimbo';
+import { Holografico as Brilho } from './efeitos/Holografico';
 import { Apagado } from './ui';
 import { IconeTema } from './icones/Icone';
 
@@ -32,6 +33,7 @@ export function CartaoPontos({ cartao }: { cartao: Cartao }) {
         </Text>
         <Apagado>Vale foto tirada agora, de algo real na sua frente, de um dos temas.</Apagado>
         <Apagado estilo={{ fontSize: 12, marginTop: 4 }}>{cartao.juizes}</Apagado>
+        <View pointerEvents="none" style={{ position: 'absolute', right: 8, top: 10 }}><Carimbo aceita={false} cor={c.recusa} /></View>
       </View>
     );
   }
@@ -60,6 +62,7 @@ export function CartaoPontos({ cartao }: { cartao: Cartao }) {
         <Apagado estilo={{ fontSize: 12, marginTop: 6 }}>{cartao.juizes}</Apagado>
         <Brilho pausa={2500} atraso={500} />
       </View>
+      <View pointerEvents="none" style={{ position: 'absolute', right: 6, bottom: 10 }}><Carimbo aceita cor={c.destaque} /></View>
       </View>
     </Animated.View>
   );

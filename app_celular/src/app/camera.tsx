@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CartaoPontos } from '../componentes/CartaoPontos';
 import { CompartilharFoto } from '../componentes/CompartilharFoto';
+import { Confete } from '../componentes/efeitos/Confete';
 import { SeletorAba } from '../componentes/SeletorAba';
 import { Apagado, Botao, Fichas, Titulo } from '../componentes/ui';
 import { api, type Julgamento, type Tema } from '../lib/api';
@@ -156,6 +157,7 @@ export default function Camera() {
             </View>
           ) : null}
         </ScrollView>
+        {resposta?.status === 'ok' && resposta.cartao.aceita ? <Confete key={resposta.id} disparo={1} /> : null}
       </SafeAreaView>
     );
   }

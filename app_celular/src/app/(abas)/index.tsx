@@ -11,7 +11,8 @@ import { Aviso, Botao } from '../../componentes/ui';
 import { api, type Mapa as DadosMapa, type Tema } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
 import { useModo } from '../../lib/modo';
-import { Brilho, Surge, useContagem, useEntrada } from '../../lib/movimento';
+import { Holografico as Brilho } from '../../componentes/efeitos/Holografico';
+import { Surge, useContagem, useEntrada } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 import { Icone, IconeTema } from '../../componentes/icones/Icone';
 

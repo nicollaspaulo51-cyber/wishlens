@@ -4,7 +4,8 @@ import { Animated, Text, View } from 'react-native';
 
 import { type LinhaPodio } from '../lib/api';
 import { FONTE_TITULO, useCores } from '../lib/cores';
-import { Brilho, useEntrada } from '../lib/movimento';
+import { useEntrada } from '../lib/movimento';
+import { Holografico as Brilho } from './efeitos/Holografico';
 
 export function Degraus({ ranking, chave }: { ranking: LinhaPodio[]; chave: string }) {
   const c = useCores();

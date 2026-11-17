@@ -6,7 +6,8 @@ import { Galeria } from '../../componentes/Galeria';
 import { Apagado, Aviso, Cartaz, Subtitulo, Titulo } from '../../componentes/ui';
 import { api, type Medalha } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
-import { Brilho, Surge, useVisita } from '../../lib/movimento';
+import { Holografico as Brilho } from '../../componentes/efeitos/Holografico';
+import { Surge, useVisita } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 import { IconeTema } from '../../componentes/icones/Icone';
 

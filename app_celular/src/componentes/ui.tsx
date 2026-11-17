@@ -1,7 +1,9 @@
 // Peças pequenas de interface usadas em várias telas, no estilo caderno de campo (classes do NativeWind; as cores
 // são as variáveis da PALETA, então o tema claro/escuro troca sozinho).
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View, type TextStyle, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View, type TextStyle, type ViewStyle } from 'react-native';
+
+import { graoDePapel } from './efeitos/grao';
 
 import { useCores } from '../lib/cores';
 
@@ -35,11 +37,20 @@ export function Anotacao({ children, estilo }: { children: ReactNode; estilo?: T
 // A ficha de papel do caderno: fundo de ficha, borda de lápis e uma sombra curta. `fita` cola um pedaço de fita adesiva.
 export function Cartaz({ children, estilo, fita }: { children: ReactNode; estilo?: ViewStyle; fita?: boolean }) {
   return (
-    <View className="bg-ficha border border-linha rounded-ficha p-4 shadow-sm" style={estilo}>
+    <View className="bg-ficha border border-linha rounded-ficha p-4 shadow-sm overflow-hidden" style={estilo}>
+      <Grao />
       {fita ? <View pointerEvents="none" className="absolute -top-2.5 self-center w-16 h-5 bg-sol/40 rotate-[-3deg]" /> : null}
       {children}
     </View>
   );
+}
+
+// Textura de papel por baixo do conteúdo da ficha (ladrilho de ruído do Skia, bem fraquinho)
+function Grao() {
+  const ladrilho = graoDePapel();
+  if (!ladrilho) return null;
+  return <Image source={{ uri: ladrilho }} resizeMode="repeat" pointerEvents="none" accessibilityElementsHidden
+    style={[StyleSheet.absoluteFill, { opacity: 0.07 }]} />;
 }
 
 export function Botao({ titulo, aoTocar, tipo = 'primario', desativado, carregando, estilo, rotulo }: {

@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FONTE_TITULO, useCores } from '../lib/cores';
 import { apagarDaGaleria, enderecoDa, useGaleria, type FotoGaleria } from '../lib/galeria';
-import { Brilho, useEntrada, useLaco } from '../lib/movimento';
+import { useEntrada, useLaco } from '../lib/movimento';
+import { Holografico as Brilho } from './efeitos/Holografico';
 import { CompartilharFoto } from './CompartilharFoto';
 import { Apagado, Botao } from './ui';
 import { Icone } from './icones/Icone';

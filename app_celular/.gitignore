@@ -42,3 +42,6 @@ yarn-error.*
 
 # segredos locais
 .env
+
+# Skia no navegador (gerado por "npx setup-skia-web public")
+public/canvaskit.wasm

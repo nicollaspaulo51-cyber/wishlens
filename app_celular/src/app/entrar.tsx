@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Topografia } from '../componentes/efeitos/Topografia';
+import { Icone, type NomeIcone } from '../componentes/icones/Icone';
 import { Apagado, Botao, Fichas } from '../componentes/ui';
 import { FONTE_TITULO, useCores } from '../lib/cores';
 import { Surge, useLaco } from '../lib/movimento';
@@ -27,18 +29,18 @@ function Lupa() {
 
 // Os temas do jogo flutuando em volta da marca, como alfinetes num mapa
 const ALFINETES = [
-  { e: '🚗', x: '8%', y: '14%' }, { e: '🌿', x: '82%', y: '10%' }, { e: '🐦', x: '88%', y: '58%' },
-  { e: '🐾', x: '4%', y: '66%' }, { e: '🖥️', x: '70%', y: '82%' },
+  { id: 'carros', x: '8%', y: '14%' }, { id: 'plantas', x: '82%', y: '10%' }, { id: 'passaros', x: '88%', y: '58%' },
+  { id: 'pets', x: '4%', y: '66%' }, { id: 'pecas', x: '70%', y: '82%' },
 ] as const;
 
-function Alfinete({ e, x, y, i }: { e: string; x: string; y: string; i: number }) {
+function Alfinete({ id, x, y, i }: { id: NomeIcone; x: string; y: string; i: number }) {
   const { v } = useLaco(2400 + i * 300, 200);
   return (
     <Animated.View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
       style={{ position: 'absolute', left: x as `${number}%`, top: y as `${number}%`, width: 46, height: 46, borderRadius: 23,
         backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center',
         justifyContent: 'center', transform: [{ translateY: v.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, -8, 0] }) }] }}>
-      <Text className="font-texto text-[22px]" >{e}</Text>
+      <Icone nome={id} tamanho={24} cor="#FFFFFF" />
     </Animated.View>
   );
 }
@@ -87,7 +89,8 @@ export default function Entrar() {
           <View style={{ flexGrow: larga ? 0 : 1, width: '100%', maxWidth: 460, alignSelf: 'center' }}>
           <SafeAreaView edges={['top']} style={{ flexGrow: 1, minHeight: 320, justifyContent: 'center', alignItems: 'center',
             paddingHorizontal: 28, paddingVertical: 32, gap: 6 }}>
-            {ALFINETES.map((a, i) => <Alfinete key={a.e} {...a} i={i} />)}
+            <Topografia />
+            {ALFINETES.map((a, i) => <Alfinete key={a.id} {...a} i={i} />)}
             <Surge><Lupa /></Surge>
             <Surge ordem={2}>
               <Text accessibilityRole="header" style={{ fontFamily: FONTE_TITULO, fontSize: 52, color: '#FFFFFF', letterSpacing: -1.5,
