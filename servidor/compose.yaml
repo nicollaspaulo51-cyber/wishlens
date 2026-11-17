@@ -8,8 +8,10 @@ services:
     environment:  # vêm do servidor/.env (o compose lê sozinho); sem eles o jogo fica em memória
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_KEY: ${SUPABASE_KEY:-}
-      # 2º juiz: IA de visão open source no próprio PC (Ollama, MIT + Qwen2.5-VL 7B, Apache 2.0). VISAO_URL= desliga.
-      VISAO_URL: ${VISAO_URL-http://ollama:11434/v1}
+      # 2º juiz: IA de visão open source (Ollama, MIT + Qwen2.5-VL 7B, Apache 2.0). Sem VISAO_URL, só o CLIP julga.
+      # Na placa de vídeo: Ollama do Windows + ponte, VISAO_URL=http://<ip do WSL>:11434/v1 no servidor/.env.
+      # No processador: VISAO_URL=http://ollama:11434/v1 e docker compose --profile ia-cpu up -d
+      VISAO_URL: ${VISAO_URL:-}
       VISAO_MODELO: ${VISAO_MODELO:-qwen2.5vl:7b}
     ports: ["7860:7860"]
     # avisos do suporte e dados do chat (conversas e fotos): sobrevivem a reinícios
@@ -19,10 +21,11 @@ services:
       interval: 30s
       start_period: 60s
 
-  # Roda a IA de visão. Sem placa de vídeo leva ~30-60 s por foto; o modelo (~6 GB) fica no volume ollama.
+  # IA de visão no processador (perfil ia-cpu). Sem placa de vídeo leva ~30-60 s por foto; o modelo (~6 GB) fica no volume ollama.
   # Baixar o modelo uma vez: docker compose exec ollama ollama pull qwen2.5vl:7b
   ollama:
     image: ollama/ollama:0.12.6
+    profiles: [ia-cpu]
     restart: unless-stopped
     environment:
       OLLAMA_KEEP_ALIVE: 24h  # deixa o modelo na memória: carregar de novo custa ~20 s
