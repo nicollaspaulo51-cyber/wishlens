@@ -7,6 +7,7 @@ import { useCores } from '../lib/cores';
 import { NOME_LIVRE } from '../lib/modo';
 import { useDados } from '../lib/useDados';
 import { Barras, Colunas, Legenda, useCoresGrafico } from './Graficos';
+import { Pizza, type Fatia } from './Pizza';
 import { Apagado, Aviso, Cartaz, Fichas, Subtitulo } from './ui';
 
 const NUMEROS: { id: keyof Estatisticas['resumo']; nome: string; formato?: (v: number) => string }[] = [
@@ -35,6 +36,10 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
   const nomeTema = Object.fromEntries((temas.dados?.temas ?? []).map((t) => [t.id, `${t.emoji} ${t.nome}`]));
   const nomeAba: Record<string, string> = { livre: `${NOME_LIVRE.emoji} ${NOME_LIVRE.nome}`,
     ...Object.fromEntries((temas.dados?.abas ?? []).map((a) => [a.id, `${a.emoji} ${a.nome}`])) };
+  // Pizza: uma por pessoa, com os nomes dos baldes
+  const pizza = (f: (e: Estatisticas) => Fatia[]) =>
+    [eu, outro].filter((e): e is Estatisticas => !!e).map((e, i) => ({ nome: i ? e.apelido : 'Você', fatias: f(e) }));
+  const fatias = (b: Balde[], nome: (chave: string) => string) => b.map((x) => ({ nome: nome(x.chave), valor: x.valor }));
   const series = (f: (e: Estatisticas) => Balde[]) =>
     [eu, outro].filter((e): e is Estatisticas => !!e).map((e, i) => ({ nome: i ? e.apelido : 'Você', valores: valores(f(e)) }));
 
@@ -93,8 +98,19 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
             <Barras chave={chave} rotulos={eu.por_tema.map((t) => nomeTema[t.chave] ?? t.chave)} series={series((e) => e.por_tema)} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
+            <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Pontos divididos por tema</Text>
+            <Pizza pessoas={pizza((e) => fatias(e.por_tema, (k) => nomeTema[k] ?? k))} />
+          </Cartaz>
+          <Cartaz estilo={{ gap: 10 }}>
             <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Pontos por aba do jogo</Text>
-            <Barras chave={chave} rotulos={eu.por_aba.map((a) => nomeAba[a.chave] ?? a.chave)} series={series((e) => e.por_aba)} />
+            <Pizza pessoas={pizza((e) => fatias(e.por_aba, (k) => nomeAba[k] ?? k))} />
+          </Cartaz>
+          <Cartaz estilo={{ gap: 10 }}>
+            <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Fotos aceitas e recusadas</Text>
+            <Pizza pessoas={pizza((e) => {
+              const aceitas = Math.round(e.resumo.fotos * e.resumo.aceitas);
+              return [{ nome: '✔ aceitas', valor: aceitas }, { nome: '✖ recusadas', valor: e.resumo.fotos - aceitas }];
+            })} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
             <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Que horas você fotografa</Text>
@@ -106,7 +122,7 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
             <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Fotos por clima</Text>
-            <Barras chave={chave} rotulos={['☀️ sol', '☁️ nublado', '🌧️ chuva', 'sem dado']} series={series((e) => e.por_clima)} />
+            <Pizza pessoas={pizza((e) => fatias(e.por_clima, (k) => ({ sol: '☀️ sol', nublado: '☁️ nublado', chuva: '🌧️ chuva' })[k] ?? 'sem dado'))} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
             <Text style={{ color: c.tinta, fontSize: 16, fontWeight: '700' }}>Achados mais fotografados</Text>
