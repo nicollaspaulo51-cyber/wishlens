@@ -1,10 +1,9 @@
-// Entrada: a marca no verde do mapa de trilha, com o Zum e os temas do jogo em volta, e o formulário embaixo.
+// Entrada: a marca no verde do mapa de trilha, com os temas do jogo em volta, e o formulário embaixo.
 // No celular o formulário é uma folha que sobe de baixo; em tela larga, tudo vira uma coluna centralizada.
 import { useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Corredor } from '../componentes/Corredor';
 import { Apagado, Botao, Fichas } from '../componentes/ui';
 import { FONTE_TITULO, useCores } from '../lib/cores';
 import { Surge, useLaco } from '../lib/movimento';
@@ -97,7 +96,6 @@ export default function Entrar() {
               </Text>
             </Surge>
             <Surge ordem={4}><Text style={{ color: '#D6EDE2', fontSize: 18, textAlign: 'center' }}>Aponte. Fotografe. Descubra.</Text></Surge>
-            <Surge ordem={6} estilo={{ marginTop: 10 }}><Corredor passo="parado" direcao={1} /></Surge>
           </SafeAreaView>
 
           <SafeAreaView edges={larga ? [] : ['bottom']} style={{ backgroundColor: c.superficie, borderTopLeftRadius: 30, borderTopRightRadius: 30,

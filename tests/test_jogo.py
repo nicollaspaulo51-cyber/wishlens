@@ -410,3 +410,28 @@ def test_dono_da_academia_ganha_por_dia_e_por_dias_seguidos():
     bonus = p[p["bonus_dono"].eq(True)]
     assert set(bonus["usuario"]) == {"ana"}
     assert bonus["pontos"].tolist() == [jogo.DONO_DIA, jogo.DONO_DIA, jogo.DONO_DIA + jogo.DONO_SEGUIDOS]
+
+
+def test_estatisticas_baldes_fixos_e_vazio():
+    from datetime import date, datetime
+
+    import pandas as pd
+
+    from src import jogo
+    hoje = date(2026, 11, 16)
+    df = pd.DataFrame([
+        {"usuario": "ana", "criado_em": datetime(2026, 11, 16, 10), "tema": "carros", "achado": "Fusca", "aceita": True,
+         "pontos": 20, "aba": "livre", "clima": "sol", "km_anterior": 1.5},
+        {"usuario": "ana", "criado_em": datetime(2026, 11, 14, 19), "tema": "carros", "achado": "fusca", "aceita": True,
+         "pontos": 10, "aba": "livre", "clima": None, "km_anterior": 40.0},  # 40 km não é caminhada
+        {"usuario": "ana", "criado_em": datetime(2026, 11, 14, 20), "tema": "plantas", "achado": "ipê", "aceita": False,
+         "pontos": 0, "aba": "livre", "clima": "chuva", "km_anterior": None},
+    ])
+    e = jogo.estatisticas(df, "ana", ["carros", "plantas"], ["livre", "paisagens"], hoje)
+    assert len(e["por_dia"]) == jogo.DIAS_SERIE and e["por_dia"][-1] == {"chave": "2026-11-16", "valor": 20}
+    assert e["por_dia"][-2]["valor"] == 0 and e["por_dia"][-3]["valor"] == 10
+    assert e["resumo"]["aceitas"] == 0.67 and e["resumo"]["achados"] == 1 and e["resumo"]["km"] == 1.5
+    assert [x["chave"] for x in e["por_hora"]] == list(jogo.FAIXAS_HORA) and e["por_hora"][3]["valor"] == 1
+    assert e["por_clima"][-1] == {"chave": "sem dado", "valor": 1} and e["top_achados"][0]["valor"] == 2
+    vazio = jogo.estatisticas(df, "bia", ["carros", "plantas"], ["livre", "paisagens"], hoje)
+    assert vazio["resumo"]["fotos"] == 0 and len(vazio["por_semana"]) == 7 and vazio["top_achados"] == []

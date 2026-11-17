@@ -22,12 +22,13 @@ import uuid
 from contextlib import contextmanager
 from pathlib import Path
 
+import pandas as pd
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field
 
-from servidor.app import (ABAS, FOTO_MAX, SessaoMemoria, TODOS, _capturas, _pontuadas, _pontuadas_aba, gravar_aviso,
+from servidor.app import (ABAS, FOTO_MAX, SessaoMemoria, TEMAS, TODOS, _capturas, _pontuadas, _pontuadas_aba, gravar_aviso,
                           sessao)
 from src import jogo
 from src.categorias import nome_valido
@@ -201,6 +202,24 @@ def placar(periodo: str = "hoje", modo: str = "livre", mim: str = Depends(eu), s
     todos = com_pontos + [(a, 0, 0) for a in sem]
     return {"ranking": [{"posicao": i, "apelido": a, "pontos": p, "achados": n, "voce": a == mim}
                         for i, (a, p, n) in enumerate(todos, 1)]}
+
+
+@router.get("/amigos/estatisticas")
+def estatisticas(com: str | None = None, mim: str = Depends(eu), s=Depends(sessao)):
+    """Seus números e, se `com` for um amigo aceito, os dele, para comparar. Só agregados: nada de linhas, lugar ou
+    célula. A amizade é a fronteira de privacidade (o horário em que alguém joga é um hábito pessoal)."""
+    outro = None
+    if com and com.strip() != mim:
+        outro = _outro(com, mim)
+        with _db() as db:
+            if not _amigos(db, mim, outro):
+                raise HTTPException(403, "Só dá para comparar com amigos.")
+    todas = _capturas(s)
+    partes = [_pontuadas(s, todas).assign(aba="livre")] + [_pontuadas_aba(s, m, todas).assign(aba=m) for m in ABAS]
+    p = pd.concat([x for x in partes if not x.empty]) if any(not x.empty for x in partes) else partes[0]
+    temas, abas = [t.id for t in TEMAS], ["livre", *ABAS]
+    return {"eu": {"apelido": mim, **jogo.estatisticas(p, mim, temas, abas)},
+            "amigo": {"apelido": outro, **jogo.estatisticas(p, outro, temas, abas)} if outro else None}
 
 
 @router.post("/amigos/responder")

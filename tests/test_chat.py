@@ -144,3 +144,20 @@ def test_placar_dos_amigos(c, monkeypatch):
     assert r[0]["pontos"] > 0 and r[1]["pontos"] == 0
     assert c.get("/amigos/placar?modo=paisagens", headers=_h("ana")).json()["ranking"][0]["pontos"] == 0
     assert c.get("/amigos/placar?periodo=ano", headers=_h("ana")).status_code == 400
+
+
+def test_estatisticas_so_com_amigos(c, monkeypatch):
+    def clip(_imagem, _modo="livre"):
+        return {"nitidez": 80.0, "nao_identificou": False, "tema": "carros", "achado": "fiat uno", "foto_real": True,
+                "confianca": 0.9, "probs": {"carros": 0.9, "tela": 0.02, "nenhum": 0.08}, "vetor": [1.0] + [0.0] * 511}
+    monkeypatch.setattr(srv, "_clip", clip)
+    buf = io.BytesIO()
+    Image.new("RGB", (64, 48), (10, 120, 40)).save(buf, "JPEG")
+    assert c.post("/julgar", files={"foto": ("f.jpg", buf.getvalue(), "image/jpeg")}, headers=_h("bia")).json()["cartao"]["aceita"]
+    assert c.get("/amigos/estatisticas?com=bia", headers=_h("ana")).status_code == 403  # ainda não são amigos
+    _amigos(c)
+    r = c.get("/amigos/estatisticas?com=bia", headers=_h("ana")).json()
+    assert r["eu"]["resumo"]["fotos"] == 0 and r["amigo"]["resumo"]["fotos"] == 1
+    assert r["amigo"]["resumo"]["pontos"] > 0 and r["amigo"]["por_dia"][-1]["valor"] == r["amigo"]["resumo"]["pontos"]
+    assert {"cidade", "celula", "tipo_lugar"}.isdisjoint(json.dumps(r).split('"'))
+    assert c.get("/amigos/estatisticas", headers=_h("ana")).json()["amigo"] is None

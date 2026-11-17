@@ -57,6 +57,13 @@ export type CartaoAchado = { tema: string; nome: string; emoji: string; cor: str
 export type Mensagem = { id: number; de: string; minha: boolean; texto: string; sistema: boolean; foto: string | null;
   cartao: CartaoAchado | null; criado_em: string };
 export type Amigo = { apelido: string; nao_lidas: number; ultima: { texto: string; minha: boolean; criado_em: string } | null };
+// Estatísticas da aba Amigos: baldes de ordem fixa, já com zero onde não houve foto
+export type Balde = { chave: string; valor: number };
+export type Estatisticas = {
+  apelido: string;
+  resumo: { pontos: number; fotos: number; aceitas: number; achados: number; corrente: number; melhor_dia: number; km: number; dias_jogados: number };
+  por_dia: Balde[]; por_tema: Balde[]; por_aba: Balde[]; por_hora: Balde[]; por_semana: Balde[]; por_clima: Balde[]; top_achados: Balde[];
+};
 export type Amigos = { amigos: Amigo[]; recebidos: string[]; enviados: string[] };
 
 export class ErroApi extends Error {
@@ -129,6 +136,8 @@ export const api = {
   },
 
   amigos: () => chamar<Amigos>('/amigos'),
+  estatisticas: (com?: string | null) =>
+    chamar<{ eu: Estatisticas; amigo: Estatisticas | null }>(`/amigos/estatisticas${com ? `?com=${encodeURIComponent(com)}` : ''}`),
   placarAmigos: (periodo: string, modo: Modo = 'livre') =>
     chamar<{ ranking: LinhaPodio[] }>(`/amigos/placar?periodo=${periodo}&modo=${modo}`),
   pedirAmizade: (apelido: string) => chamar<{ estado: 'pedido' | 'aceita' }>('/amigos', json({ apelido })),

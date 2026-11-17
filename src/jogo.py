@@ -781,3 +781,51 @@ def _bonus_donos(pontuadas: pd.DataFrame) -> pd.DataFrame:
                            "base": 0, "novidade": 0, "raridade": 0, "do_dia": False, "extra": bonus, "lupa": 0,
                            "meta": 0, "detalhes": texto, "aceita": True, "motivo": None, "bonus_dono": True})
     return pd.DataFrame(linhas, columns=[*pontuadas.columns, "bonus_dono"])
+
+
+# ---------------------------------------------------------------- estatísticas (aba Amigos)
+DIAS_SERIE = 14
+NOMES_SEMANA = ("seg", "ter", "qua", "qui", "sex", "sáb", "dom")
+FAIXAS_HORA = ("0-3h", "3-6h", "6-9h", "9-12h", "12-15h", "15-18h", "18-21h", "21-24h")
+CLIMAS = ("sol", "nublado", "chuva", "sem dado")
+KM_MAX_TRECHO = 5.0  # um trecho maior que isto entre duas fotos não é caminhada (ônibus, carro, dia seguinte)
+
+
+def estatisticas(pontuadas: pd.DataFrame, usuario: str, temas: list[str], abas: list[str],
+                 hoje: date | None = None) -> dict:
+    """Só números agregados de uma pessoa, em baldes de ordem fixa e preenchidos com zero (o app compara duas
+    pessoas lado a lado sem alinhar nada). `pontuadas` traz todas as abas, com a coluna "aba"."""
+    hoje = hoje or dia_de(None)
+    df = pontuadas[pontuadas["usuario"] == usuario] if not pontuadas.empty else pontuadas
+    ok = df[df["aceita"]] if not df.empty else df
+    dias = [hoje - timedelta(days=i) for i in range(DIAS_SERIE - 1, -1, -1)]
+    if df.empty:
+        zeros = lambda chaves: [{"chave": k, "valor": 0} for k in chaves]
+        return {"resumo": {"pontos": 0, "fotos": 0, "aceitas": 0.0, "achados": 0, "corrente": 0, "melhor_dia": 0,
+                           "km": 0.0, "dias_jogados": 0},
+                "por_dia": zeros([d.isoformat() for d in dias]), "por_tema": zeros(temas), "por_aba": zeros(abas),
+                "por_hora": zeros(FAIXAS_HORA), "por_semana": zeros(NOMES_SEMANA), "por_clima": zeros(CLIMAS),
+                "top_achados": []}
+    dia = df["criado_em"].map(lambda t: dia_de(t.to_pydatetime() if hasattr(t, "to_pydatetime") else t))
+    pts_dia = ok.groupby(dia[ok.index])["pontos"].sum() if not ok.empty else pd.Series(dtype=float)
+    contar = lambda serie, chaves: [{"chave": k, "valor": int(serie.get(k, 0))} for k in chaves]
+    hora = df["criado_em"].map(lambda t: FAIXAS_HORA[int(t.hour) // 3])
+    semana = df["criado_em"].map(lambda t: NOMES_SEMANA[t.weekday()])
+    clima = df["clima"].map(lambda v: v if v in CLIMAS[:3] else "sem dado") if "clima" in df else pd.Series("sem dado", index=df.index)
+    km = pd.to_numeric(df.get("km_anterior"), errors="coerce") if "km_anterior" in df else pd.Series(dtype=float)
+    achados = ok["achado"].map(normalizar) if not ok.empty else pd.Series(dtype=str)
+    top = ok.assign(chave=achados).groupby("chave").agg(vezes=("achado", "size"), nome=("achado", "first")) if not ok.empty else None
+    return {
+        "resumo": {"pontos": int(ok["pontos"].sum()) if not ok.empty else 0, "fotos": int(len(df)),
+                   "aceitas": round(float(df["aceita"].mean()), 2), "achados": int(achados.nunique()),
+                   "corrente": corrente_atual(pontuadas, usuario, hoje), "melhor_dia": int(pts_dia.max()) if len(pts_dia) else 0,
+                   "km": round(float(km[(km > 0) & (km <= KM_MAX_TRECHO)].sum()), 1), "dias_jogados": int(dia.nunique())},
+        "por_dia": [{"chave": d.isoformat(), "valor": int(pts_dia.get(d, 0))} for d in dias],
+        "por_tema": contar(ok.groupby("tema")["pontos"].sum() if not ok.empty else {}, temas),
+        "por_aba": contar(ok.groupby("aba")["pontos"].sum() if not ok.empty else {}, abas),
+        "por_hora": contar(hora.value_counts(), FAIXAS_HORA),
+        "por_semana": contar(semana.value_counts(), NOMES_SEMANA),
+        "por_clima": contar(clima.value_counts(), CLIMAS),
+        "top_achados": [] if top is None else [{"chave": str(r.nome), "valor": int(r.vezes)}
+                                               for r in top.sort_values("vezes", ascending=False).head(5).itertuples()],
+    }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Analises } from '../../componentes/Analises';
 import { Degraus } from '../../componentes/Degraus';
 import { SeletorAba } from '../../componentes/SeletorAba';
 import { Apagado, Aviso, Botao, Cartaz, Fichas, Subtitulo, Titulo } from '../../componentes/ui';
@@ -121,6 +122,8 @@ export default function Amigos() {
             ))}
           </Cartaz>
         ) : null}
+
+        <Analises amigos={(d?.amigos ?? []).map((a) => a.apelido)} visita={visita} />
       </ScrollView>
     </SafeAreaView>
   );
