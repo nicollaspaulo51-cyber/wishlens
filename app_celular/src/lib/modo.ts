@@ -32,5 +32,5 @@ export function useModo(): Modo {
 }
 
 export const NOME_LIVRE = { id: 'livre', nome: 'Mapa livre', emoji: '', cor: '#3F5F55',
-  conta: 'os 5 temas (carros, plantas, pássaros, animais e peças de computador); o tema do dia vale o dobro',
+  conta: 'os 5 temas (carros, plantas, frutas e comidas, animais e peças de computador); o tema do dia vale o dobro',
   onde: 'lugares de cada tema' } as const;

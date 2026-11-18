@@ -1,7 +1,7 @@
 // Galeria do Museu, como um corredor de museu: cada foto salva fica num totem com plaquinha, e totens de câmera e
 // troféu decoram o caminho. Arrastar para o lado passa as fotos; a do centro fica grande e as dos lados ficam menores.
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Animated, FlatList, Image, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { Animated, FlatList, Image, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Reanimated, { Extrapolation, interpolate, runOnJS, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue,
   type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +10,7 @@ import { PALETA, useCores } from '../lib/cores';
 import { apagarDaGaleria, enderecoDa, useGaleria, type FotoGaleria } from '../lib/galeria';
 import { useEntrada, useLaco } from '../lib/movimento';
 import { CompartilharFoto } from './CompartilharFoto';
-import { Apagado, Botao } from './ui';
+import { Apagado, Botao, ModalTema } from './ui';
 import { Icone, IconeTema } from './icones/Icone';
 
 type Item = { tipo: 'foto'; foto: FotoGaleria; n: number } | { tipo: 'camera' | 'trofeu'; chave: string };
@@ -187,7 +187,7 @@ function TelaCheia({ fotos, inicio, aoFechar }: { fotos: FotoGaleria[]; inicio: 
   const { width, height } = useWindowDimensions();
   const topo = useSafeAreaInsets().top;
   return (
-    <Modal visible={inicio !== null} transparent animationType="fade" onRequestClose={aoFechar}>
+    <ModalTema visible={inicio !== null} transparent animationType="fade" onRequestClose={aoFechar}>
       <View style={{ flex: 1, backgroundColor: c.fundo }}>
         {inicio !== null ? (
           <FlatList data={fotos} horizontal pagingEnabled showsHorizontalScrollIndicator={false} initialScrollIndex={inicio}
@@ -209,7 +209,7 @@ function TelaCheia({ fotos, inicio, aoFechar }: { fotos: FotoGaleria[]; inicio: 
           <Icone nome="fechar" tamanho={28} cor={c.tinta} />
         </Pressable>
       </View>
-    </Modal>
+    </ModalTema>
   );
 }
 
@@ -217,7 +217,7 @@ function Opcoes({ foto, aoFechar }: { foto: FotoGaleria | null; aoFechar: () => 
   const c = useCores();
   const baixo = useSafeAreaInsets().bottom;
   return (
-    <Modal visible={!!foto} transparent animationType="slide" onRequestClose={aoFechar}>
+    <ModalTema visible={!!foto} transparent animationType="slide" onRequestClose={aoFechar}>
       <Pressable accessibilityLabel="Fechar" onPress={aoFechar} style={{ flex: 1, backgroundColor: `${PALETA.escuro.fundo}66` }} />
       {foto ? (
         <View style={{ backgroundColor: c.fundo, borderTopLeftRadius: 6, borderTopRightRadius: 6, padding: 16, paddingBottom: baixo + 16, gap: 12 }}>
@@ -229,6 +229,6 @@ function Opcoes({ foto, aoFechar }: { foto: FotoGaleria | null; aoFechar: () => 
           <Botao titulo="Apagar da galeria" tipo="secundario" aoTocar={() => { apagarDaGaleria(foto.id); aoFechar(); }} />
         </View>
       ) : null}
-    </Modal>
+    </ModalTema>
   );
 }

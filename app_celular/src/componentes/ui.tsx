@@ -1,10 +1,22 @@
 // Peças comuns do mapa topográfico; as classes do NativeWind usam as cores do tema ativo.
-import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View, type TextStyle, type ViewStyle } from 'react-native';
+import type { ComponentProps, ReactNode } from 'react';
+import { vars } from 'nativewind';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View, type TextStyle, type ViewStyle } from 'react-native';
 
 import { IconeTema } from './icones/Icone';
 
-import { useCores } from '../lib/cores';
+import { useCores, variaveis } from '../lib/cores';
+
+// Modal com as cores do tema: no navegador o Modal fica fora da raiz do app e não herda as variáveis CSS do
+// _layout.tsx, então as classes (text-tinta...) caíam no preto padrão sobre o fundo escuro.
+export function ModalTema({ children, ...props }: ComponentProps<typeof Modal>) {
+  const c = useCores();
+  return (
+    <Modal {...props}>
+      <View style={[{ flex: 1 }, vars(variaveis(c))]}>{children}</View>
+    </Modal>
+  );
+}
 
 export function Titulo({ children, tamanho = 28, estilo }: { children: ReactNode; tamanho?: number; estilo?: TextStyle }) {
   return (

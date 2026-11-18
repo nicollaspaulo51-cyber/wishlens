@@ -3,11 +3,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Pressable, ScrollView, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IconeTema } from '../../componentes/icones/Icone';
-import { Apagado, Botao } from '../../componentes/ui';
+import { Apagado, Botao, ModalTema } from '../../componentes/ui';
 import { api, SERVIDOR, type CartaoAchado, type Mensagem } from '../../lib/api';
 import { FONTE_TITULO, useCores, PALETA } from '../../lib/cores';
 import { quandoFoi } from '../../lib/quando';
@@ -147,7 +147,7 @@ export default function Conversa() {
       </KeyboardAvoidingView>
 
       {/* Opções: da mensagem (apagar, denunciar) ou da conversa (desfazer amizade, bloquear) */}
-      <Modal visible={!!opcoes} transparent animationType="fade" onRequestClose={() => setOpcoes(null)}>
+      <ModalTema visible={!!opcoes} transparent animationType="fade" onRequestClose={() => setOpcoes(null)}>
         <Pressable accessibilityLabel="Fechar" onPress={() => setOpcoes(null)} style={{ flex: 1, backgroundColor: `${PALETA.escuro.fundo}66`, justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: c.fundo, borderTopLeftRadius: 6, borderTopRightRadius: 6, padding: 16, gap: 10 }}>
             {escolhida?.minha ? (
@@ -166,15 +166,15 @@ export default function Conversa() {
             <Botao titulo="Cancelar" tipo="secundario" aoTocar={() => setOpcoes(null)} />
           </View>
         </Pressable>
-      </Modal>
+      </ModalTema>
 
       {/* Foto em tela cheia */}
-      <Modal visible={!!aberta} transparent animationType="fade" onRequestClose={() => setAberta(null)}>
+      <ModalTema visible={!!aberta} transparent animationType="fade" onRequestClose={() => setAberta(null)}>
         <Pressable accessibilityLabel="Fechar a foto" onPress={() => setAberta(null)}
           style={{ flex: 1, backgroundColor: c.fundo, alignItems: 'center', justifyContent: 'center' }}>
           {aberta ? <FotoProtegida caminho={aberta} estilo={{ width: '100%', height: '80%' }} inteira /> : null}
         </Pressable>
-      </Modal>
+      </ModalTema>
     </SafeAreaView>
   );
 }

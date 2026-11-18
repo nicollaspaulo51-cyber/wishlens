@@ -4,13 +4,13 @@ import { requestPermissionsAsync, Asset } from 'expo-media-library';
 import { router } from 'expo-router';
 import { isAvailableAsync, shareAsync } from 'expo-sharing';
 import { useState } from 'react';
-import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type Amigo } from '../lib/api';
 import { salvarNaGaleria, type FotoGaleria } from '../lib/galeria';
 import { FONTE_TITULO, useCores, PALETA } from '../lib/cores';
-import { Apagado, Botao } from './ui';
+import { Apagado, Botao, ModalTema } from './ui';
 
 type Placa = Pick<FotoGaleria, 'achado' | 'emoji' | 'tema' | 'temaId' | 'cor' | 'pontos'>;
 
@@ -112,7 +112,7 @@ export function CompartilharFoto({ foto, enviada, captura, aceita, placa }: {
         </View>
       ) : null}
 
-      <Modal visible={aberto} transparent animationType="slide" onRequestClose={() => setAberto(false)}>
+      <ModalTema visible={aberto} transparent animationType="slide" onRequestClose={() => setAberto(false)}>
         <Pressable accessibilityLabel="Fechar" onPress={() => setAberto(false)} style={{ flex: 1, backgroundColor: `${PALETA.escuro.fundo}66` }} />
         <View style={{ backgroundColor: c.fundo, borderTopLeftRadius: 6, borderTopRightRadius: 6, maxHeight: '70%',
           padding: 16, paddingBottom: baixo + 16, gap: 10 }}>
@@ -134,7 +134,7 @@ export function CompartilharFoto({ foto, enviada, captura, aceita, placa }: {
           </ScrollView>
           <Apagado estilo={{ fontSize: 12 }}>A localização da foto é apagada antes de enviar.</Apagado>
         </View>
-      </Modal>
+      </ModalTema>
     </View>
   );
 }

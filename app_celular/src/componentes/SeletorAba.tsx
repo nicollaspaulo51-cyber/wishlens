@@ -1,8 +1,9 @@
 // Troca de aba do jogo: um botão que abre uma folha de baixo com as 4 abas,
 // cada uma com o que vale nela, onde achar no mapa e os seus pontos de hoje.
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ModalTema } from './ui';
 
 import { api, type Modo } from '../lib/api';
 import { FONTE_TITULO, useCores, PALETA } from '../lib/cores';
@@ -34,7 +35,7 @@ export function SeletorAba({ pontos, estilo }: { pontos?: Partial<Record<Modo, n
         <Text className="font-texto" style={{ color: c.apagado, fontSize: 12 }}>Trocar</Text>
       </Pressable>
 
-      <Modal visible={aberta} transparent animationType="slide" onRequestClose={() => setAberta(false)}>
+      <ModalTema visible={aberta} transparent animationType="slide" onRequestClose={() => setAberta(false)}>
         <Pressable accessibilityLabel="Fechar" onPress={() => setAberta(false)} style={{ flex: 1, backgroundColor: `${PALETA.escuro.fundo}66` }} />
         <View style={{ backgroundColor: c.fundo, borderTopLeftRadius: 6, borderTopRightRadius: 6, maxHeight: '80%',
           paddingTop: 10, paddingBottom: baixo + 12 }}>
@@ -65,7 +66,7 @@ export function SeletorAba({ pontos, estilo }: { pontos?: Partial<Record<Modo, n
             })}
           </ScrollView>
         </View>
-      </Modal>
+      </ModalTema>
     </>
   );
 }
