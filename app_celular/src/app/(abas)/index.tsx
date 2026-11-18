@@ -198,7 +198,8 @@ export default function Jogar() {
           ) : null}
           {estado.erro && !e ? <Aviso texto={estado.erro} aoTentar={estado.recarregar} /> : null}
           {posicao && livre ? (
-            <View pointerEvents="box-none" className="absolute right-0 top-0 bottom-0 justify-center items-end gap-[8px]">
+            // style e não className: a coluna precisa ficar colada à direita (com classes ela caiu na esquerda no Android)
+            <View pointerEvents="box-none" style={{ position: 'absolute', right: 0, top: 0, bottom: 0, justifyContent: 'center', alignItems: 'flex-end', gap: 8 }}>
               {temas.dados?.temas.map((t) => {
                 const ligado = ativos.includes(t.id);
                 const cor = escurecerParaBranco(t.cor);
@@ -213,7 +214,7 @@ export default function Jogar() {
               })}
               <Pressable accessibilityRole="button" accessibilityLabel="Recentrar em você" onPress={() => setRecentrar((vez) => vez + 1)}
                 style={{ ...controleMapa, marginTop: 4, backgroundColor: c.superficie, borderWidth: 1, borderColor: c.linha }}>
-                <Icone nome="bussola" tamanho={22} cor={c.agua} />
+                <Icone nome="mira" tamanho={22} cor={c.agua} />
               </Pressable>
             </View>
           ) : null}

@@ -1,7 +1,7 @@
 // Mapa nativo do celular (Google no Android, Apple no iPhone): você, os lugares de cada tema e as manchas da turma.
 // Os blocos do tile.openstreetmap.org bloqueiam apps sem identificação ("Access blocked"), por isso o mapa do sistema.
 // shortcut: no Expo Go o Google Maps já vem com chave; num APK próprio, pôr a chave em app.json (android.config.googleMaps).
-import { memo, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { Fragment, memo, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import MapView, { Callout, Circle, Marker, type MapStyleElement, type Region } from 'react-native-maps';
 
@@ -122,6 +122,8 @@ function Lugares({ lugares, temas, c, regiao, largura, posicao, temaDoDia, aprox
       .sort((primeiro, segundo) => distancia(primeiro) - distancia(segundo)).slice(0, 3).map((lugar) => lugar.mapa));
   }, [lugares, posicao, reduzido, temaDoDia]);
   const [desenhando, setDesenhando] = useState(true);
+  // metros por pixel na escala atual: o anel do pulso começa do tamanho do marcador (18 px de raio)
+  const metrosPorPx = largura > 0 ? (regiao.longitudeDelta * 111320 * Math.cos(regiao.latitude * Math.PI / 180)) / largura : 3;
   const chave = JSON.stringify(itens.map((item) => item.tipo === 'grupo' ? item.lugares.map((lugar) => lugar.mapa) : item.lugar.mapa));
   const chavePulsos = JSON.stringify([...pulsam]);
   useEffect(() => {
@@ -153,41 +155,51 @@ function Lugares({ lugares, temas, c, regiao, largura, posicao, temaDoDia, aprox
         const distancia = `${lugar.distancia_km.toFixed(1)} km`;
         const dica = tema ? ` · procure ${tema.nome.toLowerCase()}` : '';
         return (
-          <Marker key={lugar.mapa} coordinate={{ latitude: lugar.lat, longitude: lugar.lon }} anchor={CENTRO}
-            tracksViewChanges={desenhando || pulsa} title={lugar.nome} description={`${distancia}${dica}`}>
-            <View style={[estilosMarcador.area, pulsa && estilosMarcador.areaPulso]}>
-              {pulsa ? <Pulso cor={c.destaque} /> : null}
+          <Fragment key={lugar.mapa}>
+            {pulsa ? <Pulso centro={{ latitude: lugar.lat, longitude: lugar.lon }} raioBase={18 * metrosPorPx} cor={c.destaque} /> : null}
+            <Marker coordinate={{ latitude: lugar.lat, longitude: lugar.lon }} anchor={CENTRO}
+              tracksViewChanges={desenhando} title={lugar.nome} description={`${distancia}${dica}`}>
               <View style={[estilosMarcador.circulo, { backgroundColor: escurecerParaBranco(tema?.cor ?? c.agua),
                 borderColor: doDia ? c.destaque : c.superficie }]}>
                 <IconeTema id={lugar.tema} tamanho={18} cor="#FFFFFF" />
               </View>
-            </View>
-            <Balao c={c} titulo={lugar.nome} distancia={lugar.distancia_km} linha={tema ? `procure ${tema.nome.toLowerCase()}` : undefined} />
-          </Marker>
+              <Balao c={c} titulo={lugar.nome} distancia={lugar.distancia_km} linha={tema ? `procure ${tema.nome.toLowerCase()}` : undefined} />
+            </Marker>
+          </Fragment>
         );
       })}
     </>
   );
 }
 
-function Pulso({ cor }: { cor: string }) {
+// Pulso do lugar: um círculo do próprio mapa que cresce e some. No Android o marcador vira uma imagem parada,
+// então uma animação dentro dele não aparece; o círculo é desenhado pelo mapa e anima liso.
+const CirculoAnimado = Animated.createAnimatedComponent(Circle);
+const rgba = (hex: string, a: number) => {
+  const n = parseInt(hex.slice(1, 7), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+};
+
+function Pulso({ centro, raioBase, cor }: { centro: { latitude: number; longitude: number }; raioBase: number; cor: string }) {
   const [progresso] = useState(() => new Animated.Value(0));
   useEffect(() => {
+    // driver em JS: o raio do círculo do mapa não é uma propriedade que o driver nativo anime
     const animacao = Animated.loop(Animated.timing(progresso, {
-      toValue: 1, duration: 1600, easing: Easing.out(Easing.cubic), useNativeDriver: true, isInteraction: false,
+      toValue: 1, duration: 1600, easing: Easing.out(Easing.cubic), useNativeDriver: false, isInteraction: false,
     }));
     animacao.start();
     return () => animacao.stop();
   }, [progresso]);
-  return <Animated.View pointerEvents="none" style={[estilosMarcador.circulo, { position: 'absolute', borderColor: cor,
-    opacity: progresso.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] }),
-    transform: [{ scale: progresso.interpolate({ inputRange: [0, 1], outputRange: [1, 1.6] }) }],
-  }]} />;
+  return (
+    <CirculoAnimado center={centro} zIndex={0}
+      radius={progresso.interpolate({ inputRange: [0, 1], outputRange: [raioBase, raioBase * 2.6] })}
+      strokeWidth={2}
+      strokeColor={progresso.interpolate({ inputRange: [0, 1], outputRange: [rgba(cor, 0.8), rgba(cor, 0)] })}
+      fillColor={progresso.interpolate({ inputRange: [0, 1], outputRange: [rgba(cor, 0.25), rgba(cor, 0)] })} />
+  );
 }
 
 const estilosMarcador = StyleSheet.create({
-  area: { alignItems: 'center', justifyContent: 'center' },
-  areaPulso: { width: 58, height: 58 },
   circulo: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
 });
 
