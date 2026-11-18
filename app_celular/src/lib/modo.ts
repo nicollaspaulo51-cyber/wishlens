@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
 import type { Modo } from './api';
+import { useSessao } from './sessao';
 
 const CHAVE = 'wl_aba';
 const MODOS: Modo[] = ['livre', 'paisagens', 'treino', 'academia', 'competicao'];
@@ -25,10 +26,12 @@ export function escolherModo(m: Modo) {
 }
 
 export function useModo(): Modo {
-  return useSyncExternalStore((f) => {
+  const { convidado } = useSessao();
+  const modo = useSyncExternalStore((f) => {
     ouvintes.add(f);
     return () => { ouvintes.delete(f); };
   }, () => atual);
+  return convidado && modo === 'competicao' ? 'livre' : modo;
 }
 
 export const NOME_LIVRE = { id: 'livre', nome: 'Mapa livre', emoji: '', cor: '#3F5F55',

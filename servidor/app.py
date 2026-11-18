@@ -11,6 +11,7 @@ Privacidade: o GPS chega no corpo do pedido (nunca na URL, que vai para os logs)
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import io
 import json
@@ -22,6 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import unquote
 
 import pandas as pd
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
@@ -85,28 +87,39 @@ _trava = threading.Lock()
 class SessaoMemoria:
     """Os mesmos métodos de banco.Sessao, guardando em memória (sem Supabase: para testar)."""
 
-    def __init__(self, apelido: str):
+    def __init__(self, apelido: str, convidado: bool = False, chave: str | None = None):
         self.apelido = apelido
+        self.convidado = convidado
+        self._dispositivo = hashlib.sha256(chave.encode()).hexdigest() if convidado and chave else None
+
+    def _mesmo_espaco(self, captura: dict) -> bool:
+        return bool(captura.get("convidado")) == self.convidado and (
+            not self.convidado or (captura["usuario"] == self.apelido and captura.get("_dispositivo") == self._dispositivo)
+        )
 
     def salvar_captura(self, registro: dict) -> None:
         with _trava:
-            _memoria.append({**registro, "usuario": self.apelido})
+            _memoria.append({**registro, "usuario": self.apelido, "convidado": self.convidado,
+                             "_dispositivo": self._dispositivo})
 
     def capturas_todas(self) -> list[dict]:
-        return list(_memoria)
+        with _trava:
+            return [c for c in _memoria if self._mesmo_espaco(c)]
 
     def contestar(self, id_captura: str, tema: str) -> None:
-        for c in _memoria:
-            if c["id"] == id_captura and c["usuario"] == self.apelido:
-                c["contestada"] = tema
+        with _trava:
+            for c in _memoria:
+                if c["id"] == id_captura and c["usuario"] == self.apelido and self._mesmo_espaco(c):
+                    c["contestada"] = tema
 
     def objeto_visto(self, tema: str, celula: str | None, vetor: list[float]) -> str | None:
-        anteriores = [(c["usuario"], c.get("celula"), c.get("clip_vetor")) for c in _memoria
+        anteriores = [(c["usuario"], c.get("celula"), c.get("clip_vetor")) for c in self.capturas_todas()
                       if c["tema"] == tema and c["foto_real"]]
         return jogo.objeto_visto(vetor, self.apelido, celula, anteriores)
 
     def manchas(self) -> list[dict]:
         df = pd.DataFrame(_memoria, columns=COLUNAS_CAPTURA)
+        df = df[~df["convidado"].eq(True)]
         df = df[df["celula"].notna() & df["foto_real"].astype(bool) & (df["tema"] != "nenhum")]
         return [{"celula": c, "tema": t, "n": len(g), "achados": list(g["achado"].value_counts(ascending=True).index[:3])}
                 for (c, t), g in df.groupby(["celula", "tema"]) if len(g) >= 2]
@@ -142,15 +155,17 @@ def _sessao_supabase(token: str) -> banco.Sessao:
     return sessao
 
 
-def sessao(authorization: str | None = Header(None), x_apelido: str | None = Header(None)):
-    if all(SUPABASE):
+def sessao(authorization: str | None = Header(None), x_apelido: str | None = Header(None),
+           x_convidado: str | None = Header(None), x_chave: str | None = Header(None)):
+    convidado = x_convidado == "1"
+    if all(SUPABASE) and not convidado:
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(401, "Entre na sua conta para jogar.")
         return _sessao_supabase(authorization.removeprefix("Bearer ").strip())
-    apelido = (x_apelido or "eu").strip()[:30]
+    apelido = (unquote(x_apelido or "") if convidado else (x_apelido or "eu")).strip()[:30]
     if not nome_valido(apelido):
         raise HTTPException(400, "Apelido inválido.")
-    return SessaoMemoria(apelido)
+    return SessaoMemoria(apelido, convidado, x_chave)
 
 
 # ---------------------------------------------------------------- capturas e pontos
@@ -183,9 +198,12 @@ def _pontuadas_aba(s, modo: str, capturas: pd.DataFrame | None = None) -> pd.Dat
     return jogo.pontos_modo(_capturas(s) if capturas is None else capturas, modo)
 
 
-def _hoje(pontuadas: pd.DataFrame, eu: str) -> tuple[int, int | None]:
+def _hoje(pontuadas: pd.DataFrame, s) -> tuple[int, int | None]:
+    if s.convidado:
+        hoje = jogo.no_periodo(pontuadas, "hoje")
+        return (int(hoje.loc[hoje["aceita"], "pontos"].sum()) if not hoje.empty else 0, None)
     ranking = jogo.podio(pontuadas, "hoje")
-    meus = ranking[ranking["usuario"] == eu]
+    meus = ranking[ranking["usuario"] == s.apelido]
     return (int(meus["pontos"].iloc[0]), int(meus["posicao"].iloc[0])) if not meus.empty else (0, None)
 
 
@@ -285,7 +303,7 @@ def _bairro_seguro(lat: float, lon: float) -> str | None:
 
 # shortcut: a foto anterior de cada pessoa fica na memória do servidor (some quando ele reinicia).
 # Para valer sempre, guardar no banco a última célula da pessoa (função security definer).
-_ultima_foto: dict[str, tuple[float, float, object]] = {}
+_ultima_foto: dict[str | tuple[str, str | None], tuple[float, float, object]] = {}
 
 
 # ---------------------------------------------------------------- rotas
@@ -309,11 +327,11 @@ def estado(s=Depends(sessao)):
     """O placar do topo e o painel do dia: pontos, posição, lupa, corrente, meta e desafios."""
     todas = _capturas(s)
     p = _pontuadas(s, todas)
-    pontos, posicao = _hoje(p, s.apelido)
+    pontos, posicao = _hoje(p, s)
     meta = jogo.meta_da_turma(p)
     # pontos de hoje em cada aba, para o seletor de abas do app
-    abas = {"livre": pontos, **{m: _hoje(_pontuadas_aba(s, m, todas), s.apelido)[0] for m in ABAS}}
-    return {"apelido": s.apelido, "pontos_hoje": pontos, "posicao": posicao, "pontos_abas": abas,
+    abas = {"livre": pontos, **{m: _hoje(_pontuadas_aba(s, m, todas), s)[0] for m in ABAS}}
+    return {"apelido": s.apelido, "convidado": s.convidado, "pontos_hoje": pontos, "posicao": posicao, "pontos_abas": abas,
             "espera_competicao": jogo.espera_competicao(todas, s.apelido),
             "tema_do_dia": _tema(tema_do_dia()),
             "dia": jogo.estado_do_dia(p, s.apelido), "corrente": jogo.corrente_atual(p, s.apelido),
@@ -322,6 +340,8 @@ def estado(s=Depends(sessao)):
 
 @app.get("/podio")
 def podio(periodo: str = "hoje", tema: str | None = None, modo: str = "livre", s=Depends(sessao)):
+    if s.convidado:
+        raise HTTPException(403, "Crie uma conta para entrar no pódio.")
     if periodo not in ("hoje", "semana", "geral") or (tema and tema not in POR_ID) or modo not in MODOS:
         raise HTTPException(400, "Período, tema ou aba inválido.")
     contar = lambda nomes: [{"apelido": str(u), "quadrados": int(n)} for u, n in pd.Series(nomes, dtype=object).value_counts().items()]
@@ -496,6 +516,8 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
     """Julga a foto, grava a captura e devolve o cartão de pontos (ou pede outra foto, se ficou borrada)."""
     if modo not in MODOS:
         raise HTTPException(400, "Modo inválido.")
+    if s.convidado and modo == "competicao":
+        raise HTTPException(403, "Crie uma conta para participar das competições.")
     if not CLIP_INSTALADO:
         raise HTTPException(503, "O juiz (CLIP) não está instalado neste servidor.")
     dados = foto.file.read(FOTO_MAX + 1)
@@ -571,11 +593,12 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
         contexto["tipo_lugar"] = perto.get("tipo") if contexto["mirante"] else None
         contexto["clima"] = f_clima.result()
         agora = jogo.agora_naive()
-        if anterior := _ultima_foto.get(s.apelido):
+        jogador = (s.apelido, s._dispositivo) if s.convidado else s.apelido
+        if anterior := _ultima_foto.get(jogador):
             la0, lo0, t0 = anterior
             contexto["km_anterior"] = round(distancia_km(la0, lo0, lat, lon), 2)
             contexto["min_anterior"] = round((agora - t0).total_seconds() / 60, 1)
-        _ultima_foto[s.apelido] = (round(lat, 3), round(lon, 3), agora)
+        _ultima_foto[jogador] = (round(lat, 3), round(lon, 3), agora)
 
     mesmo = None
     if captura.tema and modo != "competicao":  # telas de vitória do mesmo jogo são quase iguais
@@ -620,7 +643,7 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
                    if m["nivel"] and m["nivel"] != medalhas_antes.get(m["id"])]
         if dica:
             avisos.insert(0, dica)
-    pontos, posicao = _hoje(depois, s.apelido)
+    pontos, posicao = _hoje(depois, s)
     cartao = _cartao(resultado, captura, vezes, juizes)
     if not livre:
         cartao["pode_contestar"] = False  # contestar é escolher outro tema do Mapa livre

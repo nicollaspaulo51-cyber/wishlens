@@ -99,6 +99,46 @@ def test_com_supabase_exige_login(cliente, monkeypatch):
     assert cliente.get("/estado").status_code == 401
 
 
+@pytest.mark.parametrize("supabase", [False, True])
+def test_servidor_convidado_sem_bearer_e_sem_competicao(cliente, monkeypatch, supabase):
+    monkeypatch.setattr(srv, "SUPABASE", ("configurado", "configurado") if supabase else (None, None))
+    monkeypatch.setattr(srv, "CLIP_INSTALADO", False)
+    headers = {"X-Apelido": "ana", "X-Convidado": "1"}
+    assert cliente.get("/estado", headers=headers).json()["convidado"] is True
+    assert cliente.get("/estado", headers={**headers, "X-Apelido": "Jo%C3%A3o"}).json()["apelido"] == "João"
+    assert cliente.get("/estado", headers={"X-Convidado": "1"}).status_code == 400
+    podio = cliente.get("/podio", headers=headers)
+    assert podio.status_code == 403 and podio.json()["detail"] == "Crie uma conta para entrar no pódio."
+    julgar = cliente.post("/julgar", headers=headers, data={"modo": "competicao"},
+                          files={"foto": ("f.jpg", b"sem imagem", "image/jpeg")})
+    assert julgar.status_code == 403
+    assert julgar.json()["detail"] == "Crie uma conta para participar das competições."
+    assert srv._memoria == []
+
+
+def test_servidor_captura_convidada_so_conta_para_o_proprio_jogador(cliente):
+    headers = {"X-Apelido": "ana", "X-Convidado": "1", "X-Chave": "identificador-do-aparelho"}
+    foto = cliente.post("/julgar", headers=headers, files={"foto": ("f.jpg", _jpeg(), "image/jpeg")})
+    assert foto.status_code == 200 and foto.json()["cartao"]["aceita"]
+    assert srv._memoria[0]["convidado"] is True
+    estado = cliente.get("/estado", headers=headers).json()
+    assert estado["pontos_hoje"] == foto.json()["pontos_hoje"] > 0
+    assert estado["posicao"] is None and foto.json()["posicao"] is None
+    album = cliente.get("/colecao", headers=headers).json()["album"]
+    carros = next(pagina for pagina in album if pagina["tema"]["id"] == "carros")
+    assert carros["colados"] == [{"achado": "volkswagen gol", "turma": 1}]
+    assert cliente.get("/estado", headers={**headers, "X-Chave": "outro-aparelho"}).json()["pontos_hoje"] == 0
+    assert cliente.get("/podio", headers={"X-Apelido": "ana"}).json()["ranking"] == []
+    assert _enviar(cliente, apelido="bia")["cartao"]["aceita"]
+    ranking = cliente.get("/podio", headers={"X-Apelido": "ana"}).json()["ranking"]
+    assert [linha["apelido"] for linha in ranking] == ["bia"]
+    capturas = srv.pd.DataFrame(srv._memoria).assign(celula="quadrado")
+    assert srv.jogo.guardioes(capturas.assign(convidado=False))["usuario"].size == 1
+    assert srv.jogo.guardioes(capturas).empty
+    pontuadas = capturas.assign(aceita=True, pontos=10)
+    assert list(srv.jogo.podio(pontuadas)["usuario"]) == ["bia"]
+
+
 def test_mapa_avisa_quando_o_openstreetmap_nao_respondeu(cliente, monkeypatch):
     h = {"X-Apelido": "ana"}
     pos = {"lat": -20.3, "lon": -40.3}

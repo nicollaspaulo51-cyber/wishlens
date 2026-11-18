@@ -7,6 +7,7 @@ import { Animated, Easing, Platform, Pressable, Text, useWindowDimensions, View,
 import { api } from '../lib/api';
 import { useCores } from '../lib/cores';
 import { useLaco, useMovimentoReduzido } from '../lib/movimento';
+import { useSessao } from '../lib/sessao';
 import { Icone, type NomeIcone } from './icones/Icone';
 
 type Props = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
@@ -50,18 +51,20 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
   }, [destino, parado, pilula]);
   // Mensagens não lidas no ícone do Chat (de 20 em 20 s; a barra não é uma tela, então sem useDados)
   const [naoLidas, setNaoLidas] = useState(0);
+  const { convidado } = useSessao();
   useEffect(() => {
+    if (convidado) return;
     const buscar = () => api.naoLidas().then((r) => setNaoLidas(r.nao_lidas)).catch(() => {});
     buscar();
     const id = setInterval(buscar, 20000);
     return () => clearInterval(id);
-  }, [state.index]);
+  }, [convidado, state.index]);
 
   const aba = (rota: (typeof state.routes)[number], indice: number) => {
     const ativa = state.index === indice;
     const titulo = String(descriptors[rota.key].options.title ?? rota.name);
     const nomeIcone = ICONES[rota.name] ?? 'alfinete';
-    const contador = rota.name === 'chat' ? naoLidas : 0;
+    const contador = rota.name === 'chat' && !convidado ? naoLidas : 0;
     return (
       <Pressable key={rota.key} accessibilityRole="tab" accessibilityState={{ selected: ativa }}
         accessibilityLabel={contador ? `${titulo}, ${contador} mensagens não lidas` : titulo}

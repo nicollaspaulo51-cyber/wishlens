@@ -5,7 +5,7 @@ import { Overpass_400Regular, Overpass_700Bold, Overpass_800ExtraBold, useFonts 
 import { OverpassMono_600SemiBold } from '@expo-google-fonts/overpass-mono';
 import { vars } from 'nativewind';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Redirect, Stack, useSegments } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -15,19 +15,20 @@ import { ProvedorSessao, useSessao } from '../lib/sessao';
 function Navegacao() {
   const c = useCores();
   const { pronto, entrou } = useSessao();
-  const segmentos = useSegments();
   if (!pronto) {
     return <View className="flex-1 bg-papel justify-center"><ActivityIndicator color={c.destaque} /></View>;
   }
-  const naEntrada = segmentos[0] === 'entrar';
-  if (!entrou && !naEntrada) return <Redirect href="/entrar" />;
-  if (entrou && naEntrada) return <Redirect href="/" />;
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.fundo } }}>
-      <Stack.Screen name="(abas)" />
-      <Stack.Screen name="entrar" />
-      <Stack.Screen name="camera" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
-      <Stack.Screen name="avisar" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+      <Stack.Protected guard={entrou}>
+        <Stack.Screen name="(abas)" />
+        <Stack.Screen name="camera" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="avisar" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="conversa/[apelido]" />
+      </Stack.Protected>
+      <Stack.Protected guard={!entrou}>
+        <Stack.Screen name="entrar" />
+      </Stack.Protected>
     </Stack>
   );
 }

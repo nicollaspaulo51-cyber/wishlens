@@ -1,9 +1,11 @@
 // Conta: quem você é no jogo, como pontuar e o que o app guarda sobre você.
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Apagado, Botao, Cartaz, Subtitulo, Titulo } from '../../componentes/ui';
+import { BotaoCriarConta } from '../../componentes/PrecisaDeConta';
 import { api } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
 import { useSessao } from '../../lib/sessao';
@@ -22,7 +24,8 @@ const REGRAS = [
 
 export default function Conta() {
   const c = useCores();
-  const { sair, comConta } = useSessao();
+  const { sair, convidado } = useSessao();
+  const [erroSaida, setErroSaida] = useState(false);
   const estado = useDados(api.estado);
   const apelido = estado.dados?.apelido;
 
@@ -35,10 +38,11 @@ export default function Conta() {
             <Text className="font-titulo text-[26px] text-tinta">{(apelido ?? '?').charAt(0).toUpperCase()}</Text>
           </View>
           <View className="flex-1">
-            <Text className="font-titulo text-[22px] text-tinta">{apelido ?? '...'}</Text>
-            <Apagado>{comConta ? 'É assim que a turma vê você no pódio.' : 'Modo de teste, sem conta.'}</Apagado>
+            <Text className="font-titulo text-[22px] text-tinta">{convidado ? 'Convidado: ' : ''}{apelido ?? '...'}</Text>
+            <Apagado>{convidado ? 'Seus pontos ficam só até o servidor reiniciar.' : 'É assim que a turma vê você no pódio.'}</Apagado>
           </View>
         </Cartaz>
+        {convidado ? <BotaoCriarConta /> : null}
 
         <Subtitulo>Como pontuar</Subtitulo>
         <Cartaz estilo={{ paddingVertical: 6 }}>
@@ -60,7 +64,9 @@ export default function Conta() {
         <Apagado>O juiz errou, o app travou ou algo ficou estranho? Mande um aviso: ele é lido e corrigido.</Apagado>
         <Botao titulo="Avisar um problema" aoTocar={() => router.push('/avisar')} />
 
-        <Botao titulo="Sair da conta" tipo="secundario" aoTocar={sair} estilo={{ marginTop: 20 }} />
+        <Botao titulo={convidado ? 'Sair' : 'Sair da conta'} tipo="secundario"
+          aoTocar={() => { setErroSaida(false); sair().catch(() => setErroSaida(true)); }} estilo={{ marginTop: 20 }} />
+        {erroSaida ? <Text accessibilityLiveRegion="polite" className="font-texto text-tinta">Não deu para sair. Tente de novo.</Text> : null}
       </ScrollView>
     </SafeAreaView>
   );

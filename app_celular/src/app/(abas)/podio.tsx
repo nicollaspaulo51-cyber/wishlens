@@ -4,16 +4,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Degraus } from '../../componentes/Degraus';
 import { SeletorAba } from '../../componentes/SeletorAba';
+import { PrecisaDeConta } from '../../componentes/PrecisaDeConta';
 import { Apagado, Aviso, Cartaz, Fichas, Subtitulo, Titulo } from '../../componentes/ui';
 import { api } from '../../lib/api';
 import { useCores } from '../../lib/cores';
 import { useModo } from '../../lib/modo';
 import { Surge, useVisita } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
+import { useSessao } from '../../lib/sessao';
 
 type Periodo = 'hoje' | 'semana' | 'geral';
 
 export default function Podio() {
+  return useSessao().convidado ? <PrecisaDeConta podio titulo="Pódio" /> : <PodioDaConta />;
+}
+
+function PodioDaConta() {
   const c = useCores();
   const [periodo, setPeriodo] = useState<Periodo>('hoje');
   const [tema, setTema] = useState('todos');

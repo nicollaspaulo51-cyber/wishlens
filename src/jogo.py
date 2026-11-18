@@ -505,6 +505,10 @@ def pistas_por_tipo(pontuadas: pd.DataFrame, limite: int = 3) -> dict[str, list[
     return saida
 
 
+def _sem_convidados(capturas: pd.DataFrame) -> pd.DataFrame:
+    return capturas[~capturas["convidado"].eq(True).fillna(False)] if "convidado" in capturas else capturas
+
+
 def guardioes(capturas: pd.DataFrame, hoje: date | None = None, temas=tuple(POR_ID)) -> pd.DataFrame:
     """Guardião de cada quadrado de ~500 m na semana: quem tem mais achados diferentes ali.
 
@@ -514,7 +518,7 @@ def guardioes(capturas: pd.DataFrame, hoje: date | None = None, temas=tuple(POR_
     colunas = ["celula", "usuario", "achados"]
     if capturas.empty or "celula" not in capturas:
         return pd.DataFrame(columns=colunas)
-    df = no_periodo(capturas, "semana", hoje)
+    df = no_periodo(_sem_convidados(capturas), "semana", hoje)
     # só os temas pedidos: as fotos das outras abas não fazem guardião no Mapa livre
     df = df[df["celula"].map(lambda v: bool(_valor(v))) & df["foto_real"].astype(bool) & df["tema"].isin(temas)]
     if df.empty:
@@ -542,7 +546,7 @@ def podio(pontuadas: pd.DataFrame, periodo: str = "hoje", tema: str | None = Non
           hoje: date | None = None) -> pd.DataFrame:
     """Ranking: usuario, pontos, achados, ultimo, posicao. Empate: quem chegou antes no total."""
     colunas = ["posicao", "usuario", "pontos", "achados", "ultimo"]
-    df = no_periodo(pontuadas, periodo, hoje)
+    df = no_periodo(_sem_convidados(pontuadas), periodo, hoje)
     if tema:
         df = df[df["tema"] == tema]
     df = df[df["aceita"]] if not df.empty else df

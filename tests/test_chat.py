@@ -61,6 +61,15 @@ def test_pedido_aceite_e_conversa(c):
     assert amigos[0]["apelido"] == "bia" and amigos[0]["ultima"]["minha"]
 
 
+def test_chat_e_amigos_recusam_convidados(c):
+    headers = {**_h("ana"), "X-Convidado": "1"}
+    respostas = [c.get(rota, headers=headers) for rota in ("/amigos", "/chat/novas", "/conversa/bia")]
+    respostas.append(c.post("/amigos", json={"apelido": "bia"}, headers=headers))
+    for resposta in respostas:
+        assert resposta.status_code == 403
+        assert resposta.json()["detail"] == "Crie uma conta para adicionar amigos e conversar."
+
+
 def test_pedido_cruzado_vira_amizade_e_recusa_apaga(c):
     c.post("/amigos", json={"apelido": "bia"}, headers=_h("ana"))
     assert c.post("/amigos", json={"apelido": "ana"}, headers=_h("bia")).json()["estado"] == "aceita"

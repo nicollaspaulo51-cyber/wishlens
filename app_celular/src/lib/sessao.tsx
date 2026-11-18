@@ -1,5 +1,3 @@
-// Quem está jogando. Com o Supabase configurado: e-mail e senha (o mesmo login do app web).
-// Sem ele: só um apelido, guardado no aparelho, e o servidor joga em memória (para testar).
 import 'react-native-url-polyfill/auto';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,8 +24,9 @@ if (supabase && Platform.OS !== 'web') {
 }
 
 const CHAVE_APELIDO = 'wl_apelido';
-// Sem o Supabase: chave aleatória deste aparelho. O juiz dá o chat de um apelido só ao primeiro aparelho que o usa.
+const CHAVE_MODO = 'wl_modo_sessao';
 const CHAVE_APARELHO = 'wl_chave';
+type ModoSessao = 'conta' | 'convidado';
 
 async function chaveDoAparelho() {
   const guardada = await AsyncStorage.getItem(CHAVE_APARELHO);
@@ -40,11 +39,13 @@ async function chaveDoAparelho() {
 type Sessao = {
   pronto: boolean;
   entrou: boolean;
-  comConta: boolean;
+  convidado: boolean;
+  contasDisponiveis: boolean;
+  criarAoSair: boolean;
   entrar: (email: string, senha: string) => Promise<void>;
   cadastrar: (email: string, senha: string, apelido: string) => Promise<string>;
-  entrarComApelido: (apelido: string) => Promise<void>;
-  sair: () => Promise<void>;
+  entrarComoConvidado: (apelido: string) => Promise<void>;
+  sair: (paraCriarConta?: boolean) => Promise<void>;
 };
 
 const Contexto = createContext<Sessao | null>(null);
@@ -53,40 +54,47 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
   const [pronto, setPronto] = useState(false);
   const [sessao, setSessao] = useState<Session | null>(null);
   const [apelido, setApelido] = useState<string | null>(null);
+  const [modo, setModo] = useState<ModoSessao | null>(null);
+  const [criarAoSair, setCriarAoSair] = useState(false);
+  const convidado = modo === 'convidado' && !!apelido;
 
   useEffect(() => {
-    if (supabase) {
-      supabase.auth.getSession().then(({ data }) => {
-        setSessao(data.session);
-        setPronto(true);
-      });
-      const { data } = supabase.auth.onAuthStateChange((_evento, nova) => setSessao(nova));
-      return () => data.subscription.unsubscribe();
-    }
-    AsyncStorage.getItem(CHAVE_APELIDO).then((a) => {
-      setApelido(a);
-      setPronto(true);
-    });
+    const auth = supabase?.auth.onAuthStateChange((_evento, nova) => setSessao(nova));
+    let ativo = true;
+    AsyncStorage.multiGet([CHAVE_MODO, CHAVE_APELIDO]).then(async ([[, salvo], [, nome]]) => {
+      const atual = (await supabase?.auth.getSession())?.data.session;
+      if (!ativo) return;
+      setSessao(atual ?? null);
+      setApelido(salvo === 'convidado' ? nome : null);
+      setModo(salvo === 'convidado' && nome ? 'convidado' : atual ? 'conta' : null);
+    }).catch(() => {}).finally(() => { if (ativo) setPronto(true); });
+    return () => { ativo = false; auth?.data.subscription.unsubscribe(); };
   }, []);
 
   // Layout: roda antes dos useEffect das telas filhas, então a primeira chamada delas já sai com o apelido
   useLayoutEffect(() => {
     usarCabecalhos(async (): Promise<Record<string, string>> => {
-      if (supabase) {
+      if (convidado && apelido) return { 'X-Apelido': encodeURIComponent(apelido), 'X-Chave': await chaveDoAparelho(), 'X-Convidado': '1' };
+      if (modo === 'conta' && supabase) {
         const { data } = await supabase.auth.getSession(); // já renovado, se estava vencendo
         return data.session ? { Authorization: `Bearer ${data.session.access_token}` } : {};
       }
-      return apelido ? { 'X-Apelido': apelido, 'X-Chave': await chaveDoAparelho() } : {};
+      return {};
     });
-  }, [apelido, sessao]);
+  }, [apelido, convidado, modo]);
 
   const valor = useMemo<Sessao>(() => ({
     pronto,
-    entrou: supabase ? !!sessao : !!apelido,
-    comConta: !!supabase,
+    entrou: convidado || (modo === 'conta' && !!sessao),
+    convidado,
+    contasDisponiveis: !!supabase,
+    criarAoSair,
     async entrar(email, senha) {
       const { error } = await supabase!.auth.signInWithPassword({ email: email.trim(), password: senha });
       if (error) throw new Error(error.message === 'Invalid login credentials' ? 'E-mail ou senha errados.' : error.message);
+      await AsyncStorage.setItem(CHAVE_MODO, 'conta');
+      setModo('conta');
+      setCriarAoSair(false);
     },
     async cadastrar(email, senha, apelidoNovo) {
       // O perfil (apelido público) é criado pelo gatilho criar_perfil do supabase/schema.sql
@@ -94,18 +102,31 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
         email: email.trim(), password: senha, options: { data: { apelido: apelidoNovo.trim() } },
       });
       if (error) throw new Error(error.message);
+      if (data.session) {
+        await AsyncStorage.setItem(CHAVE_MODO, 'conta');
+        setModo('conta');
+        setCriarAoSair(false);
+      }
       return data.session ? 'Conta criada.' : 'Conta criada. Confirme o e-mail que chegou e depois entre.';
     },
-    async entrarComApelido(novo) {
-      await AsyncStorage.setItem(CHAVE_APELIDO, novo.trim());
+    async entrarComoConvidado(novo) {
+      await chaveDoAparelho();
+      await AsyncStorage.multiSet([[CHAVE_MODO, 'convidado'], [CHAVE_APELIDO, novo.trim()]]);
       setApelido(novo.trim());
+      setModo('convidado');
+      setCriarAoSair(false);
     },
-    async sair() {
-      if (supabase) await supabase.auth.signOut();
-      await AsyncStorage.removeItem(CHAVE_APELIDO);
+    async sair(paraCriarConta = false) {
+      if (supabase && sessao) {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+      }
+      await AsyncStorage.multiRemove([CHAVE_MODO, CHAVE_APELIDO]);
+      setCriarAoSair(paraCriarConta);
+      setModo(null);
       setApelido(null);
     },
-  }), [pronto, sessao, apelido]);
+  }), [pronto, sessao, modo, convidado, criarAoSair]);
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }

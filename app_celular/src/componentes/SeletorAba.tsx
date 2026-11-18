@@ -8,8 +8,9 @@ import { ModalTema } from './ui';
 import { api, type Modo } from '../lib/api';
 import { useCores, PALETA } from '../lib/cores';
 import { escolherModo, NOME_LIVRE, useModo } from '../lib/modo';
+import { useSessao } from '../lib/sessao';
 import { useDados } from '../lib/useDados';
-import { IconeTema } from './icones/Icone';
+import { Icone, IconeTema } from './icones/Icone';
 
 export function useAbas() {
   const temas = useDados(api.temas);
@@ -45,6 +46,7 @@ export function FolhaAbas({ aberta, fechar, abas, modo, pontos, titulo, children
 }) {
   const c = useCores();
   const baixo = useSafeAreaInsets().bottom;
+  const { convidado } = useSessao();
   return (
     <ModalTema visible={aberta} transparent animationType="slide" onRequestClose={fechar}>
       <Pressable accessibilityRole="button" accessibilityLabel="Fechar" onPress={fechar} style={{ flex: 1, backgroundColor: `${PALETA.escuro.fundo}66` }} />
@@ -59,9 +61,10 @@ export function FolhaAbas({ aberta, fechar, abas, modo, pontos, titulo, children
           {children ? <Text accessibilityRole="header" className="font-titulo text-[18px] text-tinta">Onde você quer jogar?</Text> : null}
           {abas.map((a) => {
             const ativa = a.id === modo;
+            const bloqueada = convidado && a.id === 'competicao';
             const pts = pontos?.[a.id as Modo];
             return (
-              <Pressable key={a.id} accessibilityRole="radio" accessibilityState={{ selected: ativa }}
+              <Pressable key={a.id} accessibilityRole="radio" accessibilityState={{ selected: ativa, disabled: bloqueada }} disabled={bloqueada}
                 onPress={() => { escolherModo(a.id as Modo); fechar(); }}
                 className="active:opacity-80"
                 style={{ backgroundColor: c.superficie, borderRadius: 6, minHeight: 44, padding: 14, gap: 4,
@@ -69,7 +72,10 @@ export function FolhaAbas({ aberta, fechar, abas, modo, pontos, titulo, children
                 <View className="flex-row items-center gap-[8px]">
                   <IconeTema id={a.id} tamanho={24} cor={c.tinta} />
                   <Text className="flex-1 font-titulo text-[18px] text-tinta">{a.nome}</Text>
-                  {pts !== undefined ? <Text className="font-texto text-apagado"><Text className="font-numero">{pts}</Text> pts hoje</Text> : null}
+                  {bloqueada ? <View className="flex-row items-center gap-[4px]">
+                    <Icone nome="cadeado" tamanho={18} cor={c.apagado} />
+                    <Text className="font-texto text-apagado">Precisa de conta</Text>
+                  </View> : pts !== undefined ? <Text className="font-texto text-apagado"><Text className="font-numero">{pts}</Text> pts hoje</Text> : null}
                   {ativa ? <Text className="font-texto-forte text-destaque">Atual</Text> : null}
                 </View>
                 <Text className="font-texto text-tinta text-[14px] leading-[19px]" >Vale: {a.conta}.</Text>

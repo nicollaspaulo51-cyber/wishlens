@@ -12,6 +12,8 @@ import { api, SERVIDOR, type CartaoAchado, type Mensagem } from '../../lib/api';
 import { FONTE_TITULO, useCores, PALETA } from '../../lib/cores';
 import { quandoFoi } from '../../lib/quando';
 import { useDados } from '../../lib/useDados';
+import { useSessao } from '../../lib/sessao';
+import { PrecisaDeConta } from '../../componentes/PrecisaDeConta';
 
 // O endereço da foto vem assinado pelo juiz e só chega a quem está na conversa (servidor/chat.py)
 function FotoProtegida({ caminho, estilo, inteira }: { caminho: string; estilo: object; inteira?: boolean }) {
@@ -35,6 +37,10 @@ function Cartao({ cartao }: { cartao: CartaoAchado }) {
 }
 
 export default function Conversa() {
+  return useSessao().convidado ? <PrecisaDeConta titulo="Chat" /> : <ConversaDaConta />;
+}
+
+function ConversaDaConta() {
   const c = useCores();
   const { apelido } = useLocalSearchParams<{ apelido: string }>();
   const conversa = useDados(() => api.conversa(apelido), [apelido], 4);

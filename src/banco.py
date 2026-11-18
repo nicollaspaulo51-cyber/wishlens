@@ -20,7 +20,7 @@ COLUNAS_CAPTURA = ["id", "usuario", "criado_em", "tema", "achado", "confianca", 
                    # contexto da foto para as mecânicas (src/jogo.py), sem a localização exata
                    "mirante", "tipo_lugar", "clima", "km_anterior", "min_anterior",
                    # resultado da comparação com o vetor do CLIP: "seu", "turma" ou vazio
-                   "mesmo_objeto"]
+                   "mesmo_objeto", "convidado"]
 
 
 # Colunas com a opinião de cada juiz (CLIP x IA) e o contexto das mecânicas; bancos antigos não as têm
@@ -44,6 +44,7 @@ def para_brasilia(valor) -> datetime:
 
 
 class Sessao:
+    convidado = False
     cliente: object
     usuario_id: str
     apelido: str

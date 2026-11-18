@@ -9,8 +9,14 @@ import { quandoFoi } from '../../lib/quando';
 import { useCores } from '../../lib/cores';
 import { Surge, useVisita } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
+import { useSessao } from '../../lib/sessao';
+import { PrecisaDeConta } from '../../componentes/PrecisaDeConta';
 
 export default function Chat() {
+  return useSessao().convidado ? <PrecisaDeConta titulo="Chat" /> : <ChatDaConta />;
+}
+
+function ChatDaConta() {
   const c = useCores();
   const amigos = useDados(api.amigos, [], 10);
   const d = amigos.dados;

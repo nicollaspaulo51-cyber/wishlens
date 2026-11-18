@@ -75,6 +75,8 @@ def _db():
 
 def eu(s=Depends(sessao), x_chave: str | None = Header(None)) -> str:
     """O apelido de quem chama. Sem o Supabase, confere a chave do aparelho."""
+    if s.convidado:
+        raise HTTPException(403, "Crie uma conta para adicionar amigos e conversar.")
     if isinstance(s, SessaoMemoria):
         if not x_chave or not 16 <= len(x_chave) <= 128:
             raise HTTPException(401, "Atualize o app para usar o chat.")

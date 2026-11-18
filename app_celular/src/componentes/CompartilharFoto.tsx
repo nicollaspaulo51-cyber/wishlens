@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, type Amigo } from '../lib/api';
 import { salvarNaGaleria, type FotoGaleria } from '../lib/galeria';
 import { FONTE_TITULO, useCores, PALETA } from '../lib/cores';
+import { useSessao } from '../lib/sessao';
 import { Apagado, Botao, ModalTema } from './ui';
 
 type Placa = Pick<FotoGaleria, 'achado' | 'emoji' | 'tema' | 'temaId' | 'cor' | 'pontos'>;
@@ -18,6 +19,7 @@ export function CompartilharFoto({ foto, enviada, captura, aceita, placa }: {
   foto: string; enviada: string; captura: string; aceita: boolean; placa?: Placa;
 }) {
   const c = useCores();
+  const { convidado } = useSessao();
   const baixo = useSafeAreaInsets().bottom;
   const [amigos, setAmigos] = useState<Amigo[] | null>(null);
   const [aberto, setAberto] = useState(false);
@@ -82,8 +84,8 @@ export function CompartilharFoto({ foto, enviada, captura, aceita, placa }: {
   return (
     <View className="gap-[10px]">
       <View className="flex-row gap-[8px]">
-        <Botao titulo={aceita ? 'Enviar com o cartão' : 'Enviar a um amigo'} estilo={{ flex: 1 }} aoTocar={abrir}
-          rotulo={aceita ? 'Enviar a foto e o cartão do achado a um amigo' : 'Enviar a foto a um amigo'} />
+        {!convidado ? <Botao titulo={aceita ? 'Enviar com o cartão' : 'Enviar a um amigo'} estilo={{ flex: 1 }} aoTocar={abrir}
+          rotulo={aceita ? 'Enviar a foto e o cartão do achado a um amigo' : 'Enviar a foto a um amigo'} /> : null}
         <Botao titulo="Salvar" tipo="secundario" aoTocar={salvar} rotulo="Salvar a foto no seu museu" />
       </View>
       {msg ? (

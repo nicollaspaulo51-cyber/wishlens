@@ -13,6 +13,7 @@ export type Aba = Tema & { conta: string };
 export type Modo = 'livre' | 'paisagens' | 'treino' | 'academia' | 'competicao';
 export type Desafio = { texto: string; feito: number; alvo: number; ok: boolean };
 export type Estado = {
+  convidado: boolean;
   apelido: string;
   pontos_hoje: number;
   posicao: number | null;

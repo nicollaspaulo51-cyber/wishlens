@@ -16,6 +16,7 @@ const TRACOS = {
   bussola: [o(12, 12, 9), 'M15.8 8.2l-2.2 5.4-5.4 2.2 2.2-5.4z'],
   camera: ['M4 7.6h3.6L9.1 5h5.8l1.5 2.6H20v11.5H4z', o(12, 13.1, 3.6)],
   lupa: [o(10.4, 10.4, 6.1), 'M14.9 14.9l5.6 5.6'],
+  cadeado: ['M7 10V7a5 5 0 0 1 10 0v3', 'M5 10h14v11H5z', 'M12 14v3'],
   // temas do Mapa livre
   // carro de lado: capô, teto com duas janelas e as rodas
   carros: ['M4.8 16.5H3v-3.7l3.3-1.2 2.9-3.8h5.9l3.3 3.8 2.6.6v4.3h-1.8', 'M9.2 16.5h5.6', 'M6.6 11.6h11.6', 'M12 7.9v3.7',

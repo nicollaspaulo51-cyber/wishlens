@@ -7,16 +7,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Analises } from '../../componentes/Analises';
 import { Degraus } from '../../componentes/Degraus';
 import { SeletorAba } from '../../componentes/SeletorAba';
+import { PrecisaDeConta } from '../../componentes/PrecisaDeConta';
 import { Apagado, Aviso, Botao, Cartaz, Fichas, Subtitulo, Titulo } from '../../componentes/ui';
 import { api } from '../../lib/api';
 import { useCores } from '../../lib/cores';
 import { useModo } from '../../lib/modo';
+import { useSessao } from '../../lib/sessao';
 import { useVisita } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 
 type Periodo = 'hoje' | 'semana' | 'geral';
+const APELIDO_EM_USO = 'Este apelido já usa o chat em outro aparelho.';
 
 export default function Amigos() {
+  return useSessao().convidado ? <PrecisaDeConta titulo="Amigos" /> : <AmigosDaConta />;
+}
+
+function AmigosDaConta() {
   const c = useCores();
   const modo = useModo();
   const [periodo, setPeriodo] = useState<Periodo>('hoje');
@@ -26,6 +33,7 @@ export default function Amigos() {
   const [msg, setMsg] = useState<{ texto: string; erro: boolean } | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const d = amigos.dados;
+  const conflito = [amigos.erro, placar.erro, msg?.texto].includes(APELIDO_EM_USO);
   const visita = useVisita();
   const ranking = placar.dados?.ranking ?? [];
   const eu = ranking.find((r) => r.voce);
@@ -67,8 +75,9 @@ export default function Amigos() {
             className="flex-1 min-h-[48px] border border-linha rounded-ficha px-[14px] text-[16px] text-tinta bg-ficha" />
           <Botao titulo="Adicionar" aoTocar={adicionar} desativado={novo.trim().length < 2 || ocupado} estilo={{ paddingHorizontal: 16 }} />
         </View>
-        {msg ? <Text className="font-texto" accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>{msg.texto}</Text> : null}
-        {amigos.erro && !d ? <Aviso texto={amigos.erro} aoTentar={amigos.recarregar} /> : null}
+        {msg && msg.texto !== APELIDO_EM_USO ? <Text className="font-texto" accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>{msg.texto}</Text> : null}
+        {conflito ? <Aviso texto={APELIDO_EM_USO} aoTentar={() => fazer(async () => {})} />
+          : amigos.erro && !d ? <Aviso texto={amigos.erro} aoTentar={amigos.recarregar} /> : null}
 
         {d?.recebidos.length ? (
           <>
@@ -91,7 +100,7 @@ export default function Amigos() {
         <Fichas<Periodo> rotulo="Período" valor={periodo} aoEscolher={setPeriodo}
           opcoes={[{ valor: 'hoje', texto: 'Hoje' }, { valor: 'semana', texto: 'Semana' }, { valor: 'geral', texto: 'Geral' }]} />
         <SeletorAba />
-        {placar.erro && !placar.dados ? <Aviso texto={placar.erro} aoTentar={placar.recarregar} /> : null}
+        {placar.erro && !placar.dados && placar.erro !== APELIDO_EM_USO ? <Aviso texto={placar.erro} aoTentar={placar.recarregar} /> : null}
         {d && !d.amigos.length ? (
           <Apagado>Adicione um amigo pelo apelido (o mesmo que aparece no Pódio) para comparar os pontos.</Apagado>
         ) : null}
