@@ -6,9 +6,10 @@ import { useRef, useState } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Pressable, ScrollView, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { IconeTema } from '../../componentes/icones/Icone';
 import { Apagado, Botao } from '../../componentes/ui';
 import { api, SERVIDOR, type CartaoAchado, type Mensagem } from '../../lib/api';
-import { FONTE_TITULO, useCores } from '../../lib/cores';
+import { FONTE_TITULO, useCores, PALETA } from '../../lib/cores';
 import { quandoFoi } from '../../lib/quando';
 import { useDados } from '../../lib/useDados';
 
@@ -19,13 +20,16 @@ function FotoProtegida({ caminho, estilo, inteira }: { caminho: string; estilo: 
 }
 
 function Cartao({ cartao }: { cartao: CartaoAchado }) {
+  const c = useCores();
   return (
-    <View style={{ borderRadius: 12, borderWidth: 3, borderColor: '#fff', backgroundColor: cartao.cor, padding: 12, gap: 2, minWidth: 200 }}
+    <View style={{ padding: 8, gap: 2, minWidth: 200 }}
       accessible accessibilityLabel={`Cartão de achado: ${cartao.achado}, ${cartao.nome}, ${cartao.pontos} pontos`}>
-      <Text className="font-texto text-[28px]" >{cartao.emoji}</Text>
-      <Text className="font-texto-forte" style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>{cartao.nome}</Text>
-      <Text style={{ color: '#fff', fontFamily: FONTE_TITULO, fontSize: 20 }}>{cartao.achado}</Text>
-      <Text className="font-texto-forte" style={{ color: '#fff', fontSize: 15, fontWeight: '800' }}>+{cartao.pontos} pts</Text>
+      <View className="flex-row items-center gap-2">
+        <IconeTema id={cartao.tema} cor={c.tinta} tamanho={20} />
+        <Text className="font-texto-forte text-apagado text-xs">{cartao.nome}</Text>
+      </View>
+      <Text style={{ color: c.tinta, fontFamily: FONTE_TITULO, fontSize: 20 }}>{cartao.achado}</Text>
+      <Text className="font-texto text-tinta text-[15px]"><Text className="font-numero">+{cartao.pontos}</Text> pts</Text>
     </View>
   );
 }
@@ -100,21 +104,21 @@ export default function Conversa() {
           <Apagado estilo={{ textAlign: 'center', fontSize: 12 }}>Só vocês dois veem estas mensagens. A localização das fotos é apagada antes de enviar.</Apagado>
           {conversa.erro && !conversa.dados ? <Text className="font-texto text-carimbo" >{conversa.erro}</Text> : null}
           {mensagens.map((m) => m.sistema ? (
-            <Text className="font-texto self-center text-apagado text-[13px] py-[4px]" key={m.id} >{m.texto}</Text>
+            <Text className="font-texto self-center text-apagado text-[13px] py-[4px]" key={m.id}>{m.texto}</Text>
           ) : (
             <Pressable key={m.id} onLongPress={() => setOpcoes(m)} delayLongPress={350}
               accessibilityHint="Segure para ver as opções da mensagem"
-              style={{ alignSelf: m.minha ? 'flex-end' : 'flex-start', maxWidth: '82%', gap: 4, padding: m.texto ? 10 : 4,
-                borderRadius: 16, borderBottomRightRadius: m.minha ? 4 : 16, borderBottomLeftRadius: m.minha ? 16 : 4,
-                backgroundColor: m.minha ? c.destaque : c.superficie, borderWidth: m.minha ? 0 : 1, borderColor: c.linha }}>
+              style={{ alignSelf: m.minha ? 'flex-end' : 'flex-start', maxWidth: '82%', minWidth: 44, gap: 4, padding: m.texto ? 10 : 4,
+                borderRadius: 6, minHeight: 44, borderWidth: 1, borderColor: c.linha,
+                backgroundColor: m.minha ? c.suave : c.superficie }}>
               {m.cartao ? <Cartao cartao={m.cartao} /> : null}
               {m.foto ? (
                 <Pressable onPress={() => setAberta(m.foto)} accessibilityRole="imagebutton" accessibilityLabel="Abrir a foto">
-                  <FotoProtegida caminho={m.foto} estilo={{ width: 220, height: 220, borderRadius: 12 }} />
+                  <FotoProtegida caminho={m.foto} estilo={{ width: 220, height: 220, borderRadius: 6 }} />
                 </Pressable>
               ) : null}
-              {m.texto ? <Text className="font-texto" style={{ color: m.minha ? c.fundo : c.tinta, fontSize: 16, lineHeight: 21 }}>{m.texto}</Text> : null}
-              <Text className="font-texto" style={{ color: m.minha ? c.fundo : c.apagado, opacity: 0.75, fontSize: 11, alignSelf: 'flex-end' }}>{quandoFoi(m.criado_em)}</Text>
+              {m.texto ? <Text className="font-texto" style={{ color: c.tinta, fontSize: 16, lineHeight: 21 }}>{m.texto}</Text> : null}
+              <Text className="font-texto" style={{ color: c.apagado, fontSize: 11, alignSelf: 'flex-end' }}>{quandoFoi(m.criado_em)}</Text>
             </Pressable>
           ))}
         </ScrollView>
@@ -131,21 +135,21 @@ export default function Conversa() {
           </Pressable>
           <TextInput value={texto} onChangeText={setTexto} placeholder="Mensagem" placeholderTextColor={c.apagado} multiline maxLength={500}
             accessibilityLabel="Mensagem"
-            style={{ flex: 1, minHeight: 44, maxHeight: 120, borderWidth: 1.5, borderColor: c.linha, borderRadius: 22, paddingHorizontal: 14,
+            style={{ flex: 1, minHeight: 44, maxHeight: 120, borderWidth: 1, borderColor: c.linha, borderRadius: 6, paddingHorizontal: 14,
               paddingTop: 11, paddingBottom: 11, fontSize: 16, color: c.tinta, backgroundColor: c.superficie }} />
           <Pressable accessibilityRole="button" accessibilityLabel="Enviar mensagem" onPress={() => mandar({ texto: texto.trim() })}
             disabled={enviando || !texto.trim()}
-            style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
+            style={{ width: 44, height: 44, borderRadius: 6, alignItems: 'center', justifyContent: 'center',
               backgroundColor: texto.trim() ? c.destaque : c.linha }}>
-            {enviando ? <ActivityIndicator color={c.fundo} /> : <Ionicons name="send" size={20} color={c.fundo} />}
+            {enviando ? <ActivityIndicator color={c.destaqueTinta} /> : <Ionicons name="send" size={20} color={c.destaqueTinta} />}
           </Pressable>
         </View>
       </KeyboardAvoidingView>
 
       {/* Opções: da mensagem (apagar, denunciar) ou da conversa (desfazer amizade, bloquear) */}
       <Modal visible={!!opcoes} transparent animationType="fade" onRequestClose={() => setOpcoes(null)}>
-        <Pressable accessibilityLabel="Fechar" onPress={() => setOpcoes(null)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: c.fundo, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, gap: 10 }}>
+        <Pressable accessibilityLabel="Fechar" onPress={() => setOpcoes(null)} style={{ flex: 1, backgroundColor: `${PALETA.escuro.fundo}66`, justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: c.fundo, borderTopLeftRadius: 6, borderTopRightRadius: 6, padding: 16, gap: 10 }}>
             {escolhida?.minha ? (
               <Botao titulo="Apagar para os dois" aoTocar={() => acao(() => api.apagarMensagem(escolhida.id))} />
             ) : null}
@@ -167,7 +171,7 @@ export default function Conversa() {
       {/* Foto em tela cheia */}
       <Modal visible={!!aberta} transparent animationType="fade" onRequestClose={() => setAberta(null)}>
         <Pressable accessibilityLabel="Fechar a foto" onPress={() => setAberta(null)}
-          style={{ flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
+          style={{ flex: 1, backgroundColor: c.fundo, alignItems: 'center', justifyContent: 'center' }}>
           {aberta ? <FotoProtegida caminho={aberta} estilo={{ width: '100%', height: '80%' }} inteira /> : null}
         </Pressable>
       </Modal>

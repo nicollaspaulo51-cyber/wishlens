@@ -1,11 +1,13 @@
 # Roteiro do vídeo: WishLens
 
+Este roteiro descreve a versão anterior de compras em Streamlit. A identidade visual do jogo de celular está no [README do app](../app_celular/README.md#identidade-visual).
+
 Duração sugerida: **8 a 10 minutos**. Grave a tela com o app aberto, os notebooks no GitHub
 e, se quiser, a prévia da interface. Cada bloco corresponde a uma fase do CRISP-DM.
 
 | # | Tempo | Fase | O que falar | O que mostrar na tela |
 |---|---|---|---|---|
-| 0 | 0:00–0:40 | Abertura | "Já viu algo na rua e pensou *quero isso*? O WishLens transforma esse momento em dados." Apresente o nome e o slogan *Point. Snap. Want.* | Tela inicial do app; alternar o botão ☀️/🌙 |
+| 0 | 0:00–0:40 | Abertura | Apresente o WishLens e explique como a versão de compras registra desejos a partir de fotos. | Tela inicial da versão de compras. |
 | 1 | 0:40–1:40 | **Entendimento do negócio** | O problema (não há um lugar único para descobrir onde conseguir o que se deseja nem para entender os próprios desejos), para quem é e as 4 perguntas de negócio. Critérios de sucesso. | `README.md` e o início do notebook 01 |
 | 2 | 1:40–3:30 | **Entendimento dos dados** | De onde vêm os dados (fotos → registros), as colunas, as licenças. Explicar o `describe()`: count (dados ausentes em `preco_max`), média × mediana (assimetria do preço), desvio padrão, quartis da hora. Mostrar 2 ou 3 gráficos e o que eles dizem. | Notebook 01: `describe()`, countplot por categoria, heatmap dia × hora, heatmap pessoa × categoria |
 | 3 | 3:30–4:30 | **Preparação** | As 3 regras de limpeza (confiança < 0,45, duplicados, mínimo de 10 desejos), a anonimização (LGPD) e a ideia do **vetor de perfil** (proporção por categoria, e por que proporção e não contagem). | Notebook 02: antes/depois da limpeza, tabela anonimizada, heatmap dos perfis |

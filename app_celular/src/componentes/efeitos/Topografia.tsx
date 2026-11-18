@@ -3,6 +3,8 @@ import { Canvas, Group, Path, Skia } from '@shopify/react-native-skia';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { useCores } from '../../lib/cores';
+
 function morro(cx: number, cy: number, niveis: number, passo: number, semente: number) {
   const caminho = Skia.PathBuilder.Make();
   for (let n = 1; n <= niveis; n++) {
@@ -20,7 +22,8 @@ function morro(cx: number, cy: number, niveis: number, passo: number, semente: n
   return caminho.build();
 }
 
-export function Topografia({ cor = '#FFFFFF', opacidade = 0.12 }: { cor?: string; opacidade?: number }) {
+export function Topografia() {
+  const c = useCores();
   const [t, setT] = useState({ w: 0, h: 0 });
   const caminhos = useMemo(() => (t.w ? [morro(t.w * 0.18, t.h * 0.28, 9, t.w * 0.06, 1.3), morro(t.w * 0.9, t.h * 0.75, 11, t.w * 0.07, 4.1)] : []),
     [t.w, t.h]);
@@ -28,8 +31,8 @@ export function Topografia({ cor = '#FFFFFF', opacidade = 0.12 }: { cor?: string
     <View pointerEvents="none" style={StyleSheet.absoluteFill} onLayout={(e) => setT({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
       {t.w ? (
         <Canvas style={StyleSheet.absoluteFill}>
-          <Group opacity={opacidade}>
-            {caminhos.map((c, i) => <Path key={i} path={c} style="stroke" strokeWidth={1.2} color={cor} />)}
+          <Group opacity={0.08}>
+            {caminhos.map((caminho, i) => <Path key={i} path={caminho} style="stroke" strokeWidth={1.2} color={c.linha} />)}
           </Group>
         </Canvas>
       ) : null}

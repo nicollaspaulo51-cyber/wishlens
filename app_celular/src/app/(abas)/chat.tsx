@@ -24,8 +24,9 @@ export default function Chat() {
 
         {amigos.erro && !d ? <Aviso texto={amigos.erro} aoTentar={amigos.recarregar} /> : null}
         {d?.recebidos.length ? (
-          <Botao titulo={`${d.recebidos.length} ${d.recebidos.length === 1 ? 'pedido' : 'pedidos'} de amizade`} tipo="secundario"
-            aoTocar={() => router.navigate('/amigos')} rotulo="Ver os pedidos de amizade na aba Amigos" />
+          <Botao titulo={<><Text className="font-numero">{d.recebidos.length}</Text> {d.recebidos.length === 1 ? 'pedido' : 'pedidos'} de amizade</>}
+            tipo="secundario" aoTocar={() => router.navigate('/amigos')}
+            rotulo={`Ver os pedidos de amizade na aba Amigos: ${d.recebidos.length}`} />
         ) : null}
         <Subtitulo>Conversas</Subtitulo>
         {d && !d.amigos.length ? (
@@ -35,21 +36,21 @@ export default function Chat() {
           <Surge key={a.apelido} ordem={i} chave={visita}><Pressable accessibilityRole="button"
             accessibilityLabel={`Conversa com ${a.apelido}${a.nao_lidas ? `, ${a.nao_lidas} não lidas` : ''}`}
             onPress={() => router.push({ pathname: '/conversa/[apelido]', params: { apelido: a.apelido } })}
-            className="flex-row items-center gap-3 p-3 rounded-[14px] bg-ficha active:bg-suave border border-linha">
-            <View className="w-[44px] h-[44px] rounded-[22px] bg-suave items-center justify-center">
+            className="flex-row items-center gap-3 p-3 rounded-ficha bg-ficha active:bg-suave border border-linha">
+            <View className="w-[44px] h-[44px] rounded-full bg-suave items-center justify-center">
               <Text className="font-texto-forte text-destaque text-[18px]" >{a.apelido.slice(0, 1).toUpperCase()}</Text>
             </View>
             <View className="flex-1 gap-[2px]">
               <Text className="font-texto-forte text-tinta text-[16px]" >{a.apelido}</Text>
               <Text className="font-texto text-apagado text-[14px]" numberOfLines={1} >
-                {a.ultima ? `${a.ultima.minha ? 'Você: ' : ''}${a.ultima.texto}` : 'Diga oi!'}
+                {a.ultima ? `${a.ultima.minha ? 'Você: ' : ''}${a.ultima.texto}` : 'Envie uma mensagem.'}
               </Text>
             </View>
             <View className="items-end gap-[4px]">
               {a.ultima ? <Text className="font-texto text-apagado text-[12px]" >{quandoFoi(a.ultima.criado_em)}</Text> : null}
               {a.nao_lidas ? (
-                <View className="min-w-[22px] h-[22px] rounded-[11px] px-[6px] bg-destaque items-center justify-center">
-                  <Text className="font-texto-forte text-papel text-[12px]" >{a.nao_lidas}</Text>
+                <View className="min-w-[22px] h-[22px] rounded-full px-[6px] bg-destaque items-center justify-center">
+                  <Text className="font-numero text-destaque-tinta text-[12px]" >{a.nao_lidas}</Text>
                 </View>
               ) : null}
             </View>

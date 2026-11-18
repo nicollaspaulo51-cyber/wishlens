@@ -11,6 +11,7 @@ export type FotoGaleria = {
   achado: string;
   emoji: string;
   tema: string;
+  temaId?: string;
   cor: string;
   pontos: number;
   criado_em: string;

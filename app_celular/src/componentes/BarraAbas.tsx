@@ -2,7 +2,7 @@
 import * as Haptics from 'expo-haptics';
 import { router, type Tabs } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
-import { Animated, Pressable, Text, View, type LayoutRectangle } from 'react-native';
+import { Animated, Pressable, Text, useWindowDimensions, View, type LayoutRectangle } from 'react-native';
 
 import { api } from '../lib/api';
 import { useCores } from '../lib/cores';
@@ -11,7 +11,7 @@ import { Icone, type NomeIcone } from './icones/Icone';
 
 type Props = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
-// Ícones próprios do caderno de campo (componentes/icones)
+// Ícones das rotas principais.
 const ICONES: Record<string, NomeIcone> = {
   index: 'mapa', podio: 'trofeu', amigos: 'amigos', chat: 'chat', colecao: 'museu', conta: 'bussola',
 };
@@ -19,6 +19,9 @@ const ICONES: Record<string, NomeIcone> = {
 export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) {
   const c = useCores();
   const meio = Math.floor(state.routes.length / 2);
+  const { width } = useWindowDimensions();
+  const centro = Math.min(84, Math.max(44, width - state.routes.length * 44));
+  const botao = Math.min(68, centro);
   const { v: halo } = useLaco(1800, 600);
   const parado = useMovimentoReduzido();
   // Pílula da aba ativa: uma só, que desliza com mola até a aba tocada. A posição de cada aba vem do onLayout.
@@ -57,15 +60,15 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
       <Pressable key={rota.key} accessibilityRole="tab" accessibilityState={{ selected: ativa }}
         accessibilityLabel={contador ? `${titulo}, ${contador} mensagens não lidas` : titulo}
         onPress={() => navigateToTab(rota.key)} onLayout={(e) => medir(indice, 'aba', e.nativeEvent.layout)}
-        className="flex-1 items-center justify-center min-h-[56px] gap-[2px]">
+        className="flex-1 items-center justify-center min-h-[56px] min-w-[44px] gap-[2px]">
         <View onLayout={(e) => medir(indice, 'pilula', e.nativeEvent.layout)}
-          style={{ paddingHorizontal: 12, paddingVertical: 3, borderRadius: 14, backgroundColor: ativa && !pronta ? c.suave : 'transparent' }}>
+          style={{ paddingHorizontal: 12, paddingVertical: 3, borderRadius: 6, backgroundColor: ativa && !pronta ? c.suave : 'transparent' }}>
           <IconePula ativa={ativa} parado={parado}>
             <Icone nome={nomeIcone} tamanho={23} cor={ativa ? c.destaque : c.apagado} ativo={ativa} />
           </IconePula>
           {contador ? (
-            <View className="absolute -top-[2px] right-[6px] min-w-[18px] h-[18px] rounded-[9px] px-[4px] bg-carimbo items-center justify-center">
-              <Text className="font-texto-forte" style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{contador > 99 ? '99+' : contador}</Text>
+            <View className="absolute -top-[2px] right-[6px] min-w-[18px] h-[18px] rounded-full px-[4px] bg-destaque items-center justify-center">
+              <Text className="font-numero text-destaque-tinta text-[11px]">{contador > 99 ? '99+' : contador}</Text>
             </View>
           ) : null}
         </View>
@@ -76,17 +79,16 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
 
   return (
     <View accessibilityRole="tablist" style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: c.superficie,
-      paddingBottom: insets.bottom, paddingTop: 4, borderTopLeftRadius: 22, borderTopRightRadius: 22,
-      shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: -3 }, elevation: 16 }}>
+      paddingBottom: insets.bottom, paddingTop: 4, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderTopWidth: 1, borderColor: c.linha }}>
       {pronta ? (
         <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, width: alvo!.pilula!.width,
-          height: alvo!.pilula!.height, borderRadius: 14, backgroundColor: c.suave, transform: pilula.getTranslateTransform() }} />
+          height: alvo!.pilula!.height, borderRadius: 6, backgroundColor: c.suave, transform: pilula.getTranslateTransform() }} />
       ) : null}
       {state.routes.slice(0, meio).map((r, i) => aba(r, i))}
-      <View className="w-[84px] items-center">
+      <View className="items-center" style={{ width: centro }}>
         {/* Halo de lente: chama para a câmera sem tampar nada */}
-        <Animated.View pointerEvents="none" accessibilityElementsHidden style={{ position: 'absolute', top: -30, width: 68, height: 68,
-          borderRadius: 34, borderWidth: 3, borderColor: c.sol,
+        <Animated.View pointerEvents="none" accessibilityElementsHidden style={{ position: 'absolute', top: -30, width: botao, height: botao,
+          borderRadius: 6, borderWidth: 3, borderColor: c.sol,
           opacity: halo.interpolate({ inputRange: [0, 0.1, 1], outputRange: [0, 0.8, 0] }),
           transform: [{ scale: halo.interpolate({ inputRange: [0, 1], outputRange: [1, 1.6] }) }] }} />
         <Pressable accessibilityRole="button" accessibilityLabel="Fotografar"
@@ -95,9 +97,8 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
             router.push('/camera');
           }}
           // estilo fixo, sem função nem className: no celular o Pressable ficava sem tamanho (não dava para tocar)
-          style={{ width: 68, height: 68, borderRadius: 34, marginTop: -30, alignItems: 'center', justifyContent: 'center',
-            backgroundColor: c.sol, borderWidth: 5, borderColor: c.superficie,
-            shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 8 }}>
+          style={{ width: botao, height: botao, borderRadius: 6, marginTop: -30, alignItems: 'center', justifyContent: 'center',
+            backgroundColor: c.sol, borderWidth: 1, borderColor: c.linha }}>
           <Icone nome="camera" tamanho={30} cor={c.solTinta} traco={2.2} />
         </Pressable>
       </View>

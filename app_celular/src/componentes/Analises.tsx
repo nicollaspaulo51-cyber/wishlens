@@ -33,13 +33,14 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
   const outro = est.dados?.amigo ?? null;
   const chave = `${visita}-${com}`;
 
-  const nomeTema = Object.fromEntries((temas.dados?.temas ?? []).map((t) => [t.id, `${t.emoji} ${t.nome}`]));
-  const nomeAba: Record<string, string> = { livre: `${NOME_LIVRE.emoji} ${NOME_LIVRE.nome}`,
-    ...Object.fromEntries((temas.dados?.abas ?? []).map((a) => [a.id, `${a.emoji} ${a.nome}`])) };
+  const nomeTema = Object.fromEntries((temas.dados?.temas ?? []).map((t) => [t.id, t.nome]));
+  const nomeAba: Record<string, string> = { livre: NOME_LIVRE.nome,
+    ...Object.fromEntries((temas.dados?.abas ?? []).map((a) => [a.id, a.nome])) };
   // Pizza: uma por pessoa, com os nomes dos baldes
   const pizza = (f: (e: Estatisticas) => Fatia[]) =>
     [eu, outro].filter((e): e is Estatisticas => !!e).map((e, i) => ({ nome: i ? e.apelido : 'Você', fatias: f(e) }));
-  const fatias = (b: Balde[], nome: (chave: string) => string) => b.map((x) => ({ nome: nome(x.chave), valor: x.valor }));
+  const fatias = (b: Balde[], nome: (chave: string) => string, comIcone = false): Fatia[] =>
+    b.map((x) => ({ nome: nome(x.chave), valor: x.valor, icone: comIcone ? x.chave : undefined }));
   const series = (f: (e: Estatisticas) => Balde[]) =>
     [eu, outro].filter((e): e is Estatisticas => !!e).map((e, i) => ({ nome: i ? e.apelido : 'Você', valores: valores(f(e)) }));
 
@@ -48,7 +49,7 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
     <View className="flex-1 gap-[6px]">
       <Text className="font-texto text-apagado text-[13px]" >{nome}</Text>
       {e.top_achados.length ? e.top_achados.map((t, i) => (
-        <Text className="font-texto text-tinta text-[14px]" key={t.chave} numberOfLines={1} >{i + 1}. {t.chave} <Text className="font-texto text-apagado" >×{t.valor}</Text></Text>
+        <Text className="font-texto text-tinta text-[14px]" key={t.chave} numberOfLines={1} ><Text className="font-numero">{i + 1}.</Text> {t.chave} <Text className="font-numero text-apagado">×{t.valor}</Text></Text>
       )) : <Apagado>Nada ainda.</Apagado>}
     </View>
   );
@@ -63,7 +64,6 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
 
       {eu ? (
         <>
-          {/* Números lado a lado, com a coroa em quem ganha (em texto, não só na cor) */}
           <Legenda series={series((e) => e.por_dia)} />
           <View className="flex-row flex-wrap gap-[8px]">
             {NUMEROS.map((n) => {
@@ -73,13 +73,14 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
               const ganha = b === undefined || a === b ? null : a > b ? 'voce' : 'amigo';
               return (
                 <View key={n.id} accessible accessibilityLabel={`${n.nome}: você ${f(a)}${outro ? `, ${outro.apelido} ${f(b!)}` : ''}${ganha ? `. Ganha: ${ganha === 'voce' ? 'você' : outro!.apelido}` : ''}`}
-                  style={{ width: '48%', flexGrow: 1, backgroundColor: c.superficie, borderRadius: 12, padding: 10, gap: 2,
+                  style={{ width: '48%', flexGrow: 1, backgroundColor: c.superficie, borderRadius: 6, padding: 10, gap: 2,
                     borderWidth: 1, borderColor: c.linha }}>
                   <View className="flex-row items-center gap-[10px] flex-wrap">
-                    {[[f(a), cor.voce, ganha === 'voce'], ...(outro ? [[f(b!), cor.amigo, ganha === 'amigo']] : [])].map(([v, tom, coroa], i) => (
+                    {[[f(a), cor.voce, ganha === 'voce'], ...(outro ? [[f(b!), cor.amigo, ganha === 'amigo']] : [])].map(([v, tom, maior], i) => (
                       <View key={i} className="flex-row items-center gap-[5px]">
                         <View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: tom as string }} />
-                        <Text className="font-texto-forte text-tinta text-[20px]" >{coroa ? '👑 ' : ''}{v as string}</Text>
+                        <Text className="font-numero text-tinta text-[20px]">{v as string}</Text>
+                        {maior ? <Text className="font-texto text-apagado text-xs">Maior</Text> : null}
                       </View>
                     ))}
                   </View>
@@ -95,21 +96,21 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
             <Text className="font-texto-forte text-tinta text-[16px]" >Pontos por tema</Text>
-            <Barras chave={chave} rotulos={eu.por_tema.map((t) => nomeTema[t.chave] ?? t.chave)} series={series((e) => e.por_tema)} />
+            <Barras chave={chave} icones={eu.por_tema.map((t) => t.chave)} rotulos={eu.por_tema.map((t) => nomeTema[t.chave] ?? t.chave)} series={series((e) => e.por_tema)} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
             <Text className="font-texto-forte text-tinta text-[16px]" >Pontos divididos por tema</Text>
-            <Pizza pessoas={pizza((e) => fatias(e.por_tema, (k) => nomeTema[k] ?? k))} />
+            <Pizza pessoas={pizza((e) => fatias(e.por_tema, (k) => nomeTema[k] ?? k, true))} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
             <Text className="font-texto-forte text-tinta text-[16px]" >Pontos por aba do jogo</Text>
-            <Pizza pessoas={pizza((e) => fatias(e.por_aba, (k) => nomeAba[k] ?? k))} />
+            <Pizza pessoas={pizza((e) => fatias(e.por_aba, (k) => nomeAba[k] ?? k, true))} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
             <Text className="font-texto-forte text-tinta text-[16px]" >Fotos aceitas e recusadas</Text>
             <Pizza pessoas={pizza((e) => {
               const aceitas = Math.round(e.resumo.fotos * e.resumo.aceitas);
-              return [{ nome: '✔ aceitas', valor: aceitas }, { nome: '✖ recusadas', valor: e.resumo.fotos - aceitas }];
+              return [{ nome: 'Aceitas', valor: aceitas }, { nome: 'Recusadas', valor: e.resumo.fotos - aceitas }];
             })} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
@@ -122,7 +123,7 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
             <Text className="font-texto-forte text-tinta text-[16px]" >Fotos por clima</Text>
-            <Pizza pessoas={pizza((e) => fatias(e.por_clima, (k) => ({ sol: '☀️ sol', nublado: '☁️ nublado', chuva: '🌧️ chuva' })[k] ?? 'sem dado'))} />
+            <Pizza pessoas={pizza((e) => fatias(e.por_clima, (k) => ({ sol: 'Sol', nublado: 'Nublado', chuva: 'Chuva' })[k] ?? 'sem dado'))} />
           </Cartaz>
           <Cartaz estilo={{ gap: 10 }}>
             <Text className="font-texto-forte text-tinta text-[16px]" >Achados mais fotografados</Text>

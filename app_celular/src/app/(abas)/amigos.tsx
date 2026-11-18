@@ -64,7 +64,7 @@ export default function Amigos() {
           <TextInput value={novo} onChangeText={setNovo} placeholder="Apelido do amigo" placeholderTextColor={c.apagado}
             autoCapitalize="none" autoCorrect={false} maxLength={30} accessibilityLabel="Apelido do amigo para adicionar"
             onSubmitEditing={adicionar} returnKeyType="send"
-            className="flex-1 min-h-[48px] border-[1.5px] border-linha rounded-[14px] px-[14px] text-[16px] text-tinta bg-ficha" />
+            className="flex-1 min-h-[48px] border border-linha rounded-ficha px-[14px] text-[16px] text-tinta bg-ficha" />
           <Botao titulo="Adicionar" aoTocar={adicionar} desativado={novo.trim().length < 2 || ocupado} estilo={{ paddingHorizontal: 16 }} />
         </View>
         {msg ? <Text className="font-texto" accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>{msg.texto}</Text> : null}
@@ -99,7 +99,7 @@ export default function Amigos() {
         {eu && ranking.length > 1 ? (
           <Text className="font-texto text-tinta text-[16px]" >
             {ranking[0].pontos === 0 ? 'Ninguém pontuou ainda. Tire a primeira foto!'
-              : acima ? <>Faltam <Text className="font-texto-forte" >{falta} {falta === 1 ? 'ponto' : 'pontos'}</Text> para passar {acima.apelido}.</>
+              : acima ? <>Faltam <Text className="font-numero">{falta}</Text> {falta === 1 ? 'ponto' : 'pontos'} para passar {acima.apelido}.</>
               : 'Você lidera entre seus amigos.'}
           </Text>
         ) : null}
@@ -110,12 +110,12 @@ export default function Amigos() {
                 accessibilityLabel={`${r.posicao}º, ${r.apelido}${r.voce ? ' (você)' : ''}, ${r.pontos} pontos, ${r.achados} achados${r.voce ? '' : '. Abrir a conversa'}`}
                 onPress={() => router.push({ pathname: '/conversa/[apelido]', params: { apelido: r.apelido } })}
                 className={`flex-row items-center py-3 px-4 gap-3 border-linha active:bg-suave ${r.voce ? 'bg-suave' : ''} ${i < ranking.length - 1 ? 'border-b' : ''}`}>
-                <Text className="font-texto-forte w-[32px] text-apagado" >{r.posicao}º</Text>
+                <Text className="font-numero w-[32px] text-apagado" >{r.posicao}º</Text>
                 <View className="flex-1">
                   <Text className="font-texto text-tinta text-[16px]" >{r.apelido}{r.voce ? ' (você)' : ''}</Text>
-                  <Text className="font-texto text-apagado text-[13px]" >{r.achados} {r.achados === 1 ? 'achado' : 'achados'}</Text>
+                  <Text className="font-texto text-apagado text-[13px]" ><Text className="font-numero">{r.achados}</Text> {r.achados === 1 ? 'achado' : 'achados'}</Text>
                 </View>
-                <Text className="font-texto-forte text-tinta" >{r.pontos} pts</Text>
+                <Text className="font-texto text-tinta"><Text className="font-numero">{r.pontos}</Text> pts</Text>
               </Pressable>
             ))}
           </Cartaz>

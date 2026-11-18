@@ -3,13 +3,9 @@ import { type ReactNode } from 'react';
 import { Animated, Text, View } from 'react-native';
 
 import { type LinhaPodio } from '../lib/api';
-import { FONTE_TITULO, useCores } from '../lib/cores';
+import { useCores } from '../lib/cores';
 import { useEntrada } from '../lib/movimento';
-import { Holografico as Brilho } from './efeitos/Holografico';
 import { Icone } from './icones/Icone';
-
-// ouro, prata e bronze em tinta: legíveis no papel claro e no escuro
-const MEDALHAS = { 1: '#D19A00', 2: '#8E9AA3', 3: '#B8692E' } as const;
 
 export function Degraus({ ranking, chave }: { ranking: LinhaPodio[]; chave: string }) {
   const c = useCores();
@@ -23,9 +19,9 @@ export function Degraus({ ranking, chave }: { ranking: LinhaPodio[]; chave: stri
             rotulo={r ? `${pos}º lugar: ${r.apelido}, ${r.pontos} pontos` : `${pos}º lugar vazio`}>
             {r ? (
               <>
-                <Icone nome="medalha" tamanho={34} cor={MEDALHAS[pos]} traco={2.2} ativo />
+                <Icone nome="medalha" tamanho={34} cor={pos === 1 ? c.destaque : c.apagado} traco={2.2} ativo />
                 <Text className="font-texto-forte text-tinta text-[15px]" numberOfLines={1} >{r.apelido}{r.voce ? ' (você)' : ''}</Text>
-                <Text className="font-texto text-apagado text-[13px]" >{r.pontos} pts</Text>
+                <Text className="font-texto text-apagado text-[13px]" ><Text className="font-numero">{r.pontos}</Text> pts</Text>
               </>
             ) : null}
           </Degrau>
@@ -46,11 +42,11 @@ function Degrau({ pos, chave, altura, rotulo, children }: { pos: 1 | 2 | 3; chav
         transform: [{ translateY: cai.interpolate({ inputRange: [0, 1], outputRange: [-24, 0] }) }] }}>
         {children}
       </Animated.View>
-      <Animated.View style={{ alignSelf: 'stretch', height: altura, borderTopLeftRadius: 10, borderTopRightRadius: 10,
-        backgroundColor: pos === 1 ? c.sol : c.suave, alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+      <Animated.View style={{ alignSelf: 'stretch', height: altura, borderRadius: 6,
+        backgroundColor: pos === 1 ? c.superficie : c.suave, borderWidth: 1, borderColor: pos === 1 ? c.destaque : c.linha,
+        alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
         transformOrigin: 'bottom', transform: [{ scaleY: sobe }] }}>
-        <Text style={{ fontFamily: FONTE_TITULO, fontSize: 26, color: pos === 1 ? c.solTinta : c.tinta }}>{pos}</Text>
-        {pos === 1 ? <Brilho pausa={4000} /> : null}
+        <Text className="font-numero text-tinta text-[26px]">{pos}</Text>
       </Animated.View>
     </View>
   );

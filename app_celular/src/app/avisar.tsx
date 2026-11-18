@@ -28,7 +28,7 @@ export default function Avisar() {
     setMsg(null);
     try {
       await api.avisar(tipo, texto.trim(), p.captura);
-      setMsg({ texto: 'Aviso enviado. Obrigado: ele vai ser lido e corrigido.', erro: false });
+      setMsg({ texto: 'Aviso enviado.', erro: false });
       setTimeout(() => router.back(), 1500);
     } catch (e) {
       setMsg({ texto: e instanceof Error ? e.message : 'Não deu para enviar. Tente de novo.', erro: true });
@@ -47,7 +47,7 @@ export default function Avisar() {
           <View className="gap-[6px]">
             <TextInput value={texto} onChangeText={setTexto} multiline maxLength={500} placeholder={dica}
               placeholderTextColor={c.apagado} accessibilityLabel="O que aconteceu"
-              style={{ minHeight: 140, textAlignVertical: 'top', borderWidth: 1.5, borderColor: c.linha, borderRadius: 14,
+              style={{ minHeight: 140, textAlignVertical: 'top', borderWidth: 1, borderColor: c.linha, borderRadius: 6,
                 padding: 14, fontSize: 16, lineHeight: 22, color: c.tinta, backgroundColor: c.superficie }} />
             <Apagado estilo={{ fontSize: 12, alignSelf: 'flex-end' }}>{texto.length}/500</Apagado>
           </View>

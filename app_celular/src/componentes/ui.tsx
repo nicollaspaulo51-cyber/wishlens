@@ -1,9 +1,7 @@
-// Peças pequenas de interface usadas em várias telas, no estilo caderno de campo (classes do NativeWind; as cores
-// são as variáveis da PALETA, então o tema claro/escuro troca sozinho).
+// Peças comuns do mapa topográfico; as classes do NativeWind usam as cores do tema ativo.
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View, type TextStyle, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View, type TextStyle, type ViewStyle } from 'react-native';
 
-import { graoDePapel } from './efeitos/grao';
 import { IconeTema } from './icones/Icone';
 
 import { useCores } from '../lib/cores';
@@ -16,12 +14,10 @@ export function Titulo({ children, tamanho = 28, estilo }: { children: ReactNode
   );
 }
 
-// Subtítulo de seção com um traço de marca-texto embaixo, como num caderno
 export function Subtitulo({ children }: { children: ReactNode }) {
   return (
     <View className="mt-6 mb-2 self-start">
       <Text accessibilityRole="header" className="font-titulo-media text-[19px] text-tinta">{children}</Text>
-      <View className="h-1.5 -mt-2 -mx-1 rounded-full bg-sol opacity-40" />
     </View>
   );
 }
@@ -30,32 +26,16 @@ export function Apagado({ children, estilo }: { children: ReactNode; estilo?: Te
   return <Text className="font-texto text-apagado text-sm leading-5" style={estilo}>{children}</Text>;
 }
 
-// Anotação à mão (Caveat): só para textos curtos, como etiquetas e carimbos
-export function Anotacao({ children, estilo }: { children: ReactNode; estilo?: TextStyle }) {
-  return <Text className="font-mao text-destaque text-xl" style={estilo}>{children}</Text>;
-}
-
-// A ficha de papel do caderno: fundo de ficha, borda de lápis e uma sombra curta. `fita` cola um pedaço de fita adesiva.
-export function Cartaz({ children, estilo, fita }: { children: ReactNode; estilo?: ViewStyle; fita?: boolean }) {
+export function Cartaz({ children, estilo }: { children: ReactNode; estilo?: ViewStyle }) {
   return (
-    <View className="bg-ficha border border-linha rounded-ficha p-4 shadow-sm overflow-hidden" style={estilo}>
-      <Grao />
-      {fita ? <View pointerEvents="none" className="absolute -top-2.5 self-center w-16 h-5 bg-sol/40 rotate-[-3deg]" /> : null}
+    <View className="bg-ficha border border-linha rounded-ficha p-4" style={estilo}>
       {children}
     </View>
   );
 }
 
-// Textura de papel por baixo do conteúdo da ficha (ladrilho de ruído do Skia, bem fraquinho)
-function Grao() {
-  const ladrilho = graoDePapel();
-  if (!ladrilho) return null;
-  return <Image source={{ uri: ladrilho }} resizeMode="repeat" pointerEvents="none" accessibilityElementsHidden
-    style={[StyleSheet.absoluteFill, { opacity: 0.07 }]} />;
-}
-
 export function Botao({ titulo, aoTocar, tipo = 'primario', desativado, carregando, estilo, rotulo }: {
-  titulo: string; aoTocar: () => void; tipo?: 'primario' | 'secundario'; desativado?: boolean; carregando?: boolean;
+  titulo: ReactNode; aoTocar: () => void; tipo?: 'primario' | 'secundario'; desativado?: boolean; carregando?: boolean;
   estilo?: ViewStyle; rotulo?: string;
 }) {
   const c = useCores();
@@ -63,7 +43,7 @@ export function Botao({ titulo, aoTocar, tipo = 'primario', desativado, carregan
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={rotulo ?? titulo}
+      accessibilityLabel={rotulo ?? (typeof titulo === 'string' ? titulo : undefined)}
       accessibilityState={{ disabled: !!desativado || !!carregando, busy: !!carregando }}
       disabled={desativado || carregando}
       onPress={aoTocar}
@@ -78,9 +58,9 @@ export function Botao({ titulo, aoTocar, tipo = 'primario', desativado, carregan
 }
 
 // Escolha de uma opção (períodos, temas): etiquetas que rolam de lado quando não cabem
-// `icone` é o id de um tema/aba: a etiqueta mostra o desenho do caderno antes do texto
+// `icone` identifica o tema ou a aba e aparece antes do texto.
 export function Fichas<T extends string>({ opcoes, valor, aoEscolher, rotulo }: {
-  opcoes: { valor: T; texto: string; icone?: { id: string; emoji?: string; cor: string } }[]; valor: T; aoEscolher: (v: T) => void; rotulo: string;
+  opcoes: { valor: T; texto: string; icone?: { id: string } }[]; valor: T; aoEscolher: (v: T) => void; rotulo: string;
 }) {
   const c = useCores();
   return (
@@ -91,9 +71,9 @@ export function Fichas<T extends string>({ opcoes, valor, aoEscolher, rotulo }: 
         const ativa = o.valor === valor;
         return (
           <Pressable key={o.valor} accessibilityRole="radio" accessibilityState={{ selected: ativa }} onPress={() => aoEscolher(o.valor)}
-            className={`min-h-[40px] px-3.5 rounded-full flex-row items-center gap-1.5 border ${ativa ? 'bg-tinta border-tinta' : 'bg-ficha border-linha'}`}>
-            {o.icone ? <IconeTema id={o.icone.id} emoji={o.icone.emoji} tamanho={18} cor={ativa ? c.fundo : o.icone.cor} /> : null}
-            <Text className={`text-[15px] ${ativa ? 'font-texto-forte text-papel' : 'font-texto text-tinta'}`}>{o.texto}</Text>
+            className={`min-h-[44px] min-w-[44px] px-3.5 rounded-ficha flex-row items-center gap-1.5 border ${ativa ? 'bg-suave border-apagado' : 'bg-ficha border-linha'}`}>
+            {o.icone ? <IconeTema id={o.icone.id} tamanho={18} cor={ativa ? c.tinta : c.apagado} /> : null}
+            <Text className={`text-[15px] ${ativa ? 'font-texto-forte text-tinta' : 'font-texto text-tinta'}`}>{o.texto}</Text>
           </Pressable>
         );
       })}

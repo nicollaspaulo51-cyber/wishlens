@@ -10,7 +10,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CartaoPontos } from '../componentes/CartaoPontos';
 import { CompartilharFoto } from '../componentes/CompartilharFoto';
-import { Confete } from '../componentes/efeitos/Confete';
 import { SeletorAba } from '../componentes/SeletorAba';
 import { Apagado, Botao, Fichas, Titulo } from '../componentes/ui';
 import { api, type Julgamento, type Tema } from '../lib/api';
@@ -84,7 +83,7 @@ export default function Camera() {
     }
   }
 
-  if (!permissao) return <View style={{ flex: 1, backgroundColor: '#000' }} />;
+  if (!permissao) return <View style={{ flex: 1, backgroundColor: c.fundo }} />;
   if (!permissao.granted) {
     return (
       <SafeAreaView className="flex-1 bg-papel p-[24px] gap-[16px] justify-center">
@@ -102,7 +101,7 @@ export default function Camera() {
     return (
       <SafeAreaView className="flex-1 bg-papel">
         <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-          <Image source={{ uri: foto }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 12 }} accessibilityLabel="Sua foto" />
+          <Image source={{ uri: foto }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 6 }} accessibilityLabel="Sua foto" />
           {!resposta && !erro ? (
             <View className="flex-row gap-[12px] items-center" accessibilityLiveRegion="polite">
               <ActivityIndicator color={c.destaque} />
@@ -111,7 +110,7 @@ export default function Camera() {
           ) : null}
           {erro ? <Text className="font-texto text-carimbo text-[16px]"  accessibilityLiveRegion="assertive">{erro}</Text> : null}
           {resposta?.status === 'borrada' ? (
-            <View className="bg-ficha rounded-[14px] p-[16px] gap-[6px]">
+            <View className="bg-ficha border border-linha rounded-ficha p-[16px] gap-[6px]">
               <Text className="font-texto-forte text-tinta text-[17px]" >{resposta.titulo ?? 'Foto borrada'}</Text>
               <Text className="font-texto text-tinta text-[15px] leading-[21px]" >{resposta.mensagem}</Text>
             </View>
@@ -120,14 +119,14 @@ export default function Camera() {
             <>
               <CartaoPontos cartao={resposta.cartao} />
               {resposta.avisos.map((a) => (
-                <Text className="font-texto text-tinta text-[15px]" key={a} >⚡ {a}</Text>
+                <Text className="font-texto text-tinta text-[15px]" key={a} >{a}</Text>
               ))}
               {enviada ? <CompartilharFoto foto={foto} enviada={enviada} captura={resposta.id} aceita={resposta.cartao.aceita}
-                placa={{ achado: resposta.cartao.achado, emoji: resposta.cartao.tema?.emoji ?? '📷', tema: resposta.cartao.tema?.nome ?? '',
-                  cor: resposta.cartao.tema?.cor ?? '#136B4C', pontos: resposta.cartao.aceita ? resposta.cartao.pontos : 0 }} /> : null}
+                placa={{ achado: resposta.cartao.achado, emoji: resposta.cartao.tema?.emoji ?? '', tema: resposta.cartao.tema?.nome ?? '', temaId: resposta.cartao.tema?.id,
+                  cor: resposta.cartao.tema?.cor ?? c.apagado, pontos: resposta.cartao.aceita ? resposta.cartao.pontos : 0 }} /> : null}
               {resposta.posicao ? (
                 <Text className="font-texto text-tinta text-[16px]" >
-                  <Text className="font-texto-forte" >{resposta.posicao}º lugar hoje</Text> com {resposta.pontos_hoje} pontos.
+                  <Text className="font-numero">{resposta.posicao}º</Text> lugar hoje com <Text className="font-numero">{resposta.pontos_hoje}</Text> pontos.
                 </Text>
               ) : null}
               {resposta.cartao.pode_contestar ? (
@@ -158,7 +157,6 @@ export default function Camera() {
             </View>
           ) : null}
         </ScrollView>
-        {resposta?.status === 'ok' && resposta.cartao.aceita ? <Confete key={resposta.id} disparo={1} /> : null}
       </SafeAreaView>
     );
   }
@@ -170,17 +168,17 @@ export default function Camera() {
         pointerEvents="box-none">
         <View className="flex-row justify-between items-center p-[16px]">
           <Pressable accessibilityRole="button" accessibilityLabel="Fechar a câmera" onPress={() => router.back()}
-            style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
-            <Text className="font-texto" style={{ color: '#fff', fontSize: 22 }}>✕</Text>
+            style={{ minWidth: 48, minHeight: 48, paddingHorizontal: 12, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
+            <Text className="font-texto" style={{ color: '#fff', fontSize: 16 }}>Fechar</Text>
           </Pressable>
-          <SeletorAba escuro />
+          <SeletorAba />
         </View>
         <View style={{ alignItems: 'center', gap: 12, paddingBottom: Platform.OS === 'web' ? 24 : 12 }}>
           {modo === 'competicao' ? (
             <Text className="font-texto-forte" accessibilityLiveRegion="polite" style={{ color: '#fff', fontSize: 15, fontWeight: '700', backgroundColor: 'rgba(0,0,0,0.55)',
-              paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, overflow: 'hidden', textAlign: 'center' }}>
-              {falta > 0 ? `🎮 Próxima partida em ${Math.floor(falta / 60)}:${String(falta % 60).padStart(2, '0')}`
-                : '🎮 Fotografe a tela do fim da partida'}
+              paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, overflow: 'hidden', textAlign: 'center' }}>
+              {falta > 0 ? <>Próxima partida em <Text className="font-numero">{Math.floor(falta / 60)}:{String(falta % 60).padStart(2, '0')}</Text></>
+                : 'Fotografe a tela do fim da partida'}
             </Text>
           ) : null}
           <Pressable accessibilityRole="button" accessibilityLabel={falta > 0 ? 'Tirar a foto (espere a próxima partida)' : 'Tirar a foto'}
@@ -188,7 +186,7 @@ export default function Camera() {
             onPressIn={() => setApertado(true)} onPressOut={() => setApertado(false)}
             // estilo fixo e sem className: no celular um Pressable só com classes ficava sem tamanho (botão invisível)
             style={{ width: 78, height: 78, borderRadius: 39, borderWidth: 5, borderColor: '#fff', alignItems: 'center', justifyContent: 'center',
-              backgroundColor: apertado ? '#FFC83D' : 'rgba(255,255,255,0.25)', opacity: pronta && falta <= 0 ? 1 : 0.4 }}>
+              backgroundColor: apertado ? c.destaque : 'rgba(255,255,255,0.25)', opacity: pronta && falta <= 0 ? 1 : 0.4 }}>
             <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#fff' }} />
           </Pressable>
         </View>

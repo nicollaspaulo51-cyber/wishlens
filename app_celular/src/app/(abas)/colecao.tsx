@@ -6,12 +6,9 @@ import { Galeria } from '../../componentes/Galeria';
 import { Apagado, Aviso, Cartaz, Subtitulo, Titulo } from '../../componentes/ui';
 import { api, type Medalha } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
-import { Holografico as Brilho } from '../../componentes/efeitos/Holografico';
 import { Surge, useVisita } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 import { IconeTema } from '../../componentes/icones/Icone';
-
-const COR_NIVEL = { bronze: '#B87333', prata: '#9AA4AD', ouro: '#FFC83D' } as const;
 
 export default function Colecao() {
   const c = useCores();
@@ -29,15 +26,16 @@ export default function Colecao() {
         {col.erro && !d ? <Aviso texto={col.erro} aoTentar={col.recarregar} /> : null}
         {d ? (
           <>
-            <View className="flex-row flex-wrap gap-[8px]">
-              {[[d.resumo.pontos, 'pontos'], [d.resumo.achados, 'achados diferentes'], [d.resumo.corrente, 'dias seguidos'],
-                [d.resumo.fotos, 'fotos'], [`${Math.round(d.resumo.recusadas * 100)}%`, 'recusadas']].map(([valor, rotulo], i) => (
-                <Surge key={String(rotulo)} ordem={i} chave={visita} estilo={{ backgroundColor: c.superficie, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, minWidth: 96 }}>
-                  <Text className="font-titulo text-[22px] text-tinta">{valor}</Text>
-                  <Text className="font-texto text-apagado text-[12px]" >{rotulo}</Text>
-                </Surge>
-              ))}
-            </View>
+            {/* Pontos em destaque; o resto é apoio numa linha só, sem caixas do mesmo peso */}
+            <Surge chave={visita} estilo={{ gap: 4 }}>
+              <Text className="font-numero text-[44px] leading-[48px] text-tinta">{d.resumo.pontos}<Text className="font-texto text-apagado text-[16px]"> pontos</Text></Text>
+              <Text className="font-texto text-apagado text-[14px] leading-[20px]">
+                {[[d.resumo.achados, 'achados diferentes'], [d.resumo.corrente, 'dias seguidos'], [d.resumo.fotos, 'fotos'],
+                  [`${Math.round(d.resumo.recusadas * 100)}%`, 'recusadas']].map(([valor, rotulo], i) => (
+                  <Text key={String(rotulo)}>{i ? '  ·  ' : ''}<Text className="font-numero text-tinta">{valor}</Text> {rotulo}</Text>
+                ))}
+              </Text>
+            </Surge>
             {d.estilo ? (
               <Cartaz>
                 <Text className="font-titulo text-[20px] text-destaque">{d.estilo}</Text>
@@ -49,9 +47,9 @@ export default function Colecao() {
             {d.album.map((p) => (
               <View key={p.tema.id} className="gap-[8px] mb-[12px]">
                 <View className="flex-row items-center gap-[8px]">
-                  <IconeTema id={p.tema.id} emoji={p.tema.emoji} tamanho={24} cor={p.tema.cor} />
+                  <IconeTema id={p.tema.id} tamanho={24} cor={c.tinta} />
                   <Text accessibilityRole="header" className="flex-1 font-titulo text-[18px] text-tinta">{p.tema.nome}</Text>
-                  <Text className="font-texto text-apagado" >{p.colados.length} de {p.total}</Text>
+                  <Text className="font-texto text-apagado" ><Text className="font-numero">{p.colados.length}</Text> de <Text className="font-numero">{p.total}</Text></Text>
                   {p.medalha?.nivel ? <SeloMedalha m={p.medalha} /> : null}
                 </View>
                 {p.colados.length === 0 && p.faltam.length === 0 ? (
@@ -61,21 +59,20 @@ export default function Colecao() {
                     {p.colados.map((f, i) => (
                       <Surge key={f.achado} ordem={i} chave={visita} estilo={{ width: '31%' }}>
                       <View accessibilityLabel={`${f.achado}, achado por ${f.turma} da turma`}
-                        style={{ minHeight: 84, overflow: 'hidden', backgroundColor: c.figurinha, borderRadius: 6, borderWidth: 4, borderColor: '#FFFFFF',
-                          padding: 6, justifyContent: 'space-between', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 3, elevation: 2,
-                          ...(f.turma === 1 ? { borderColor: c.sol } : null) }}>
+                        style={{ minHeight: 84, overflow: 'hidden', backgroundColor: c.superficie,
+                          borderRadius: 6, borderWidth: 1, borderColor: f.turma === 1 ? c.destaque : c.linha,
+                          padding: 6, justifyContent: 'space-between' }}>
                         <Text className="font-texto-forte text-tinta text-[13px]"  numberOfLines={3}>{f.achado}</Text>
-                        <Text className="font-texto text-apagado text-[11px]" >{f.turma === 1 ? 'só você' : `${f.turma} na turma`}</Text>
-                        {f.turma === 1 ? <Brilho pausa={4500} atraso={i * 400} /> : null}
+                        <Text className="font-texto text-apagado text-[11px]" >{f.turma === 1 ? 'só você' : <><Text className="font-numero">{f.turma}</Text> na turma</>}</Text>
                       </View>
                       </Surge>
                     ))}
                     {p.faltam.map((f, i) => (
                       <View key={`${f.dica}-${f.turma}-${i}`} accessibilityLabel={`Falta: começa com ${f.dica[0]}, ${f.turma} da turma já acharam`}
-                        style={{ width: '31%', minHeight: 84, borderRadius: 6, borderWidth: 2, borderStyle: 'dashed', borderColor: c.linha,
+                        style={{ width: '31%', minHeight: 84, borderRadius: 6, borderWidth: 1, borderStyle: 'dashed', borderColor: c.linha,
                           padding: 6, justifyContent: 'space-between' }}>
                         <Text className="text-apagado font-titulo text-[22px]">{f.dica}</Text>
-                        <Text className="font-texto text-apagado text-[11px]" >{f.turma} na turma</Text>
+                        <Text className="font-texto text-apagado text-[11px]" ><Text className="font-numero">{f.turma}</Text> na turma</Text>
                       </View>
                     ))}
                   </View>
@@ -85,9 +82,9 @@ export default function Colecao() {
             <Subtitulo>Medalhas</Subtitulo>
             {d.medalhas.map((m) => (
               <View key={m.id} className="flex-row items-center gap-[10px] py-[6px]">
-                <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: m.nivel ? COR_NIVEL[m.nivel] : c.suave }} />
+                <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: m.nivel ? c.destaque : c.linha }} />
                 <Text className="font-texto flex-1 text-tinta text-[15px]" >{m.nome}{m.nivel ? ` (${m.nivel})` : ''}</Text>
-                <Apagado estilo={{ fontSize: 13 }}>{m.valor} {m.conta}{m.proximo ? ` · faltam ${m.proximo}` : ''}</Apagado>
+                <Apagado estilo={{ fontSize: 13 }}><Text className="font-numero">{m.valor}</Text> {m.conta}{m.proximo ? <> · faltam <Text className="font-numero">{m.proximo}</Text></> : null}</Apagado>
               </View>
             ))}
           </>
@@ -99,8 +96,6 @@ export default function Colecao() {
 
 function SeloMedalha({ m }: { m: Medalha }) {
   return (
-    <View style={{ backgroundColor: COR_NIVEL[m.nivel!], borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 }}>
-      <Text className="font-texto-forte" style={{ fontSize: 12, fontWeight: '700', color: '#1A1A1A' }}>{m.nome}</Text>
-    </View>
+    <Text className="font-texto-forte text-apagado text-[12px]">{m.nome} ({m.nivel})</Text>
   );
 }

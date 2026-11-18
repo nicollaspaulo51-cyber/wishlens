@@ -12,7 +12,7 @@ import { useDados } from '../../lib/useDados';
 const REGRAS = [
   ['+10', 'toda foto aceita'],
   ['+10', 'primeira vez que você acha aquilo'],
-  ['até +20', 'raridade: quem acha primeiro ganha mais'],
+  ['+20', 'raridade: até 20 para quem acha primeiro, menos para os seguintes'],
   ['×2', 'tudo que é do tema do dia'],
   ['+5', 'mirante: a até 40 m de um lugar do mapa (3 por dia)'],
   ['+50%', 'lupa cheia: depois de 3 temas diferentes no dia'],
@@ -31,8 +31,8 @@ export default function Conta() {
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}>
         <Titulo>Conta</Titulo>
         <Cartaz estilo={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          <View className="w-[56px] h-[56px] rounded-[28px] bg-sol items-center justify-center">
-            <Text className="font-titulo text-[26px] text-sol-tinta">{(apelido ?? '?').charAt(0).toUpperCase()}</Text>
+          <View className="w-[56px] h-[56px] rounded-full bg-suave items-center justify-center">
+            <Text className="font-titulo text-[26px] text-tinta">{(apelido ?? '?').charAt(0).toUpperCase()}</Text>
           </View>
           <View className="flex-1">
             <Text className="font-titulo text-[22px] text-tinta">{apelido ?? '...'}</Text>
@@ -44,7 +44,7 @@ export default function Conta() {
         <Cartaz estilo={{ paddingVertical: 6 }}>
           {REGRAS.map(([valor, texto]) => (
             <View key={texto} className="flex-row items-center gap-[12px] py-[8px]">
-              <Text className="w-[68px] font-titulo text-[17px] text-destaque">{valor}</Text>
+              <Text className="w-[68px] font-numero text-[17px] text-destaque">{valor}</Text>
               <Text className="font-texto flex-1 text-tinta text-[15px] leading-[20px]" >{texto}</Text>
             </View>
           ))}

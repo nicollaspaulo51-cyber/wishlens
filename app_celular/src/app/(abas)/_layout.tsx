@@ -4,14 +4,12 @@ import type { BottomTabSceneStyleInterpolator } from 'expo-router/build/react-na
 import { BarraAbas } from '../../componentes/BarraAbas';
 import { useMovimentoReduzido } from '../../lib/movimento';
 
-// Trocar de aba vira a página como folha de caderno: a nova entra girando de leve do lado em que está na barra
-const folha: BottomTabSceneStyleInterpolator = ({ current }) => ({
+// As abas entram pela lateral; Jogar usa apenas a transição de opacidade.
+const deslocamento: BottomTabSceneStyleInterpolator = ({ current }) => ({
   sceneStyle: {
     opacity: current.progress.interpolate({ inputRange: [-1, -0.4, 0, 0.4, 1], outputRange: [0, 0.6, 1, 0.6, 0] }),
     transform: [
-      { perspective: 1200 },
       { translateX: current.progress.interpolate({ inputRange: [-1, 0, 1], outputRange: [-70, 0, 70] }) },
-      { rotateY: current.progress.interpolate({ inputRange: [-1, 0, 1], outputRange: ['28deg', '0deg', '-28deg'] }) },
     ],
   },
 });
@@ -21,10 +19,10 @@ export default function Abas() {
   return (
     <Tabs tabBar={(props) => <BarraAbas {...props} />}
       screenOptions={parado ? { headerShown: false, animation: 'none' } : {
-        headerShown: false, animation: 'shift', sceneStyleInterpolator: folha,
+        headerShown: false, animation: 'shift', sceneStyleInterpolator: deslocamento,
         transitionSpec: { animation: 'timing', config: { duration: 320 } },
       }}>
-      {/* o mapa é desenhado pelo celular: girar a tela dele pode piscar, então ele só esmaece */}
+      {/* o mapa é desenhado pelo celular: a transição sem deslocamento evita cintilação */}
       <Tabs.Screen name="index" options={{ title: 'Mapa', ...(parado ? null : { animation: 'fade', sceneStyleInterpolator: undefined }) }} />
       <Tabs.Screen name="podio" options={{ title: 'Pódio' }} />
       <Tabs.Screen name="amigos" options={{ title: 'Amigos' }} />

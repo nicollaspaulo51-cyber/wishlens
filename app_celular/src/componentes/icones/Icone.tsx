@@ -1,6 +1,5 @@
-// Ícones do caderno de campo: desenhados para o WishLens em traço de nanquim (24×24, pontas redondas, um pouco
-// tortos de propósito). Cada um é uma lista de traços SVG; `ativo` pinta um fundo leve, como marca-texto.
-import { Text } from 'react-native';
+// Ícones lineares do WishLens, desenhados em SVG sobre uma grade de 24×24.
+import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 // Círculo como traço de caminho (dois arcos), para tudo ser só <Path>
@@ -45,7 +44,7 @@ const TRACOS = {
 } as const;
 
 export type NomeIcone = keyof typeof TRACOS;
-export const temIcone = (nome: string): nome is NomeIcone => nome in TRACOS;
+export const temIcone = (nome: string): nome is NomeIcone => Object.hasOwn(TRACOS, nome);
 
 export function Icone({ nome, tamanho = 24, cor, traco = 2, ativo = false }: {
   nome: NomeIcone; tamanho?: number; cor: string; traco?: number; ativo?: boolean;
@@ -61,9 +60,8 @@ export function Icone({ nome, tamanho = 24, cor, traco = 2, ativo = false }: {
   );
 }
 
-/** Ícone do tema ou da aba pelo id ("carros", "academia"...), com o emoji de reserva se não houver desenho. */
-export function IconeTema({ id, emoji, tamanho = 22, cor }: { id: string; emoji?: string; tamanho?: number; cor: string }) {
+/** Ícone do tema ou da aba pelo id ("carros", "academia"...), com um ponto se não houver desenho. */
+export function IconeTema({ id, tamanho = 22, cor }: { id: string; tamanho?: number; cor: string }) {
   if (temIcone(id)) return <Icone nome={id} tamanho={tamanho} cor={cor} />;
-  // um tema novo no juiz aparece com o emoji até ganhar desenho
-  return <Text style={{ fontSize: tamanho * 0.85 }}>{emoji ?? '•'}</Text>;
+  return <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: cor }} />;
 }

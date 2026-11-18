@@ -7,12 +7,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Mapa } from '../../componentes/Mapa';
 import { PainelDoDia } from '../../componentes/PainelDoDia';
+import { Topografia } from '../../componentes/efeitos/Topografia';
 import { SeletorAba } from '../../componentes/SeletorAba';
 import { Aviso, Botao } from '../../componentes/ui';
 import { api, type Mapa as DadosMapa, type Tema } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
 import { useModo } from '../../lib/modo';
-import { Holografico as Brilho } from '../../componentes/efeitos/Holografico';
 import { Surge, useContagem, useEntrada } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 import { Icone, IconeTema } from '../../componentes/icones/Icone';
@@ -25,7 +25,7 @@ function Pontos({ valor }: { valor: number }) {
   const mostrado = useContagem(valor);
   const pulo = useEntrada(0, valor);
   return (
-    <Animated.Text style={{ fontFamily: FONTE_TITULO, fontSize: 20, color: c.tinta,
+    <Animated.Text className="font-numero" style={{ fontSize: 20, color: c.tinta,
       transform: [{ scale: pulo.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.25, 1], extrapolate: 'clamp' }) }] }}>
       {mostrado}<Text className="font-texto text-[13px] text-apagado" > pts</Text>
     </Animated.Text>
@@ -146,7 +146,6 @@ export default function Jogar() {
 
   const e = estado.dados;
   const pontosAba = e ? e.pontos_abas?.[modo] ?? (modo === 'livre' ? e.pontos_hoje : 0) : 0;
-  const sombra = { shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 5 };
   return (
     <View className="flex-1 bg-suave">
       {/* O mapa ocupa a tela toda; o resto flutua por cima */}
@@ -163,56 +162,54 @@ export default function Jogar() {
       </View>
 
       <SafeAreaView edges={['top']} pointerEvents="box-none" className="px-[12px] pt-[8px] gap-[8px]">
-        <View className="flex-row justify-between items-center" pointerEvents="box-none">
-          <View style={[{ backgroundColor: c.superficie, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }, sombra]}>
+        <View className="flex-row justify-between items-center overflow-hidden" pointerEvents="box-none">
+          <Topografia />
+          <View style={{ backgroundColor: c.superficie, borderRadius: 6, borderWidth: 1, borderColor: c.linha, paddingHorizontal: 14, paddingVertical: 6 }}>
             <Text accessibilityRole="header" style={{ fontFamily: FONTE_TITULO, fontSize: 20, color: c.tinta, letterSpacing: -0.5 }}>WishLens</Text>
           </View>
           {e ? (
             <View accessible accessibilityLabel={`${pontosAba} pontos hoje nesta aba${modo === 'livre' ? `, ${e.posicao ? `${e.posicao}º lugar` : 'sem posição ainda'}` : ''}`}
-              style={[{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.superficie, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 }, sombra]}>
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.superficie, borderRadius: 6, borderWidth: 1, borderColor: c.linha, paddingHorizontal: 14, paddingVertical: 6 }}>
               <Pontos valor={pontosAba} />
               {modo === 'livre' ? (
                 <>
                   <View className="w-[1px] h-[18px] bg-linha" />
                   <Icone nome="trofeu" tamanho={15} cor={c.destaque} />
-                  <Text className="font-titulo text-[18px] text-tinta">{e.posicao ? `${e.posicao}º` : '—'}</Text>
+                  <Text className="font-numero text-[18px] text-tinta">{e.posicao ? `${e.posicao}º` : '—'}</Text>
                 </>
               ) : null}
             </View>
           ) : null}
         </View>
-        <SeletorAba pontos={e?.pontos_abas} estilo={sombra} />
+        <SeletorAba pontos={e?.pontos_abas} />
         {estado.erro && !e ? <Aviso texto={estado.erro} aoTentar={estado.recarregar} /> : null}
         {aba && dica ? (
-          <Surge chave={aba.id} estilo={[{ backgroundColor: c.superficie, borderRadius: 14, padding: 12, gap: 2,
-            borderLeftWidth: 5, borderLeftColor: aba.cor }, sombra]}>
-            <Text className="font-texto text-tinta text-[14px] leading-[19px]" accessibilityLiveRegion="polite" >
-              <Text className="font-texto-forte" >{aba.emoji} {aba.nome}:</Text> vale {aba.conta}.
+          <Surge chave={aba.id} estilo={{ backgroundColor: c.superficie, borderRadius: 6, padding: 12, gap: 8, flexDirection: 'row', alignItems: 'center',
+            borderWidth: 1, borderColor: c.linha }}>
+            <IconeTema id={aba.id} cor={c.tinta} tamanho={20} />
+            <Text className="flex-1 font-texto text-tinta text-[14px] leading-[19px]" accessibilityLiveRegion="polite" >
+              <Text className="font-texto-forte" >{aba.nome}:</Text> vale {aba.conta}.
             </Text>
           </Surge>
         ) : null}
         {e && modo === 'livre' ? (
           <>
-            {/* O tema do dia é a figurinha holográfica: borda branca, um leve giro e o brilho que passa */}
             <Surge ordem={1}>
-              <View style={[{ borderRadius: 12, borderWidth: 4, borderColor: '#FFFFFF', transform: [{ rotate: '-1.2deg' }] }, sombra]}>
-                <View className="flex-row items-center gap-[10px] bg-sol rounded-[8px] px-[12px] py-[8px] overflow-hidden">
-                  <IconeTema id={e.tema_do_dia.id} emoji={e.tema_do_dia.emoji} tamanho={32} cor={c.solTinta} />
-                  <View className="flex-1">
-                    <Text className="font-texto-forte text-sol-tinta text-[12px]" >Tema de hoje</Text>
-                    <Text className="text-sol-tinta font-titulo text-[19px] leading-[22px]">{e.tema_do_dia.nome}</Text>
-                  </View>
-                  <Text accessibilityLabel="vale o dobro" className="font-titulo text-[26px] text-sol-tinta">×2</Text>
-                  <Brilho />
+              <View className="flex-row items-center gap-[10px] bg-ficha border border-linha rounded-ficha px-[12px] py-[8px] overflow-hidden">
+                <IconeTema id={e.tema_do_dia.id} tamanho={32} cor={c.tinta} />
+                <View className="flex-1">
+                  <Text className="font-texto-forte text-apagado text-[12px]" >Tema de hoje</Text>
+                  <Text className="text-tinta font-titulo text-[19px] leading-[22px]">{e.tema_do_dia.nome}</Text>
                 </View>
+                <Text accessibilityLabel="vale o dobro" className="font-numero text-[26px] text-destaque">×2</Text>
               </View>
             </Surge>
-            <Surge ordem={2} estilo={sombra}><PainelDoDia estado={e} /></Surge>
+            <Surge ordem={2}><PainelDoDia estado={e} /></Surge>
           </>
         ) : null}
         {mudou ? (
-          <Surge chave={mudou} estilo={[{ alignSelf: 'center', backgroundColor: c.tinta, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8 }, sombra]}>
-            <Text className="font-texto-forte text-papel" accessibilityLiveRegion="polite" >{mudou}</Text>
+          <Surge chave={mudou} estilo={{ alignSelf: 'center', backgroundColor: c.superficie, borderRadius: 6, borderWidth: 1, borderColor: c.linha, paddingHorizontal: 14, paddingVertical: 8 }}>
+            <Text className="font-texto-forte text-tinta" accessibilityLiveRegion="polite" >{mudou}</Text>
           </Surge>
         ) : null}
       </SafeAreaView>
@@ -226,9 +223,9 @@ export default function Jogar() {
               <Pressable key={t.id} accessibilityRole="checkbox" accessibilityState={{ checked: ligado }}
                 accessibilityLabel={`Mostrar ${t.nome} no mapa`}
                 onPress={() => setMostrar(ligado ? ativos.filter((x) => x !== t.id) : [...ativos, t.id])}
-                style={[{ width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center',
-                  backgroundColor: c.superficie, borderWidth: 3, borderColor: ligado ? t.cor : c.linha, opacity: ligado ? 1 : 0.6 }, sombra]}>
-                <View style={{ opacity: ligado ? 1 : 0.4 }}><IconeTema id={t.id} emoji={t.emoji} tamanho={22} cor={t.cor} /></View>
+                style={{ width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: c.superficie, borderWidth: 1, borderColor: c.linha, opacity: ligado ? 1 : 0.6 }}>
+                <View style={{ opacity: ligado ? 1 : 0.4 }}><IconeTema id={t.id} tamanho={22} cor={ligado ? c.tinta : c.apagado} /></View>
               </Pressable>
             );
           })}

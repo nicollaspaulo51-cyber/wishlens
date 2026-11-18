@@ -39,15 +39,15 @@ export default function Podio() {
         {podio.erro && !podio.dados ? <Aviso texto={podio.erro} aoTentar={podio.recarregar} /> : null}
         {podio.dados && ranking.length === 0 ? <Aviso texto="Ninguém pontuou neste período ainda. Tire a primeira foto em Jogar." /> : null}
         {ranking.length ? <Degraus ranking={ranking} chave={`${modo}-${periodo}-${tema}-${visita}`} /> : null}
-        {eu ? <Text className="font-texto text-tinta text-[16px]" >Você está em <Text className="font-texto-forte" >{eu.posicao}º</Text> de {ranking.length}.</Text> : null}
+        {eu ? <Text className="font-texto text-tinta text-[16px]" >Você está em <Text className="font-numero">{eu.posicao}º</Text> de <Text className="font-numero">{ranking.length}</Text>.</Text> : null}
         {ranking.length > 3 ? (
           <Cartaz estilo={{ padding: 0, overflow: 'hidden' }}>
             {ranking.slice(3).map((r, i) => (
               <Surge key={r.apelido} ordem={i + 3} chave={visita}><View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 12,
                 borderBottomWidth: i < ranking.length - 4 ? 1 : 0, borderBottomColor: c.linha, backgroundColor: r.voce ? c.suave : 'transparent' }}>
-                <Text className="font-texto-forte w-[32px] text-apagado" >{r.posicao}º</Text>
+                <Text className="font-numero w-[32px] text-apagado" >{r.posicao}º</Text>
                 <Text className="font-texto flex-1 text-tinta text-[16px]" >{r.apelido}{r.voce ? ' (você)' : ''}</Text>
-                <Text className="font-texto-forte text-tinta" >{r.pontos} pts</Text>
+                <Text className="font-texto text-tinta"><Text className="font-numero">{r.pontos}</Text> pts</Text>
               </View></Surge>
             ))}
           </Cartaz>
@@ -61,8 +61,8 @@ export default function Podio() {
               <Cartaz estilo={{ paddingVertical: 4 }}>
                 {podio.dados.donos.map((d) => (
                   <View key={d.apelido} className="flex-row py-[10px]">
-                    <Text className="font-texto flex-1 text-tinta text-[16px]" >🏋️ {d.apelido}</Text>
-                    <Text className="font-texto text-apagado" >{d.quadrados} {d.quadrados === 1 ? 'academia' : 'academias'}</Text>
+                    <Text className="font-texto flex-1 text-tinta text-[16px]" >{d.apelido}</Text>
+                    <Text className="font-texto text-apagado" ><Text className="font-numero">{d.quadrados}</Text> {d.quadrados === 1 ? 'academia' : 'academias'}</Text>
                   </View>
                 ))}
               </Cartaz>
@@ -76,8 +76,8 @@ export default function Podio() {
           <Cartaz estilo={{ paddingVertical: 4 }}>
             {podio.dados.guardioes.map((g) => (
               <View key={g.apelido} className="flex-row py-[10px]">
-                <Text className="font-texto flex-1 text-tinta text-[16px]" >🛡️ {g.apelido}</Text>
-                <Text className="font-texto text-apagado" >{g.quadrados} {g.quadrados === 1 ? 'quadrado' : 'quadrados'}</Text>
+                <Text className="font-texto flex-1 text-tinta text-[16px]" >{g.apelido}</Text>
+                <Text className="font-texto text-apagado" ><Text className="font-numero">{g.quadrados}</Text> {g.quadrados === 1 ? 'quadrado' : 'quadrados'}</Text>
               </View>
             ))}
           </Cartaz>

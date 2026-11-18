@@ -1,4 +1,4 @@
-// Tokens do caderno de campo. As cores vêm de variáveis (--papel, --tinta...) que o _layout.tsx preenche com a
+// Tokens do mapa topográfico. As cores vêm de variáveis (--fundo, --tinta...) que o _layout.tsx preenche com a
 // PALETA de src/lib/cores.ts: um lugar só para as cores, e o tema claro/escuro troca sozinho.
 const cor = (nome) => `var(--${nome})`;
 
@@ -15,10 +15,10 @@ module.exports = {
         'sol-tinta': cor('solTinta'), carimbo: cor('recusa'), figurinha: cor('figurinha'),
       },
       fontFamily: {
-        titulo: ['BricolageGrotesque_800ExtraBold'], 'titulo-media': ['BricolageGrotesque_600SemiBold'],
-        texto: ['AtkinsonHyperlegible_400Regular'], 'texto-forte': ['AtkinsonHyperlegible_700Bold'], mao: ['Caveat_700Bold'],
+        titulo: ['Overpass_800ExtraBold'], 'titulo-media': ['Overpass_700Bold'],
+        texto: ['Overpass_400Regular'], 'texto-forte': ['Overpass_700Bold'], numero: ['OverpassMono_600SemiBold'],
       },
-      borderRadius: { ficha: '14px' },
+      borderRadius: { ficha: '6px' },
     },
   },
   plugins: [],

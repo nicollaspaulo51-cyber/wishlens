@@ -9,7 +9,7 @@ import MapView, { Callout, Circle, Marker, type Region } from 'react-native-maps
 const ESTILO_LIMPO = [{ featureType: 'poi.business', stylers: [{ visibility: 'off' }] }];
 
 import type { Mapa as DadosMapa, Lugar, Tema } from '../lib/api';
-import { useCores } from '../lib/cores';
+import { useCores, type Cores } from '../lib/cores';
 import { useMovimentoReduzido } from '../lib/movimento';
 import { Icone, IconeTema } from './icones/Icone';
 
@@ -56,15 +56,17 @@ export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar }: Props
       >
         {manchas.map((m) => (
           <Circle key={`${m.celula}-${m.tema}`} center={{ latitude: m.lat, longitude: m.lon }} radius={250}
-            fillColor={m.guardiao ? 'rgba(255,200,61,0.30)' : 'rgba(19,107,76,0.18)'} strokeColor={m.guardiao ? c.sol : c.destaque} strokeWidth={1} />
+            fillColor={m.guardiao ? `${c.destaque}40` : `${c.apagado}26`} strokeColor={m.guardiao ? c.destaque : c.apagado} strokeWidth={1} />
         ))}
         {manchas.filter((m) => m.guardiao).map((m) => (
           <Marker key={`g-${m.celula}-${m.tema}`} coordinate={{ latitude: m.lat, longitude: m.lon }} opacity={0.9} tracksViewChanges={false}>
-            <Text className="font-texto" style={{ fontSize: 20 }}>🛡️</Text>
-            <Callout><Text className="font-texto">Guardião da semana: {m.guardiao}</Text></Callout>
+            <View className="h-[44px] w-[44px] items-center justify-center rounded-full bg-ficha border border-linha">
+              <Icone nome="medalha" tamanho={22} cor={c.tinta} />
+            </View>
+            <Callout><Text className="font-texto text-tinta bg-ficha p-2">Guardião da semana: {m.guardiao}</Text></Callout>
           </Marker>
         ))}
-        <Lugares lugares={lugares} temas={temas} cor={c.destaque} regiao={regiao} />
+        <Lugares lugares={lugares} temas={temas} c={c} regiao={regiao} />
       </MapView>
     </View>
   );
@@ -78,7 +80,7 @@ const PISCAM = 30;
 const PASSO_MS = 130;
 
 // Os lugares piscam, cada um no seu ritmo. Muda só a opacidade do marcador; o resto do mapa não redesenha.
-function Lugares({ lugares, temas, cor, regiao }: { lugares: Lugar[]; temas: Record<string, Tema>; cor: string; regiao: Region }) {
+function Lugares({ lugares, temas, c, regiao }: { lugares: Lugar[]; temas: Record<string, Tema>; c: Cores; regiao: Region }) {
   const parado = useMovimentoReduzido();
   const [tempo, setTempo] = useState(0);
   useEffect(() => {
@@ -86,14 +88,14 @@ function Lugares({ lugares, temas, cor, regiao }: { lugares: Lugar[]; temas: Rec
     const id = setInterval(() => setTempo((n) => n + 1), PASSO_MS);
     return () => clearInterval(id);
   }, [parado, lugares.length]);
-  // Android: o marcador com desenho próprio vira imagem; redesenha só logo depois que a lista muda
+  // Android: o marcador com desenho próprio vira imagem; atualiza quando mudam os lugares ou a paleta.
   const [desenhando, setDesenhando] = useState(true);
   const chave = lugares.map((l) => l.mapa).join();
   useEffect(() => {
     setDesenhando(true);
     const t = setTimeout(() => setDesenhando(false), 800);
     return () => clearTimeout(t);
-  }, [chave]);
+  }, [chave, c]);
   const pertoPrimeiro = [...lugares].sort((a, b) => a.distancia_km - b.distancia_km);
   const naTela = (l: Lugar) => Math.abs(l.lat - regiao.latitude) <= regiao.latitudeDelta / 2
     && Math.abs(l.lon - regiao.longitude) <= regiao.longitudeDelta / 2;
@@ -109,11 +111,19 @@ function Lugares({ lugares, temas, cor, regiao }: { lugares: Lugar[]; temas: Rec
         return (
           <Marker key={l.mapa} coordinate={{ latitude: l.lat, longitude: l.lon }} anchor={{ x: 0.5, y: 0.5 }}
             opacity={brilho} tracksViewChanges={desenhando}
-            title={`${t?.emoji ?? ''} ${l.nome}`} description={`${l.distancia_km.toFixed(1)} km · procure ${t?.nome.toLowerCase() ?? ''}`}>
-            <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: t?.cor ?? cor,
-              borderWidth: 3, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
-              {t ? <IconeTema id={t.id} emoji={t.emoji} tamanho={18} cor="#fff" /> : <Icone nome="alfinete" tamanho={18} cor="#fff" />}
+            title={l.nome} description={`${l.distancia_km.toFixed(1)} km${t ? ` · procure ${t.nome.toLowerCase()}` : ''}`}>
+            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.superficie,
+              borderWidth: 1, borderColor: c.linha, alignItems: 'center', justifyContent: 'center' }}>
+              <IconeTema id={l.tema} tamanho={18} cor={c.tinta} />
             </View>
+            <Callout>
+              <View className="bg-ficha p-2 gap-1">
+                <Text className="font-texto-forte text-tinta">{l.nome}</Text>
+                <Text className="font-texto text-apagado">
+                  <Text className="font-numero">{l.distancia_km.toFixed(1)}</Text> km{t ? ` · procure ${t.nome.toLowerCase()}` : ''}
+                </Text>
+              </View>
+            </Callout>
           </Marker>
         );
       })}

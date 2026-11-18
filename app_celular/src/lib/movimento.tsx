@@ -1,7 +1,7 @@
 // Animações do app (Animated do React Native, no driver nativo). Todas param com "reduzir movimento" ligado no celular.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useIsFocused } from 'expo-router';
-import { AccessibilityInfo, Animated, Dimensions, Easing, View, type StyleProp, type ViewStyle } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, type StyleProp, type ViewStyle } from 'react-native';
 
 export function useMovimentoReduzido() {
   const [reduzido, setReduzido] = useState(false);
@@ -41,7 +41,7 @@ export function useEntrada(atraso = 0, chave?: unknown) {
   return v;
 }
 
-// Vai de 0 a 1 sem parar (com pausa no fim), para brilhos e pulsos
+// Vai de 0 a 1 sem parar, com pausa no fim.
 export function useLaco(duracao: number, pausa = 0) {
   const v = useRef(new Animated.Value(0)).current;
   const parado = useMovimentoReduzido();
@@ -68,25 +68,6 @@ export function Surge({ children, ordem = 0, estilo, chave }: { children: ReactN
     ] }]}>
       {children}
     </Animated.View>
-  );
-}
-
-// Brilho de figurinha holográfica: uma faixa clara que atravessa o cartão de tempos em tempos.
-// Vai dentro de um View com overflow 'hidden'.
-const LARGURA = Dimensions.get('window').width;
-export function Brilho({ pausa = 3200, atraso = 0 }: { pausa?: number; atraso?: number }) {
-  const { v, parado } = useLaco(1100, pausa + atraso);
-  if (parado) return null;
-  const x = v.interpolate({ inputRange: [0, 1], outputRange: [-160, LARGURA + 40] });
-  return (
-    <View pointerEvents="none" accessibilityElementsHidden className="absolute -top-[40px] -bottom-[40px] left-[0px] right-[0px]">
-      <Animated.View style={{ position: 'absolute', top: 0, bottom: 0, width: 70, flexDirection: 'row',
-        transform: [{ translateX: x }, { rotate: '18deg' }] }}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.18)' }} />
-        <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.5)' }} />
-        <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.18)' }} />
-      </Animated.View>
-    </View>
   );
 }
 

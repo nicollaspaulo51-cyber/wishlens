@@ -1,20 +1,21 @@
 // Galeria do Museu, como um corredor de museu: cada foto salva fica num totem com plaquinha, e totens de câmera e
-// troféu decoram o caminho. Arrastar para o lado passa as fotos; a do centro fica grande e as dos lados viram de leve.
+// troféu decoram o caminho. Arrastar para o lado passa as fotos; a do centro fica grande e as dos lados ficam menores.
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Animated, FlatList, Image, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Reanimated, { Extrapolation, interpolate, runOnJS, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue,
   type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FONTE_TITULO, useCores } from '../lib/cores';
+import { PALETA, useCores } from '../lib/cores';
 import { apagarDaGaleria, enderecoDa, useGaleria, type FotoGaleria } from '../lib/galeria';
 import { useEntrada, useLaco } from '../lib/movimento';
-import { Holografico as Brilho } from './efeitos/Holografico';
 import { CompartilharFoto } from './CompartilharFoto';
 import { Apagado, Botao } from './ui';
-import { Icone } from './icones/Icone';
+import { Icone, IconeTema } from './icones/Icone';
 
 type Item = { tipo: 'foto'; foto: FotoGaleria; n: number } | { tipo: 'camera' | 'trofeu'; chave: string };
+
+const idTemaDaFoto = (foto: FotoGaleria) => foto.temaId ?? foto.tema.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
 
 // A fila do museu: câmera na entrada, troféu na saída e um totem a cada 3 fotos, alternando
 function montarFila(fotos: FotoGaleria[]): Item[] {
@@ -40,7 +41,7 @@ export function Galeria({ visita }: { visita: number }) {
   const fila = useMemo(() => montarFila(fotos), [fotos]);
   const item = Math.round(Math.min(width * 0.62, 300));
   const lado = (width - item) / 2;
-  // Reanimated: a rolagem mexe a escala e o giro na thread de interface, sem passar pelo JavaScript a cada quadro
+  // Reanimated: a rolagem mexe a escala e a opacidade na thread de interface, sem passar pelo JavaScript a cada quadro
   const x = useSharedValue(0);
   const largura = useSharedValue(item);
   useEffect(() => { largura.value = item; }, [item, largura]);
@@ -103,16 +104,14 @@ export function Galeria({ visita }: { visita: number }) {
   );
 }
 
-// Cada lugar da fila: a do centro reta e inteira; as vizinhas menores, apagadas e viradas, como paredes de um corredor
+// Cada lugar da fila: a do centro reta e inteira; as vizinhas menores e com opacidade reduzida
 function Vitrine({ x, index, largura, children }: { x: SharedValue<number>; index: number; largura: number; children: ReactNode }) {
   const estilo = useAnimatedStyle(() => {
     const faixa = [(index - 1) * largura, index * largura, (index + 1) * largura];
     return {
       opacity: interpolate(x.value, faixa, [0.5, 1, 0.5], Extrapolation.CLAMP),
       transform: [
-        { perspective: 800 },
         { scale: interpolate(x.value, faixa, [0.8, 1, 0.8], Extrapolation.CLAMP) },
-        { rotateY: `${interpolate(x.value, faixa, [20, 0, -20], Extrapolation.CLAMP)}deg` },
       ],
     };
   });
@@ -131,17 +130,18 @@ function Quadro({ foto, lado, centro, chave, aoTocar, aoSegurar }: {
         <Pressable onPress={aoTocar} onLongPress={aoSegurar} delayLongPress={350} accessibilityRole="imagebutton"
           accessibilityLabel={`${foto.achado}, ${foto.tema}${foto.pontos ? `, ${foto.pontos} pontos` : ''}, salva em ${quando(foto.criado_em)}`}
           accessibilityHint="Toque para ampliar. Segure para mais opções."
-          style={{ width: lado, height: lado, borderWidth: 6, borderColor: '#FFFFFF', borderRadius: 6, overflow: 'hidden',
-            backgroundColor: c.superficie, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 6 },
-            elevation: 6 }}>
+          style={{ width: lado, height: lado, borderWidth: 1, borderColor: centro ? c.destaque : c.linha,
+            borderRadius: 6, overflow: 'hidden', backgroundColor: c.superficie }}>
           <Image source={{ uri: enderecoDa(foto) }} className="w-full h-full" resizeMode="cover" />
-          {centro ? <Brilho pausa={3800} /> : null}
         </Pressable>
       </Animated.View>
       <Pedestal altura={78}>
-        <View style={{ backgroundColor: c.sol, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 3, maxWidth: lado * 0.62, alignItems: 'center' }}>
-          <Text className="font-texto-forte text-sol-tinta text-[12px]" numberOfLines={1} >{foto.emoji} {foto.achado}</Text>
-          <Text className="font-texto text-sol-tinta text-[10px]" >{foto.pontos ? `+${foto.pontos} · ` : ''}{quando(foto.criado_em)}</Text>
+        <View className="items-center px-2 py-1" style={{ maxWidth: lado * 0.72 }}>
+          <View className="flex-row items-center gap-1">
+            {foto.tema ? <IconeTema id={idTemaDaFoto(foto)} tamanho={16} cor={c.tinta} /> : null}
+            <Text className="shrink font-texto-forte text-tinta text-[12px]" numberOfLines={1}>{foto.achado}</Text>
+          </View>
+          <Text className="font-texto text-apagado text-[10px]">{foto.pontos ? <><Text className="font-numero">+{foto.pontos}</Text> · </> : null}{quando(foto.criado_em)}</Text>
         </View>
       </Pedestal>
     </View>
@@ -157,11 +157,10 @@ export function Totem({ tipo, chave }: { tipo: 'camera' | 'trofeu'; chave: unkno
   return (
     <Animated.View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ alignItems: 'center',
       opacity: sobe, transform: [{ translateY: sobe.interpolate({ inputRange: [0, 1], outputRange: [50, 0] }) }] }}>
-      <Animated.View style={{ width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-        backgroundColor: ouro ? c.sol : c.suave, marginBottom: 6,
+      <Animated.View style={{ width: 76, height: 76, borderRadius: 6, alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+        backgroundColor: ouro ? c.superficie : c.suave, borderWidth: ouro ? 1 : 0, borderColor: c.destaque, marginBottom: 6,
         transform: [{ translateY: flutua.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, -6, 0] }) }] }}>
-        <Icone nome={ouro ? 'trofeu' : 'camera'} tamanho={42} cor={ouro ? c.solTinta : c.destaque} />
-        {ouro ? <Brilho pausa={2600} /> : null}
+        <Icone nome={ouro ? 'trofeu' : 'camera'} tamanho={42} cor={c.destaque} />
       </Animated.View>
       <Pedestal altura={120} />
     </Animated.View>
@@ -173,22 +172,23 @@ function Pedestal({ altura, children }: { altura: number; children?: ReactNode }
   const c = useCores();
   return (
     <View className="items-center">
-      <View className="w-[130px] h-[10px] rounded-[3px] bg-linha" />
+      <View className="w-[130px] h-[10px] rounded-ficha bg-linha" />
       <View style={{ width: 104, height: altura, backgroundColor: c.superficie, borderLeftWidth: 1, borderRightWidth: 1,
         borderColor: c.linha, alignItems: 'center', justifyContent: 'center' }}>
         {children}
       </View>
-      <View className="w-[150px] h-[14px] rounded-[3px] bg-linha" />
+      <View className="w-[150px] h-[14px] rounded-ficha bg-linha" />
     </View>
   );
 }
 
 function TelaCheia({ fotos, inicio, aoFechar }: { fotos: FotoGaleria[]; inicio: number | null; aoFechar: () => void }) {
+  const c = useCores();
   const { width, height } = useWindowDimensions();
   const topo = useSafeAreaInsets().top;
   return (
     <Modal visible={inicio !== null} transparent animationType="fade" onRequestClose={aoFechar}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.94)' }}>
+      <View style={{ flex: 1, backgroundColor: c.fundo }}>
         {inicio !== null ? (
           <FlatList data={fotos} horizontal pagingEnabled showsHorizontalScrollIndicator={false} initialScrollIndex={inicio}
             keyExtractor={(f) => f.id} getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
@@ -196,14 +196,17 @@ function TelaCheia({ fotos, inicio, aoFechar }: { fotos: FotoGaleria[]; inicio: 
               <View style={{ width, height, justifyContent: 'center', gap: 12 }}>
                 <Image source={{ uri: enderecoDa(f) }} style={{ width, height: height * 0.62 }} resizeMode="contain"
                   accessibilityLabel={`Foto: ${f.achado}`} />
-                <Text style={{ color: '#fff', textAlign: 'center', fontFamily: FONTE_TITULO, fontSize: 20 }}>{f.emoji} {f.achado}</Text>
-                <Text className="font-texto" style={{ color: '#ccc', textAlign: 'center' }}>{f.tema}{f.pontos ? ` · +${f.pontos} pontos` : ''} · {quando(f.criado_em)}</Text>
+                <Text className="font-titulo text-tinta text-center text-[20px]">{f.achado}</Text>
+                <View className="flex-row items-center justify-center gap-2">
+                  {f.tema ? <IconeTema id={idTemaDaFoto(f)} tamanho={18} cor={c.tinta} /> : null}
+                  <Text className="font-texto text-apagado">{f.tema ? `${f.tema} · ` : ''}{f.pontos ? <><Text className="font-numero">+{f.pontos}</Text> pontos · </> : null}{quando(f.criado_em)}</Text>
+                </View>
               </View>
             )} />
         ) : null}
         <Pressable accessibilityRole="button" accessibilityLabel="Fechar a foto" onPress={aoFechar}
           style={{ position: 'absolute', top: topo + 8, right: 12, width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
-          <Icone nome="fechar" tamanho={28} cor="#fff" />
+          <Icone nome="fechar" tamanho={28} cor={c.tinta} />
         </Pressable>
       </View>
     </Modal>
@@ -215,10 +218,13 @@ function Opcoes({ foto, aoFechar }: { foto: FotoGaleria | null; aoFechar: () => 
   const baixo = useSafeAreaInsets().bottom;
   return (
     <Modal visible={!!foto} transparent animationType="slide" onRequestClose={aoFechar}>
-      <Pressable accessibilityLabel="Fechar" onPress={aoFechar} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} />
+      <Pressable accessibilityLabel="Fechar" onPress={aoFechar} style={{ flex: 1, backgroundColor: `${PALETA.escuro.fundo}66` }} />
       {foto ? (
-        <View style={{ backgroundColor: c.fundo, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 16, paddingBottom: baixo + 16, gap: 12 }}>
-          <Text accessibilityRole="header" className="font-titulo text-[20px] text-tinta">{foto.emoji} {foto.achado}</Text>
+        <View style={{ backgroundColor: c.fundo, borderTopLeftRadius: 6, borderTopRightRadius: 6, padding: 16, paddingBottom: baixo + 16, gap: 12 }}>
+          <View className="flex-row items-center gap-2">
+            {foto.tema ? <IconeTema id={idTemaDaFoto(foto)} tamanho={20} cor={c.tinta} /> : null}
+            <Text accessibilityRole="header" className="font-titulo text-[20px] text-tinta">{foto.achado}</Text>
+          </View>
           <CompartilharFoto foto={enderecoDa(foto)} enviada={enderecoDa(foto)} captura={foto.id} aceita={foto.pontos > 0} placa={foto} />
           <Botao titulo="Apagar da galeria" tipo="secundario" aoTocar={() => { apagarDaGaleria(foto.id); aoFechar(); }} />
         </View>

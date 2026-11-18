@@ -1,9 +1,8 @@
 import '../../global.css';
 import '../lib/estilo';
 
-import { AtkinsonHyperlegible_400Regular, AtkinsonHyperlegible_700Bold } from '@expo-google-fonts/atkinson-hyperlegible';
-import { BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBold, useFonts } from '@expo-google-fonts/bricolage-grotesque';
-import { Caveat_700Bold } from '@expo-google-fonts/caveat';
+import { Overpass_400Regular, Overpass_700Bold, Overpass_800ExtraBold, useFonts } from '@expo-google-fonts/overpass';
+import { OverpassMono_600SemiBold } from '@expo-google-fonts/overpass-mono';
 import { vars } from 'nativewind';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Redirect, Stack, useSegments } from 'expo-router';
@@ -35,8 +34,7 @@ function Navegacao() {
 
 export default function Raiz() {
   const c = useCores();
-  const [fontes] = useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBold, AtkinsonHyperlegible_400Regular,
-    AtkinsonHyperlegible_700Bold, Caveat_700Bold });
+  const [fontes] = useFonts({ Overpass_400Regular, Overpass_700Bold, Overpass_800ExtraBold, OverpassMono_600SemiBold });
   if (!fontes) return null;
   return (
     // vars(): as cores da PALETA viram variáveis CSS para as classes do NativeWind (tema claro/escuro)

@@ -131,7 +131,7 @@ def _assinatura(nome: str) -> str:
 def _resumo(r) -> str:
     if r["texto"]:
         return r["texto"]
-    return "🃏 Cartão de achado" if r["cartao"] else "📷 Foto"
+    return "Cartão de achado" if r["cartao"] else "Foto"
 
 
 # ---------------------------------------------------------------- amigos
