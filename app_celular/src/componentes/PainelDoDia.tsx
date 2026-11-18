@@ -10,7 +10,7 @@ import { useTransicao } from '../lib/movimento';
 export function PainelDoDia({ estado }: { estado: Estado }) {
   const c = useCores();
   const { dia, meta, corrente } = estado;
-  const [aberto, setAberto] = useState(dia.lupa_cheia); // fica por cima do mapa: só abre sozinho com a lupa cheia
+  const [aberto, setAberto] = useState(true);
   const porcentagem = meta.alvo > 0 ? Math.min(100, Math.max(0, (100 * meta.feitas) / meta.alvo)) : 0;
   const progresso = useTransicao(porcentagem, 300, { inicial: 0, nativo: false });
   const feitos = dia.desafios.filter((d) => d.ok).length;

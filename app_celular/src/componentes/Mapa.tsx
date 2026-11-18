@@ -1,17 +1,36 @@
 // Mapa nativo do celular (Google no Android, Apple no iPhone): você, os lugares de cada tema e as manchas da turma.
 // Os blocos do tile.openstreetmap.org bloqueiam apps sem identificação ("Access blocked"), por isso o mapa do sistema.
 // shortcut: no Expo Go o Google Maps já vem com chave; num APK próprio, pôr a chave em app.json (android.config.googleMaps).
-import { memo, useEffect, useRef, useState } from 'react';
-import { Text, View, useColorScheme } from 'react-native';
-import MapView, { Callout, Circle, Marker, type Region } from 'react-native-maps';
-
-// Esconde lojas e empresas do mapa base: sobram as ruas, os parques e os marcadores do jogo
-const ESTILO_LIMPO = [{ featureType: 'poi.business', stylers: [{ visibility: 'off' }] }];
+import { memo, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import MapView, { Callout, Circle, Marker, type MapStyleElement, type Region } from 'react-native-maps';
 
 import type { Mapa as DadosMapa, Lugar, Tema } from '../lib/api';
-import { useCores, type Cores } from '../lib/cores';
+import { agrupar, checarAgrupar } from '../lib/agrupar';
+import { escurecerParaBranco, FONTE_NUMERO, PALETA, useCores, type Cores } from '../lib/cores';
 import { useMovimentoReduzido } from '../lib/movimento';
 import { Icone, IconeTema } from './icones/Icone';
+
+if (__DEV__) checarAgrupar();
+
+function estiloMapa(escuro: boolean): MapStyleElement[] {
+  const fundo = escuro ? '#141A1F' : '#EEF1EF';
+  return [
+    { elementType: 'geometry', stylers: [{ color: fundo }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: escuro ? '#8A97A3' : '#5B6670' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: fundo }] },
+    { featureType: 'road', elementType: 'geometry.fill', stylers: [{ color: escuro ? '#2A3540' : '#FFFFFF' }] },
+    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: escuro ? '#1A2229' : '#FFFFFF' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: escuro ? '#0E2433' : '#BFD9E6' }] },
+    { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: escuro ? '#16261E' : '#DCE9DF' }] },
+    { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  ];
+}
+
+const ESTILO_ESCURO = estiloMapa(true);
+const ESTILO_CLARO = estiloMapa(false);
+const CENTRO = { x: 0.5, y: 0.5 };
 
 export type PropsMapa = {
   posicao: { lat: number; lon: number };
@@ -19,29 +38,38 @@ export type PropsMapa = {
   temas: Record<string, Tema>;
   mostrar: string[];
   temaDoDia?: string;
+  recentrar?: number;
 };
 
-// O mapa só redesenha quando os dados, a posição ou os filtros mudam; o piscar fica nos Lugares
-export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar, temaDoDia }: PropsMapa) {
+export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar, temaDoDia, recentrar }: PropsMapa) {
   const c = useCores();
-  const escuro = useColorScheme() === 'dark';
-  const lugares = (dados?.lugares ?? []).filter((l) => mostrar.includes(l.tema));
+  const escuro = c === PALETA.escuro;
+  const lugares = useMemo(() => (dados?.lugares ?? []).filter((l) => mostrar.includes(l.tema)), [dados?.lugares, mostrar]);
   const manchas = (dados?.manchas ?? []).filter((m) => mostrar.includes(m.tema));
-  // A parte do mapa na tela: só os lugares dela piscam (atualiza quando você para de arrastar)
   const [regiao, setRegiao] = useState<Region>(() => ({ latitude: posicao.lat, longitude: posicao.lon, latitudeDelta: 0.02, longitudeDelta: 0.02 }));
+  const [largura, setLargura] = useState(0);
   const mapa = useRef<MapView>(null);
+  const pedidoAnterior = useRef(recentrar ?? 0);
+  const recentrarNaPosicao = useEffectEvent(() => {
+    mapa.current?.animateToRegion({ ...regiao, latitude: posicao.lat, longitude: posicao.lon });
+  });
+  useEffect(() => {
+    if (recentrar === undefined || recentrar === pedidoAnterior.current) return;
+    recentrarNaPosicao();
+    pedidoAnterior.current = recentrar;
+  }, [recentrar]);
   // Nas abas os lugares podem estar a 5 ou 10 km: se nenhum aparece na tela, afasta até mostrar os 3 mais perto
   const chaveLugares = lugares.map((l) => l.mapa).join();
-  useEffect(() => {
+  const enquadrarLugares = useEffectEvent(() => {
     if (!lugares.length || lugares.some((l) => Math.abs(l.lat - regiao.latitude) <= regiao.latitudeDelta / 2
       && Math.abs(l.lon - regiao.longitude) <= regiao.longitudeDelta / 2)) return;
     const perto = [...lugares].sort((a, b) => a.distancia_km - b.distancia_km).slice(0, 3);
     mapa.current?.fitToCoordinates([{ latitude: posicao.lat, longitude: posicao.lon }, ...perto.map((l) => ({ latitude: l.lat, longitude: l.lon }))],
-      { edgePadding: { top: 120, right: 60, bottom: 160, left: 60 }, animated: true });
-    // só quando chegam lugares novos (troca de aba ou nova busca), não a cada arrastada
-  }, [chaveLugares]);
+      { edgePadding: { top: 72, right: 68, bottom: 48, left: 48 }, animated: true });
+  });
+  useEffect(() => { enquadrarLugares(); }, [chaveLugares]);
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 }} onLayout={(evento) => setLargura(evento.nativeEvent.layout.width)}>
       <MapView
         ref={mapa}
         style={{ flex: 1 }}
@@ -49,13 +77,13 @@ export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar, temaDoD
         onRegionChangeComplete={setRegiao}
         showsMyLocationButton={false}
         showsPointsOfInterests={false}
-        customMapStyle={ESTILO_LIMPO}
+        customMapStyle={escuro ? ESTILO_ESCURO : ESTILO_CLARO}
         userInterfaceStyle={escuro ? 'dark' : 'light'}
         toolbarEnabled={false}
         accessibilityLabel={`Mapa com ${lugares.length} lugares para procurar perto de você`}
       >
         <Marker key={`voce-${c.agua}`} coordinate={{ latitude: posicao.lat, longitude: posicao.lon }}
-          anchor={{ x: 0.5, y: 0.5 }} title="Você" tracksViewChanges={false}>
+          anchor={CENTRO} title="Você" tracksViewChanges={false}>
           <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: c.agua, borderWidth: 2, borderColor: c.aguaTinta }} />
         </Marker>
         {manchas.map((m) => (
@@ -70,62 +98,73 @@ export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar, temaDoD
             <Callout><Text className="font-texto text-tinta bg-ficha p-2">Guardião da semana: {m.guardiao}</Text></Callout>
           </Marker>
         ))}
-        <Lugares lugares={lugares} temas={temas} c={c} regiao={regiao} temaDoDia={temaDoDia} />
+        <Lugares lugares={lugares} temas={temas} c={c} regiao={regiao} largura={largura} posicao={posicao} temaDoDia={temaDoDia}
+          aproximar={(lat, lon) => mapa.current?.animateToRegion({ latitude: lat, longitude: lon,
+            latitudeDelta: regiao.latitudeDelta / 3, longitudeDelta: regiao.longitudeDelta / 3 })} />
       </MapView>
     </View>
   );
 });
 
-// Piscam todos os lugares na tela, até este limite (os mais perto de você): cada passo é uma mensagem
-// para o mapa nativo, e fora da tela ninguém vê a piscada
-const PISCAM = 30;
-// Passos curtos numa onda lenta (2,4 a 3,3 s por piscada): cada passo muda pouco a opacidade, e o olho vê
-// um brilho que respira em vez de saltos. O marcador nativo não aceita animação do Animated.
-const PASSO_MS = 130;
-
-// Os lugares piscam, cada um no seu ritmo. Muda só a opacidade do marcador; o resto do mapa não redesenha.
-function Lugares({ lugares, temas, c, regiao, temaDoDia }: { lugares: Lugar[]; temas: Record<string, Tema>; c: Cores; regiao: Region; temaDoDia?: string }) {
-  const parado = useMovimentoReduzido();
-  const [tempo, setTempo] = useState(0);
-  useEffect(() => {
-    if (parado || !lugares.length) return;
-    const id = setInterval(() => setTempo((n) => n + 1), PASSO_MS);
-    return () => clearInterval(id);
-  }, [parado, lugares.length]);
-  // Android: o marcador com desenho próprio vira imagem; atualiza quando mudam os lugares ou a paleta.
+function Lugares({ lugares, temas, c, regiao, largura, posicao, temaDoDia, aproximar }: {
+  lugares: Lugar[]; temas: Record<string, Tema>; c: Cores; regiao: Region; largura: number;
+  posicao: PropsMapa['posicao']; temaDoDia?: string; aproximar: (lat: number, lon: number) => void;
+}) {
+  const reduzido = useMovimentoReduzido();
+  const itens = useMemo(() => agrupar(lugares, regiao, largura), [lugares, regiao, largura]);
+  const pulsam = useMemo(() => {
+    if (reduzido !== false || !temaDoDia) return new Set<string>();
+    const escalaLon = Math.cos(posicao.lat * Math.PI / 180);
+    const distancia = (lugar: Lugar) => Math.hypot(lugar.lat - posicao.lat, (lugar.lon - posicao.lon) * escalaLon);
+    return new Set(lugares.filter((lugar) => lugar.tema === temaDoDia)
+      .sort((primeiro, segundo) => distancia(primeiro) - distancia(segundo)).slice(0, 3).map((lugar) => lugar.mapa));
+  }, [lugares, posicao, reduzido, temaDoDia]);
   const [desenhando, setDesenhando] = useState(true);
-  const chave = lugares.map((l) => l.mapa).join();
+  const chave = JSON.stringify(itens.map((item) => item.tipo === 'grupo' ? item.lugares.map((lugar) => lugar.mapa) : item.lugar.mapa));
+  const chavePulsos = JSON.stringify([...pulsam]);
   useEffect(() => {
     setDesenhando(true);
-    const t = setTimeout(() => setDesenhando(false), 800);
-    return () => clearTimeout(t);
-  }, [chave, c, temaDoDia]);
-  const pertoPrimeiro = [...lugares].sort((a, b) => a.distancia_km - b.distancia_km);
-  const naTela = (l: Lugar) => Math.abs(l.lat - regiao.latitude) <= regiao.latitudeDelta / 2
-    && Math.abs(l.lon - regiao.longitude) <= regiao.longitudeDelta / 2;
-  const piscam = new Set(pertoPrimeiro.filter(naTela).slice(0, PISCAM).map((l) => l.mapa));
+    const prazo = setTimeout(() => setDesenhando(false), 800);
+    return () => clearTimeout(prazo);
+  }, [chave, chavePulsos, lugares, temas, c, temaDoDia]);
+
   return (
     <>
-      {pertoPrimeiro.map((l, i) => {
-        const t = temas[l.tema];
-        const doDia = l.tema === temaDoDia;
-        const segundos = (tempo * PASSO_MS) / 1000;
-        const periodo = 2.4 + (i % 4) * 0.3;
-        const onda = 0.5 + 0.5 * Math.sin((2 * Math.PI * segundos) / periodo + i * 1.7);
-        const brilho = parado || !piscam.has(l.mapa) ? 0.95 : Math.round((0.4 + 0.6 * onda) * 50) / 50;
+      {itens.map((item) => {
+        if (item.tipo === 'grupo') {
+          const cor = escurecerParaBranco(temas[item.tema]?.cor ?? c.agua, 4.5);
+          return (
+            <Marker key={`grupo-${item.lugares[0].mapa}`} coordinate={{ latitude: item.lat, longitude: item.lon }}
+              anchor={CENTRO} tracksViewChanges={desenhando} accessibilityLabel={`${item.quantos} lugares. Toque para aproximar`}
+              onPress={() => aproximar(item.lat, item.lon)}>
+              <View style={[estilosMarcador.circulo, { width: 40, height: 40, borderRadius: 20, backgroundColor: cor, borderColor: c.superficie }]}>
+                <Text style={{ color: '#FFFFFF', fontFamily: FONTE_NUMERO, fontSize: 14 }}>{item.quantos}</Text>
+              </View>
+            </Marker>
+          );
+        }
+
+        const { lugar } = item;
+        const tema = temas[lugar.tema];
+        const doDia = lugar.tema === temaDoDia;
+        const pulsa = pulsam.has(lugar.mapa);
+        const distancia = `${lugar.distancia_km.toFixed(1)} km`;
+        const dica = tema ? ` · procure ${tema.nome.toLowerCase()}` : '';
         return (
-          <Marker key={l.mapa} coordinate={{ latitude: l.lat, longitude: l.lon }} anchor={{ x: 0.5, y: 0.5 }}
-            opacity={brilho} tracksViewChanges={desenhando}
-            title={l.nome} description={`${l.distancia_km.toFixed(1)} km${t ? ` · procure ${t.nome.toLowerCase()}` : ''}`}>
-            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: doDia ? c.destaque : c.agua,
-              borderWidth: 1, borderColor: c.superficie, alignItems: 'center', justifyContent: 'center' }}>
-              <IconeTema id={l.tema} tamanho={18} cor={doDia ? c.destaqueTinta : c.aguaTinta} />
+          <Marker key={lugar.mapa} coordinate={{ latitude: lugar.lat, longitude: lugar.lon }} anchor={CENTRO}
+            tracksViewChanges={desenhando || pulsa} title={lugar.nome} description={`${distancia}${dica}`}>
+            <View style={[estilosMarcador.area, pulsa && estilosMarcador.areaPulso]}>
+              {pulsa ? <Pulso cor={c.destaque} /> : null}
+              <View style={[estilosMarcador.circulo, { backgroundColor: escurecerParaBranco(tema?.cor ?? c.agua),
+                borderColor: doDia ? c.destaque : c.superficie }]}>
+                <IconeTema id={lugar.tema} tamanho={18} cor="#FFFFFF" />
+              </View>
             </View>
             <Callout>
               <View className="bg-ficha p-2 gap-1">
-                <Text className="font-texto-forte text-tinta">{l.nome}</Text>
+                <Text className="font-texto-forte text-tinta">{lugar.nome}</Text>
                 <Text className="font-texto text-apagado">
-                  <Text className="text-agua"><Text className="font-numero">{l.distancia_km.toFixed(1)}</Text> km</Text>{t ? ` · procure ${t.nome.toLowerCase()}` : ''}
+                  <Text className="text-agua"><Text className="font-numero">{lugar.distancia_km.toFixed(1)}</Text> km</Text>{dica}
                 </Text>
               </View>
             </Callout>
@@ -135,3 +174,24 @@ function Lugares({ lugares, temas, c, regiao, temaDoDia }: { lugares: Lugar[]; t
     </>
   );
 }
+
+function Pulso({ cor }: { cor: string }) {
+  const [progresso] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    const animacao = Animated.loop(Animated.timing(progresso, {
+      toValue: 1, duration: 1600, easing: Easing.out(Easing.cubic), useNativeDriver: true, isInteraction: false,
+    }));
+    animacao.start();
+    return () => animacao.stop();
+  }, [progresso]);
+  return <Animated.View pointerEvents="none" style={[estilosMarcador.circulo, { position: 'absolute', borderColor: cor,
+    opacity: progresso.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] }),
+    transform: [{ scale: progresso.interpolate({ inputRange: [0, 1], outputRange: [1, 1.6] }) }],
+  }]} />;
+}
+
+const estilosMarcador = StyleSheet.create({
+  area: { alignItems: 'center', justifyContent: 'center' },
+  areaPulso: { width: 58, height: 58 },
+  circulo: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+});

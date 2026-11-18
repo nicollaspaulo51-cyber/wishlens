@@ -18,6 +18,20 @@ export const PALETA = {
 };
 export type Cores = typeof PALETA.claro;
 
+export function escurecerParaBranco(cor: string, minimo: 3 | 4.5 = 3): string {
+  const canais = [1, 3, 5].map((inicio) => parseInt(cor.slice(inicio, inicio + 2), 16));
+  const linear = (canal: number) => {
+    const srgb = canal / 255;
+    return srgb <= 0.04045 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4;
+  };
+  const contraste = () => 1.05 / (0.2126 * linear(canais[0]) + 0.7152 * linear(canais[1]) + 0.0722 * linear(canais[2]) + 0.05);
+  if (contraste() >= minimo) return cor;
+  while (contraste() < minimo) {
+    for (let indice = 0; indice < canais.length; indice++) canais[indice] = Math.floor(canais[indice] * 0.98);
+  }
+  return `#${canais.map((canal) => canal.toString(16).padStart(2, '0')).join('')}`;
+}
+
 export function useCores(): Cores {
   return useColorScheme() === 'dark' ? PALETA.escuro : PALETA.claro;
 }
