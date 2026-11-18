@@ -34,8 +34,9 @@ function Navegacao() {
 
 export default function Raiz() {
   const c = useCores();
-  const [fontes] = useFonts({ Overpass_400Regular, Overpass_700Bold, Overpass_800ExtraBold, OverpassMono_600SemiBold });
-  if (!fontes) return null;
+  const [fontes, erroFontes] = useFonts({ Overpass_400Regular, Overpass_700Bold, Overpass_800ExtraBold, OverpassMono_600SemiBold });
+  // Se uma fonte não baixar, o app abre com a fonte do sistema em vez de ficar em branco para sempre
+  if (!fontes && !erroFontes) return null;
   return (
     // vars(): as cores da PALETA viram variáveis CSS para as classes do NativeWind (tema claro/escuro)
     <GestureHandlerRootView style={{ flex: 1 }}>
