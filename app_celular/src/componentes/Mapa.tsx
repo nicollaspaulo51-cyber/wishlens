@@ -7,7 +7,7 @@ import MapView, { Callout, Circle, Marker, type MapStyleElement, type Region } f
 
 import type { Mapa as DadosMapa, Lugar, Tema } from '../lib/api';
 import { agrupar, checarAgrupar } from '../lib/agrupar';
-import { escurecerParaBranco, FONTE_NUMERO, PALETA, useCores, type Cores } from '../lib/cores';
+import { escurecerParaBranco, FONTE_NUMERO, FONTE_TEXTO, FONTE_TEXTO_FORTE, PALETA, useCores, type Cores } from '../lib/cores';
 import { useMovimentoReduzido } from '../lib/movimento';
 import { Icone, IconeTema } from './icones/Icone';
 
@@ -24,6 +24,8 @@ function estiloMapa(escuro: boolean): MapStyleElement[] {
     { featureType: 'water', elementType: 'geometry', stylers: [{ color: escuro ? '#0E2433' : '#BFD9E6' }] },
     { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: escuro ? '#16261E' : '#DCE9DF' }] },
     { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+    // ícones de igreja, escola, árvore etc. do Google competiam com os marcadores do jogo
+    { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
     { featureType: 'transit', stylers: [{ visibility: 'off' }] },
   ];
 }
@@ -95,7 +97,7 @@ export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar, temaDoD
             <View className="h-[44px] w-[44px] items-center justify-center rounded-full bg-ficha border border-linha">
               <Icone nome="medalha" tamanho={22} cor={c.tinta} />
             </View>
-            <Callout><Text className="font-texto text-tinta bg-ficha p-2">Guardião da semana: {m.guardiao}</Text></Callout>
+            <Balao c={c} titulo="Guardião da semana" linha={m.guardiao ?? undefined} />
           </Marker>
         ))}
         <Lugares lugares={lugares} temas={temas} c={c} regiao={regiao} largura={largura} posicao={posicao} temaDoDia={temaDoDia}
@@ -160,14 +162,7 @@ function Lugares({ lugares, temas, c, regiao, largura, posicao, temaDoDia, aprox
                 <IconeTema id={lugar.tema} tamanho={18} cor="#FFFFFF" />
               </View>
             </View>
-            <Callout>
-              <View className="bg-ficha p-2 gap-1">
-                <Text className="font-texto-forte text-tinta">{lugar.nome}</Text>
-                <Text className="font-texto text-apagado">
-                  <Text className="text-agua"><Text className="font-numero">{lugar.distancia_km.toFixed(1)}</Text> km</Text>{dica}
-                </Text>
-              </View>
-            </Callout>
+            <Balao c={c} titulo={lugar.nome} distancia={lugar.distancia_km} linha={tema ? `procure ${tema.nome.toLowerCase()}` : undefined} />
           </Marker>
         );
       })}
@@ -195,3 +190,20 @@ const estilosMarcador = StyleSheet.create({
   areaPulso: { width: 58, height: 58 },
   circulo: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
 });
+
+// Balão do marcador. `tooltip` tira a moldura branca do Android, e a largura fixa evita o texto em coluna
+// estreita (o balão personalizado encolhe até a largura mínima quando não tem largura).
+function Balao({ c, titulo, distancia, linha }: { c: Cores; titulo: string; distancia?: number; linha?: string }) {
+  return (
+    <Callout tooltip>
+      <View style={{ width: 230, backgroundColor: c.superficie, borderColor: c.linha, borderWidth: 1, borderRadius: 6,
+        paddingHorizontal: 12, paddingVertical: 10, gap: 4 }}>
+        <Text numberOfLines={2} style={{ fontFamily: FONTE_TEXTO_FORTE, fontSize: 15, color: c.tinta }}>{titulo}</Text>
+        <Text numberOfLines={2} style={{ fontFamily: FONTE_TEXTO, fontSize: 13, color: c.apagado }}>
+          {distancia !== undefined ? <Text style={{ fontFamily: FONTE_NUMERO, color: c.agua }}>{distancia.toFixed(1)} km</Text> : null}
+          {distancia !== undefined && linha ? '  ·  ' : ''}{linha}
+        </Text>
+      </View>
+    </Callout>
+  );
+}
