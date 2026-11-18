@@ -114,13 +114,17 @@ function Lugares({ lugares, temas, c, regiao, largura, posicao, temaDoDia, aprox
 }) {
   const reduzido = useMovimentoReduzido();
   const itens = useMemo(() => agrupar(lugares, regiao, largura), [lugares, regiao, largura]);
+  // Pulsam os lugares soltos que estão na tela (até PULSAM, os mais perto de você), cada um na cor do seu tema
   const pulsam = useMemo(() => {
-    if (reduzido !== false || !temaDoDia) return new Set<string>();
+    if (reduzido !== false) return new Set<string>();
+    const naTela = (l: Lugar) => Math.abs(l.lat - regiao.latitude) <= regiao.latitudeDelta / 2
+      && Math.abs(l.lon - regiao.longitude) <= regiao.longitudeDelta / 2;
     const escalaLon = Math.cos(posicao.lat * Math.PI / 180);
     const distancia = (lugar: Lugar) => Math.hypot(lugar.lat - posicao.lat, (lugar.lon - posicao.lon) * escalaLon);
-    return new Set(lugares.filter((lugar) => lugar.tema === temaDoDia)
-      .sort((primeiro, segundo) => distancia(primeiro) - distancia(segundo)).slice(0, 3).map((lugar) => lugar.mapa));
-  }, [lugares, posicao, reduzido, temaDoDia]);
+    const soltos = itens.flatMap((item) => item.tipo === 'lugar' && naTela(item.lugar) ? [item.lugar] : []);
+    return new Set(soltos.sort((a, b) => distancia(a) - distancia(b)).slice(0, PULSAM).map((lugar) => lugar.mapa));
+  }, [itens, regiao, posicao, reduzido]);
+  const ritmos = useRitmos(pulsam.size > 0);
   const [desenhando, setDesenhando] = useState(true);
   // metros por pixel na escala atual: o anel do pulso começa do tamanho do marcador (18 px de raio)
   const metrosPorPx = largura > 0 ? (regiao.longitudeDelta * 111320 * Math.cos(regiao.latitude * Math.PI / 180)) / largura : 3;
@@ -156,7 +160,9 @@ function Lugares({ lugares, temas, c, regiao, largura, posicao, temaDoDia, aprox
         const dica = tema ? ` · procure ${tema.nome.toLowerCase()}` : '';
         return (
           <Fragment key={lugar.mapa}>
-            {pulsa ? <Pulso centro={{ latitude: lugar.lat, longitude: lugar.lon }} raioBase={18 * metrosPorPx} cor={c.destaque} /> : null}
+            {pulsa ? <Pulso centro={{ latitude: lugar.lat, longitude: lugar.lon }} raioBase={18 * metrosPorPx}
+              progresso={ritmos[Number.parseInt(lugar.mapa.slice(-2), 36) % ritmos.length || 0]}
+              cor={doDia ? c.destaque : escurecerParaBranco(tema?.cor ?? c.agua)} forte={doDia} /> : null}
             <Marker coordinate={{ latitude: lugar.lat, longitude: lugar.lon }} anchor={CENTRO}
               tracksViewChanges={desenhando} title={lugar.nome} description={`${distancia}${dica}`}>
               <View style={[estilosMarcador.circulo, { backgroundColor: escurecerParaBranco(tema?.cor ?? c.agua),
@@ -180,22 +186,37 @@ const rgba = (hex: string, a: number) => {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 };
 
-function Pulso({ centro, raioBase, cor }: { centro: { latitude: number; longitude: number }; raioBase: number; cor: string }) {
-  const [progresso] = useState(() => new Animated.Value(0));
+const PULSAM = 20;
+const ATRASOS = [0, 530, 1060]; // três ritmos defasados: os pulsos não acontecem todos juntos
+
+// Três animações compartilhadas por todos os círculos (em vez de uma por lugar): menos trabalho para o celular.
+function useRitmos(ligado: boolean) {
+  const [ritmos] = useState(() => ATRASOS.map(() => new Animated.Value(0)));
   useEffect(() => {
+    if (!ligado) return;
     // driver em JS: o raio do círculo do mapa não é uma propriedade que o driver nativo anime
-    const animacao = Animated.loop(Animated.timing(progresso, {
-      toValue: 1, duration: 1600, easing: Easing.out(Easing.cubic), useNativeDriver: false, isInteraction: false,
-    }));
-    animacao.start();
-    return () => animacao.stop();
-  }, [progresso]);
+    const laços = ritmos.map((v, i) => Animated.loop(Animated.sequence([
+      Animated.delay(ATRASOS[i]),
+      Animated.timing(v, { toValue: 1, duration: 1600, easing: Easing.out(Easing.cubic), useNativeDriver: false, isInteraction: false }),
+      Animated.timing(v, { toValue: 0, duration: 0, useNativeDriver: false }),
+      Animated.delay(1600 - ATRASOS[i]),
+    ])));
+    laços.forEach((l) => l.start());
+    return () => laços.forEach((l) => l.stop());
+  }, [ligado, ritmos]);
+  return ritmos;
+}
+
+// O tema do dia pulsa forte (anel grande e marcado); os outros, um anel menor e mais fraco.
+function Pulso({ centro, raioBase, cor, progresso, forte }: { centro: { latitude: number; longitude: number }; raioBase: number; cor: string;
+  progresso: Animated.Value; forte: boolean }) {
+  const [alcance, borda, miolo] = forte ? [2.4, 0.8, 0.22] : [1.6, 0.4, 0.08];
   return (
     <CirculoAnimado center={centro} zIndex={0}
-      radius={progresso.interpolate({ inputRange: [0, 1], outputRange: [raioBase, raioBase * 2.6] })}
-      strokeWidth={2}
-      strokeColor={progresso.interpolate({ inputRange: [0, 1], outputRange: [rgba(cor, 0.8), rgba(cor, 0)] })}
-      fillColor={progresso.interpolate({ inputRange: [0, 1], outputRange: [rgba(cor, 0.25), rgba(cor, 0)] })} />
+      radius={progresso.interpolate({ inputRange: [0, 1], outputRange: [raioBase, raioBase * alcance] })}
+      strokeWidth={forte ? 2 : 1}
+      strokeColor={progresso.interpolate({ inputRange: [0, 1], outputRange: [rgba(cor, borda), rgba(cor, 0)] })}
+      fillColor={progresso.interpolate({ inputRange: [0, 1], outputRange: [rgba(cor, miolo), rgba(cor, 0)] })} />
   );
 }
 
