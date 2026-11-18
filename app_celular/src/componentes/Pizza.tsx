@@ -5,12 +5,12 @@ import { useState } from 'react';
 import { Pressable, Text, useColorScheme, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { useCores } from '../lib/cores';
+import { PALETA, useCores } from '../lib/cores';
 import { IconeTema } from './icones/Icone';
 
 const CORES = {
-  claro: ['#C24A06', '#3F5F55', '#8A6A2E', '#5B6B8C', '#7A4E6B', '#6F7A72'],
-  escuro: ['#FF9663', '#86AD9F', '#CFAD70', '#9EACCE', '#C99DBD', '#AAB7AC'],
+  claro: ['#C24A06', PALETA.claro.agua, '#8A6A2E', '#5B6B8C', '#7A4E6B', '#6F7A72'],
+  escuro: ['#FF9663', PALETA.escuro.agua, '#CFAD70', '#9EACCE', '#C99DBD', '#AAB7AC'],
 };
 
 export type Fatia = { nome: string; valor: number; icone?: string };

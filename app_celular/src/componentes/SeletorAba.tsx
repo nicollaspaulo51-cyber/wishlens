@@ -60,7 +60,7 @@ export function SeletorAba({ pontos, estilo }: { pontos?: Partial<Record<Modo, n
                     {ativa ? <Text className="font-texto-forte text-destaque">Atual</Text> : null}
                   </View>
                   <Text className="font-texto text-tinta text-[14px] leading-[19px]" >Vale: {a.conta}.</Text>
-                  <Text className="font-texto text-apagado text-[13px]" >No mapa: {a.onde} perto de você.</Text>
+                  <Text className="font-texto text-agua text-[13px]" >No mapa: {a.onde} perto de você.</Text>
                 </Pressable>
               );
             })}

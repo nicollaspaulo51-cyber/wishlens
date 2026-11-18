@@ -8,7 +8,8 @@ import { Surge } from '../lib/movimento';
 import { IconeTema } from './icones/Icone';
 
 export function useCoresGrafico() {
-  return useColorScheme() === 'dark' ? { voce: '#FF9663', amigo: '#86AD9F' } : { voce: '#C24A06', amigo: '#3F5F55' };
+  const { agua } = useCores();
+  return { voce: useColorScheme() === 'dark' ? '#FF9663' : '#C24A06', amigo: agua };
 }
 
 type Serie = { nome: string; valores: number[] };

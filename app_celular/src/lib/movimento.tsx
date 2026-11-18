@@ -1,14 +1,17 @@
 // Animações do app (Animated do React Native, no driver nativo). Todas param com "reduzir movimento" ligado no celular.
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useIsFocused } from 'expo-router';
-import { AccessibilityInfo, Animated, Easing, type StyleProp, type ViewStyle } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Platform, type StyleProp, type ViewStyle } from 'react-native';
 
 export function useMovimentoReduzido() {
-  const [reduzido, setReduzido] = useState(false);
+  const [reduzido, setReduzido] = useState<boolean | null>(null);
   useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduzido).catch(() => {});
+    let ativo = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((preferencia) => {
+      if (ativo) setReduzido(preferencia);
+    }).catch(() => { if (ativo) setReduzido(true); });
     const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduzido);
-    return () => sub.remove();
+    return () => { ativo = false; sub?.remove(); };
   }, []);
   return reduzido;
 }
@@ -72,26 +75,38 @@ export function Surge({ children, ordem = 0, estilo, chave }: { children: ReactN
 }
 
 // Número que conta até o valor novo (pontos)
-export function useContagem(alvo: number, duracao = 700) {
-  const [valor, setValor] = useState(alvo);
-  const antes = useRef(alvo);
+export function useContagem(alvo: number, duracao: number, inicial = alvo) {
+  const [valor, setValor] = useState(inicial);
   const parado = useMovimentoReduzido();
-  useEffect(() => {
-    const de = antes.current;
-    antes.current = alvo;
-    if (parado || de === alvo) {
+  const numero = useRef(new Animated.Value(inicial)).current;
+  useLayoutEffect(() => {
+    if (parado === null) return;
+    if (parado) {
+      numero.setValue(alvo);
       setValor(alvo);
       return;
     }
-    const inicio = Date.now();
-    let quadro = 0;
-    const passo = () => {
-      const t = Math.min(1, (Date.now() - inicio) / duracao);
-      setValor(Math.round(de + (alvo - de) * (1 - (1 - t) ** 3)));
-      if (t < 1) quadro = requestAnimationFrame(passo);
-    };
-    quadro = requestAnimationFrame(passo);
-    return () => cancelAnimationFrame(quadro);
-  }, [alvo, duracao, parado]);
+    const id = numero.addListener(({ value }) => setValor(Math.round(value)));
+    const animacao = Animated.timing(numero, { toValue: alvo, duration: duracao, easing: Easing.out(Easing.cubic), useNativeDriver: false });
+    animacao.start();
+    return () => { animacao.stop(); numero.removeListener(id); };
+  }, [alvo, duracao, numero, parado]);
+  return parado ? alvo : valor;
+}
+
+export function useTransicao(alvo: number, duracao: number, { inicial = alvo, atraso = 0, nativo = true } = {}) {
+  const parado = useMovimentoReduzido();
+  const valor = useRef(new Animated.Value(inicial)).current;
+  useLayoutEffect(() => {
+    if (parado === null) return;
+    if (parado) {
+      valor.setValue(alvo);
+      return;
+    }
+    const animacao = Animated.timing(valor, { toValue: alvo, duration: duracao, delay: atraso,
+      easing: Easing.out(Easing.cubic), useNativeDriver: nativo && Platform.OS !== 'web' });
+    animacao.start();
+    return () => animacao.stop();
+  }, [alvo, atraso, duracao, nativo, parado, valor]);
   return valor;
 }

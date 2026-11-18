@@ -1,8 +1,8 @@
 // Barra de baixo: metade das abas de cada lado e o botão da câmera no meio, mais alto que a barra.
 import * as Haptics from 'expo-haptics';
 import { router, type Tabs } from 'expo-router';
-import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
-import { Animated, Pressable, Text, useWindowDimensions, View, type LayoutRectangle } from 'react-native';
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentProps } from 'react';
+import { Animated, Easing, Platform, Pressable, Text, useWindowDimensions, View, type LayoutRectangle } from 'react-native';
 
 import { api } from '../lib/api';
 import { useCores } from '../lib/cores';
@@ -24,10 +24,10 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
   const botao = Math.min(68, centro);
   const { v: halo } = useLaco(1800, 600);
   const parado = useMovimentoReduzido();
-  // Pílula da aba ativa: uma só, que desliza com mola até a aba tocada. A posição de cada aba vem do onLayout.
+  // A posição da pílula da aba ativa vem do onLayout de cada aba.
   const caixas = useRef<Record<number, { aba?: LayoutRectangle; pilula?: LayoutRectangle }>>({});
-  const [medidas, setMedidas] = useState(0);
-  const pilula = useRef(new Animated.ValueXY()).current;
+  const [, setMedidas] = useState(0);
+  const pilula = useRef(new Animated.Value(0)).current;
   const posicionada = useRef(false);
   const medir = (i: number, parte: 'aba' | 'pilula', r: LayoutRectangle) => {
     caixas.current[i] = { ...caixas.current[i], [parte]: r };
@@ -35,13 +35,19 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
   };
   const alvo = caixas.current[state.index];
   const pronta = !!(alvo?.aba && alvo.pilula);
-  useEffect(() => {
-    if (!alvo?.aba || !alvo.pilula) return;
-    const destino = { x: alvo.aba.x + alvo.pilula.x, y: alvo.aba.y + alvo.pilula.y };
-    if (parado || !posicionada.current) pilula.setValue(destino);
-    else Animated.spring(pilula, { toValue: destino, friction: 8, tension: 90, useNativeDriver: true }).start();
-    posicionada.current = true;
-  }, [state.index, medidas, parado, alvo, pilula]);
+  const destino = pronta ? alvo.aba!.x + alvo.pilula!.x : null;
+  useLayoutEffect(() => {
+    if (destino === null) return;
+    if (parado !== false || !posicionada.current) {
+      pilula.setValue(destino);
+      posicionada.current = true;
+      return;
+    }
+    const animacao = Animated.timing(pilula, { toValue: destino, duration: 220,
+      easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== 'web' });
+    animacao.start();
+    return () => animacao.stop();
+  }, [destino, parado, pilula]);
   // Mensagens não lidas no ícone do Chat (de 20 em 20 s; a barra não é uma tela, então sem useDados)
   const [naoLidas, setNaoLidas] = useState(0);
   useEffect(() => {
@@ -63,9 +69,7 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
         className="flex-1 items-center justify-center min-h-[56px] min-w-[44px] gap-[2px]">
         <View onLayout={(e) => medir(indice, 'pilula', e.nativeEvent.layout)}
           style={{ paddingHorizontal: 12, paddingVertical: 3, borderRadius: 6, backgroundColor: ativa && !pronta ? c.suave : 'transparent' }}>
-          <IconePula ativa={ativa} parado={parado}>
-            <Icone nome={nomeIcone} tamanho={23} cor={ativa ? c.destaque : c.apagado} ativo={ativa} />
-          </IconePula>
+          <Icone nome={nomeIcone} tamanho={23} cor={ativa ? c.destaque : c.apagado} ativo={ativa} />
           {contador ? (
             <View className="absolute -top-[2px] right-[6px] min-w-[18px] h-[18px] rounded-full px-[4px] bg-destaque items-center justify-center">
               <Text className="font-numero text-destaque-tinta text-[11px]">{contador > 99 ? '99+' : contador}</Text>
@@ -81,8 +85,8 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
     <View accessibilityRole="tablist" style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: c.superficie,
       paddingBottom: insets.bottom, paddingTop: 4, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderTopWidth: 1, borderColor: c.linha }}>
       {pronta ? (
-        <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, width: alvo!.pilula!.width,
-          height: alvo!.pilula!.height, borderRadius: 6, backgroundColor: c.suave, transform: pilula.getTranslateTransform() }} />
+        <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, top: alvo.aba!.y + alvo.pilula!.y, width: alvo.pilula!.width,
+          height: alvo.pilula!.height, borderRadius: 6, backgroundColor: c.suave, transform: [{ translateX: pilula }] }} />
       ) : null}
       {state.routes.slice(0, meio).map((r, i) => aba(r, i))}
       <View className="items-center" style={{ width: centro }}>
@@ -105,15 +109,4 @@ export function BarraAbas({ state, descriptors, navigateToTab, insets }: Props) 
       {state.routes.slice(meio).map((r, i) => aba(r, i + meio))}
     </View>
   );
-}
-
-// O ícone da aba escolhida dá um pulinho
-function IconePula({ ativa, parado, children }: { ativa: boolean; parado: boolean; children: ReactNode }) {
-  const v = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    if (!ativa || parado) return;
-    v.setValue(0.7);
-    Animated.spring(v, { toValue: 1, friction: 4, tension: 140, useNativeDriver: true }).start();
-  }, [ativa, parado, v]);
-  return <Animated.View style={{ transform: [{ scale: v }] }}>{children}</Animated.View>;
 }

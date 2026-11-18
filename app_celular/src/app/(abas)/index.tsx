@@ -1,7 +1,7 @@
 // Jogar: placar e tema do dia em cima, o mapa no meio e o botão Fotografar sempre à mão, embaixo.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,23 +13,37 @@ import { Aviso, Botao } from '../../componentes/ui';
 import { api, type Mapa as DadosMapa, type Tema } from '../../lib/api';
 import { FONTE_TITULO, useCores } from '../../lib/cores';
 import { useModo } from '../../lib/modo';
-import { Surge, useContagem, useEntrada } from '../../lib/movimento';
+import { Surge, useContagem, useTransicao } from '../../lib/movimento';
 import { useDados } from '../../lib/useDados';
 import { Icone, IconeTema } from '../../componentes/icones/Icone';
 
 const KM_PARA_ATUALIZAR = 0.3;
 
-// Os pontos contam até o valor novo e dão um pulo quando mudam
 function Pontos({ valor }: { valor: number }) {
-  const c = useCores();
-  const mostrado = useContagem(valor);
-  const pulo = useEntrada(0, valor);
+  const mostrado = useContagem(valor, 250);
+  const anterior = useRef(valor);
+  const [ganho, setGanho] = useState(0);
+  useLayoutEffect(() => {
+    const diferenca = valor - anterior.current;
+    anterior.current = valor;
+    setGanho(Math.max(0, diferenca));
+    if (diferenca <= 0) return;
+    const prazo = setTimeout(() => setGanho(0), 900);
+    return () => clearTimeout(prazo);
+  }, [valor]);
   return (
-    <Animated.Text className="font-numero" style={{ fontSize: 20, color: c.tinta,
-      transform: [{ scale: pulo.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.25, 1], extrapolate: 'clamp' }) }] }}>
-      {mostrado}<Text className="font-texto text-[13px] text-apagado" > pts</Text>
-    </Animated.Text>
+    <View className="flex-row items-center gap-1.5">
+      <Text className="font-numero text-[20px] text-tinta">
+        {mostrado}<Text className="font-texto text-[13px] text-apagado"> pts</Text>
+      </Text>
+      {ganho > 0 ? <GanhoPontos key={valor} ganho={ganho} /> : null}
+    </View>
   );
+}
+
+function GanhoPontos({ ganho }: { ganho: number }) {
+  const opacidade = useTransicao(1, 150, { inicial: 0 });
+  return <Animated.View style={{ opacity: opacidade }}><Text className="font-numero text-[13px] text-agua">+{ganho}</Text></Animated.View>;
 }
 
 function distanciaKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {
@@ -151,18 +165,18 @@ export default function Jogar() {
       {/* O mapa ocupa a tela toda; o resto flutua por cima */}
       <View className="absolute top-[0px] left-[0px] right-[0px] bottom-[0px]">
         {posicao ? (
-          <Mapa posicao={posicao} dados={mapa} temas={porId} mostrar={ativos} />
+          <Mapa posicao={posicao} dados={mapa} temas={porId} mostrar={ativos} temaDoDia={modo === 'livre' ? e?.tema_do_dia.id : undefined} />
         ) : (
           <View className="flex-1 justify-end p-[16px] pb-[48px] gap-[12px]">
-            <Icone nome="bussola" tamanho={44} cor={c.destaque} />
+            <Icone nome="bussola" tamanho={44} cor={c.agua} />
             <Text className="font-texto text-tinta text-[16px] leading-[22px]" >{semGps ?? 'Procurando você no mapa...'}</Text>
-            {semGps ? <Botao titulo="Ligar a localização" tipo="secundario" aoTocar={pedirGps} /> : null}
+            {semGps ? <Botao titulo="Ligar a localização" tipo="localizacao" aoTocar={pedirGps} /> : null}
           </View>
         )}
       </View>
 
       <SafeAreaView edges={['top']} pointerEvents="box-none" className="px-[12px] pt-[8px] gap-[8px]">
-        <View className="flex-row justify-between items-center overflow-hidden" pointerEvents="box-none">
+        <View className="flex-row flex-wrap gap-2 justify-between items-center overflow-hidden" pointerEvents="box-none">
           <Topografia />
           <View style={{ backgroundColor: c.superficie, borderRadius: 6, borderWidth: 1, borderColor: c.linha, paddingHorizontal: 14, paddingVertical: 6 }}>
             <Text accessibilityRole="header" style={{ fontFamily: FONTE_TITULO, fontSize: 20, color: c.tinta, letterSpacing: -0.5 }}>WishLens</Text>
@@ -170,7 +184,7 @@ export default function Jogar() {
           {e ? (
             <View accessible accessibilityLabel={`${pontosAba} pontos hoje nesta aba${modo === 'livre' ? `, ${e.posicao ? `${e.posicao}º lugar` : 'sem posição ainda'}` : ''}`}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.superficie, borderRadius: 6, borderWidth: 1, borderColor: c.linha, paddingHorizontal: 14, paddingVertical: 6 }}>
-              <Pontos valor={pontosAba} />
+              <Pontos key={modo} valor={pontosAba} />
               {modo === 'livre' ? (
                 <>
                   <View className="w-[1px] h-[18px] bg-linha" />

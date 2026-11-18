@@ -1,11 +1,12 @@
 // Peças comuns do mapa topográfico; as classes do NativeWind usam as cores do tema ativo.
 import type { ComponentProps, ReactNode } from 'react';
 import { vars } from 'nativewind';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View, type TextStyle, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View, type TextStyle, type ViewStyle } from 'react-native';
 
 import { IconeTema } from './icones/Icone';
 
 import { useCores, variaveis } from '../lib/cores';
+import { useTransicao } from '../lib/movimento';
 
 // Modal com as cores do tema: no navegador o Modal fica fora da raiz do app e não herda as variáveis CSS do
 // _layout.tsx, então as classes (text-tinta...) caíam no preto padrão sobre o fundo escuro.
@@ -47,7 +48,7 @@ export function Cartaz({ children, estilo }: { children: ReactNode; estilo?: Vie
 }
 
 export function Botao({ titulo, aoTocar, tipo = 'primario', desativado, carregando, estilo, rotulo }: {
-  titulo: ReactNode; aoTocar: () => void; tipo?: 'primario' | 'secundario'; desativado?: boolean; carregando?: boolean;
+  titulo: ReactNode; aoTocar: () => void; tipo?: 'primario' | 'secundario' | 'localizacao'; desativado?: boolean; carregando?: boolean;
   estilo?: ViewStyle; rotulo?: string;
 }) {
   const c = useCores();
@@ -59,11 +60,11 @@ export function Botao({ titulo, aoTocar, tipo = 'primario', desativado, carregan
       accessibilityState={{ disabled: !!desativado || !!carregando, busy: !!carregando }}
       disabled={desativado || carregando}
       onPress={aoTocar}
-      className={`min-h-[52px] rounded-ficha items-center justify-center px-5 active:scale-[0.97] ${primario ? 'bg-destaque' : 'border-[1.5px] border-destaque'}`}
+      className={`min-h-[52px] rounded-ficha items-center justify-center px-5 active:scale-[0.97] ${primario ? 'bg-destaque' : tipo === 'localizacao' ? 'bg-ficha border-[1.5px] border-agua' : 'border-[1.5px] border-destaque'}`}
       style={[{ opacity: desativado ? 0.5 : 1 }, estilo]}
     >
-      {carregando ? <ActivityIndicator color={primario ? c.destaqueTinta : c.destaque} /> : (
-        <Text className={`font-texto-forte text-[17px] ${primario ? 'text-destaque-tinta' : 'text-destaque'}`}>{titulo}</Text>
+      {carregando ? <ActivityIndicator color={primario ? c.destaqueTinta : tipo === 'localizacao' ? c.agua : c.destaque} /> : (
+        <Text className={`font-texto-forte text-[17px] ${primario ? 'text-destaque-tinta' : tipo === 'localizacao' ? 'text-agua' : 'text-destaque'}`}>{titulo}</Text>
       )}
     </Pressable>
   );
@@ -74,22 +75,27 @@ export function Botao({ titulo, aoTocar, tipo = 'primario', desativado, carregan
 export function Fichas<T extends string>({ opcoes, valor, aoEscolher, rotulo }: {
   opcoes: { valor: T; texto: string; icone?: { id: string } }[]; valor: T; aoEscolher: (v: T) => void; rotulo: string;
 }) {
-  const c = useCores();
   return (
     // alignItems: as etiquetas não esticam até a altura da rolagem (no Android ficavam enormes)
     <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityLabel={rotulo}
       contentContainerStyle={{ gap: 8, paddingVertical: 4, alignItems: 'center' }}>
-      {opcoes.map((o) => {
-        const ativa = o.valor === valor;
-        return (
-          <Pressable key={o.valor} accessibilityRole="radio" accessibilityState={{ selected: ativa }} onPress={() => aoEscolher(o.valor)}
-            className={`min-h-[44px] min-w-[44px] px-3.5 rounded-ficha flex-row items-center gap-1.5 border ${ativa ? 'bg-suave border-apagado' : 'bg-ficha border-linha'}`}>
-            {o.icone ? <IconeTema id={o.icone.id} tamanho={18} cor={ativa ? c.tinta : c.apagado} /> : null}
-            <Text className={`text-[15px] ${ativa ? 'font-texto-forte text-tinta' : 'font-texto text-tinta'}`}>{o.texto}</Text>
-          </Pressable>
-        );
-      })}
+      {opcoes.map((opcao) => (
+        <Ficha key={opcao.valor} texto={opcao.texto} icone={opcao.icone?.id} ativa={opcao.valor === valor} aoTocar={() => aoEscolher(opcao.valor)} />
+      ))}
     </ScrollView>
+  );
+}
+
+function Ficha({ texto, icone, ativa, aoTocar }: { texto: string; icone?: string; ativa: boolean; aoTocar: () => void }) {
+  const c = useCores();
+  const opacidade = useTransicao(ativa ? 1 : 0, 150);
+  return (
+    <Pressable accessibilityRole="radio" accessibilityState={{ selected: ativa }} onPress={aoTocar}
+      className={`min-h-[44px] min-w-[44px] px-3.5 rounded-ficha flex-row items-center gap-1.5 border bg-ficha ${ativa ? 'border-apagado' : 'border-linha'}`}>
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: 5, backgroundColor: c.suave, opacity: opacidade }]} />
+      {icone ? <IconeTema id={icone} tamanho={18} cor={ativa ? c.tinta : c.apagado} /> : null}
+      <Text className={`text-[15px] text-tinta ${ativa ? 'font-texto-forte' : 'font-texto'}`}>{texto}</Text>
+    </Pressable>
   );
 }
 

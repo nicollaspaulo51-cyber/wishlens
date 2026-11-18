@@ -13,6 +13,7 @@ module.exports = {
         papel: cor('fundo'), ficha: cor('superficie'), tinta: cor('tinta'), apagado: cor('apagado'), linha: cor('linha'),
         destaque: cor('destaque'), 'destaque-tinta': cor('destaqueTinta'), suave: cor('suave'), sol: cor('sol'),
         'sol-tinta': cor('solTinta'), carimbo: cor('recusa'), figurinha: cor('figurinha'),
+        agua: cor('agua'), 'agua-tinta': cor('aguaTinta'),
       },
       fontFamily: {
         titulo: ['Overpass_800ExtraBold'], 'titulo-media': ['Overpass_700Bold'],

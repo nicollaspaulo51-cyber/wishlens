@@ -18,10 +18,11 @@ export type PropsMapa = {
   dados: DadosMapa | null;
   temas: Record<string, Tema>;
   mostrar: string[];
+  temaDoDia?: string;
 };
 
 // O mapa só redesenha quando os dados, a posição ou os filtros mudam; o piscar fica nos Lugares
-export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar }: PropsMapa) {
+export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar, temaDoDia }: PropsMapa) {
   const c = useCores();
   const escuro = useColorScheme() === 'dark';
   const lugares = (dados?.lugares ?? []).filter((l) => mostrar.includes(l.tema));
@@ -46,7 +47,6 @@ export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar }: Props
         style={{ flex: 1 }}
         initialRegion={regiao}
         onRegionChangeComplete={setRegiao}
-        showsUserLocation
         showsMyLocationButton={false}
         showsPointsOfInterests={false}
         customMapStyle={ESTILO_LIMPO}
@@ -54,6 +54,10 @@ export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar }: Props
         toolbarEnabled={false}
         accessibilityLabel={`Mapa com ${lugares.length} lugares para procurar perto de você`}
       >
+        <Marker key={`voce-${c.agua}`} coordinate={{ latitude: posicao.lat, longitude: posicao.lon }}
+          anchor={{ x: 0.5, y: 0.5 }} title="Você" tracksViewChanges={false}>
+          <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: c.agua, borderWidth: 2, borderColor: c.aguaTinta }} />
+        </Marker>
         {manchas.map((m) => (
           <Circle key={`${m.celula}-${m.tema}`} center={{ latitude: m.lat, longitude: m.lon }} radius={250}
             fillColor={m.guardiao ? `${c.destaque}40` : `${c.apagado}26`} strokeColor={m.guardiao ? c.destaque : c.apagado} strokeWidth={1} />
@@ -66,7 +70,7 @@ export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar }: Props
             <Callout><Text className="font-texto text-tinta bg-ficha p-2">Guardião da semana: {m.guardiao}</Text></Callout>
           </Marker>
         ))}
-        <Lugares lugares={lugares} temas={temas} c={c} regiao={regiao} />
+        <Lugares lugares={lugares} temas={temas} c={c} regiao={regiao} temaDoDia={temaDoDia} />
       </MapView>
     </View>
   );
@@ -80,7 +84,7 @@ const PISCAM = 30;
 const PASSO_MS = 130;
 
 // Os lugares piscam, cada um no seu ritmo. Muda só a opacidade do marcador; o resto do mapa não redesenha.
-function Lugares({ lugares, temas, c, regiao }: { lugares: Lugar[]; temas: Record<string, Tema>; c: Cores; regiao: Region }) {
+function Lugares({ lugares, temas, c, regiao, temaDoDia }: { lugares: Lugar[]; temas: Record<string, Tema>; c: Cores; regiao: Region; temaDoDia?: string }) {
   const parado = useMovimentoReduzido();
   const [tempo, setTempo] = useState(0);
   useEffect(() => {
@@ -95,7 +99,7 @@ function Lugares({ lugares, temas, c, regiao }: { lugares: Lugar[]; temas: Recor
     setDesenhando(true);
     const t = setTimeout(() => setDesenhando(false), 800);
     return () => clearTimeout(t);
-  }, [chave, c]);
+  }, [chave, c, temaDoDia]);
   const pertoPrimeiro = [...lugares].sort((a, b) => a.distancia_km - b.distancia_km);
   const naTela = (l: Lugar) => Math.abs(l.lat - regiao.latitude) <= regiao.latitudeDelta / 2
     && Math.abs(l.lon - regiao.longitude) <= regiao.longitudeDelta / 2;
@@ -104,6 +108,7 @@ function Lugares({ lugares, temas, c, regiao }: { lugares: Lugar[]; temas: Recor
     <>
       {pertoPrimeiro.map((l, i) => {
         const t = temas[l.tema];
+        const doDia = l.tema === temaDoDia;
         const segundos = (tempo * PASSO_MS) / 1000;
         const periodo = 2.4 + (i % 4) * 0.3;
         const onda = 0.5 + 0.5 * Math.sin((2 * Math.PI * segundos) / periodo + i * 1.7);
@@ -112,15 +117,15 @@ function Lugares({ lugares, temas, c, regiao }: { lugares: Lugar[]; temas: Recor
           <Marker key={l.mapa} coordinate={{ latitude: l.lat, longitude: l.lon }} anchor={{ x: 0.5, y: 0.5 }}
             opacity={brilho} tracksViewChanges={desenhando}
             title={l.nome} description={`${l.distancia_km.toFixed(1)} km${t ? ` · procure ${t.nome.toLowerCase()}` : ''}`}>
-            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.superficie,
-              borderWidth: 1, borderColor: c.linha, alignItems: 'center', justifyContent: 'center' }}>
-              <IconeTema id={l.tema} tamanho={18} cor={c.tinta} />
+            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: doDia ? c.destaque : c.agua,
+              borderWidth: 1, borderColor: c.superficie, alignItems: 'center', justifyContent: 'center' }}>
+              <IconeTema id={l.tema} tamanho={18} cor={doDia ? c.destaqueTinta : c.aguaTinta} />
             </View>
             <Callout>
               <View className="bg-ficha p-2 gap-1">
                 <Text className="font-texto-forte text-tinta">{l.nome}</Text>
                 <Text className="font-texto text-apagado">
-                  <Text className="font-numero">{l.distancia_km.toFixed(1)}</Text> km{t ? ` · procure ${t.nome.toLowerCase()}` : ''}
+                  <Text className="text-agua"><Text className="font-numero">{l.distancia_km.toFixed(1)}</Text> km</Text>{t ? ` · procure ${t.nome.toLowerCase()}` : ''}
                 </Text>
               </View>
             </Callout>

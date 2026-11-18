@@ -1,15 +1,18 @@
 // Resumo do dia numa linha (toque para abrir): lupa, meta da turma e desafios. Abre sozinho quando a lupa
 // enche ou a meta está aberta, como no app web.
-import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Animated, Pressable, Text, View } from 'react-native';
 
 import type { Estado } from '../lib/api';
 import { useCores } from '../lib/cores';
+import { useTransicao } from '../lib/movimento';
 
 export function PainelDoDia({ estado }: { estado: Estado }) {
   const c = useCores();
   const { dia, meta, corrente } = estado;
   const [aberto, setAberto] = useState(dia.lupa_cheia); // fica por cima do mapa: só abre sozinho com a lupa cheia
+  const porcentagem = meta.alvo > 0 ? Math.min(100, Math.max(0, (100 * meta.feitas) / meta.alvo)) : 0;
+  const progresso = useTransicao(porcentagem, 300, { inicial: 0, nativo: false });
   const feitos = dia.desafios.filter((d) => d.ok).length;
   const tema = estado.tema_do_dia.nome.toLowerCase();
   const metaTxt = meta.cumprida
@@ -29,7 +32,7 @@ export function PainelDoDia({ estado }: { estado: Estado }) {
         <Text className="font-texto text-apagado text-[13px]" accessibilityElementsHidden>{aberto ? 'Ver menos' : 'Ver mais'}</Text>
       </Pressable>
       {aberto ? (
-        <View className="px-[12px] pb-[12px] gap-[10px]">
+        <Aparece>
           <Text className="font-texto text-tinta text-[14px] leading-[20px]" >
             {dia.lupa_cheia
               ? <>Lupa cheia: o próximo achado vale <Text className="font-numero">+50%</Text>.</>
@@ -39,32 +42,42 @@ export function PainelDoDia({ estado }: { estado: Estado }) {
           <View>
             <Text className="font-texto text-tinta text-[14px] leading-[20px]" >{metaTxt}</Text>
             <View accessibilityRole="progressbar" accessibilityLabel="Meta da turma"
-              accessibilityValue={{ min: 0, max: meta.alvo, now: meta.feitas }}
+              accessibilityValue={{ min: 0, max: meta.alvo, now: Math.min(meta.alvo, meta.feitas) }}
               className="h-[8px] rounded-[4px] bg-suave mt-[6px] overflow-hidden">
-              <View style={{ width: `${Math.min(100, (100 * meta.feitas) / meta.alvo)}%`, height: 8, backgroundColor: c.sol }} />
+              <Animated.View style={{ width: progresso.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }), height: 8, backgroundColor: c.agua }} />
             </View>
           </View>
           {dia.desafios.map((d) => (
             <View key={d.texto} className="flex-row gap-[10px] items-center">
               <Text className="font-texto-forte" style={{ minWidth: 36, color: d.ok ? c.destaque : c.apagado, fontWeight: '700' }}>{d.ok ? 'Feito' : <Text className="font-numero">{d.feito}/{d.alvo}</Text>}</Text>
-              <Text className="font-texto" style={{ flex: 1, color: c.tinta, fontSize: 14, textDecorationLine: d.ok ? 'line-through' : 'none' }}>
+              <Text className="font-texto" style={{ flex: 1, color: /\bmirante\b/i.test(d.texto) ? c.agua : c.tinta, fontSize: 14, textDecorationLine: d.ok ? 'line-through' : 'none' }}>
                 {d.texto} <Text className="font-numero text-apagado">(+15)</Text>
               </Text>
             </View>
           ))}
-        </View>
+        </Aparece>
       ) : null}
     </View>
   );
 }
 
+// Detalhes abertos: entram com um fade curto (o estilo vai em style porque className não pega no Animated.View da web)
+function Aparece({ children }: { children: ReactNode }) {
+  const opacidade = useTransicao(1, 180, { inicial: 0 });
+  return <Animated.View style={{ paddingHorizontal: 12, paddingBottom: 12, gap: 10, opacity: opacidade }}>{children}</Animated.View>;
+}
+
 function Lupa({ carga, cheia }: { carga: number; cheia: boolean }) {
   const c = useCores();
+  const progresso = useTransicao(Math.min(3, Math.max(0, carga)), 300, { inicial: 0, nativo: false });
   return (
     <View className="flex-row gap-[3px]" accessibilityElementsHidden>
-      {[0, 1, 2].map((k) => (
-        <View key={k} style={{ width: 8, height: 18, borderRadius: 3, backgroundColor: k < carga ? c.sol : c.suave,
-          borderWidth: cheia ? 1 : 0, borderColor: c.solTinta }} />
+      {[0, 1, 2].map((segmento) => (
+        <View key={segmento} style={{ width: 8, height: 18, borderRadius: 3, overflow: 'hidden', backgroundColor: c.suave,
+          borderWidth: cheia ? 1 : 0, borderColor: c.agua }}>
+          <Animated.View style={{ height: '100%', backgroundColor: c.agua,
+            width: progresso.interpolate({ inputRange: [segmento, segmento + 1], outputRange: ['0%', '100%'], extrapolate: 'clamp' }) }} />
+        </View>
       ))}
     </View>
   );
