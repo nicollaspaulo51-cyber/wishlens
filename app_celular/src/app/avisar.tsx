@@ -1,7 +1,7 @@
 // Avisar um problema (suporte): o juiz errou, o app travou ou outra coisa. Vai para o arquivo de avisos do juiz.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Apagado, Botao, Fichas, Titulo } from '../componentes/ui';
@@ -39,7 +39,7 @@ export default function Avisar() {
 
   return (
     <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-papel">
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
         <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }} keyboardShouldPersistTaps="handled">
           <Titulo>Avisar um problema</Titulo>
           <Fichas<TipoAviso> rotulo="Tipo de problema" valor={tipo} aoEscolher={setTipo}

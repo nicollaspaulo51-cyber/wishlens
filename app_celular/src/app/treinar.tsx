@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Apagado, Botao, Cartaz, Fichas, Subtitulo, Titulo } from '../componentes/ui';
@@ -129,6 +129,7 @@ export default function Treinar() {
   if (fotografando && rascunho) {
     return (
       <SafeAreaView className="flex-1 bg-papel">
+        <KeyboardAvoidingView className="flex-1" behavior="padding">
         <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }} keyboardShouldPersistTaps="handled">
           <Titulo>Confira a foto</Titulo>
           <Image source={{ uri: rascunho.uri }} style={{ width: '100%', aspectRatio: 3 / 4, borderRadius: 6 }} resizeMode="cover"
@@ -152,6 +153,7 @@ export default function Treinar() {
           <Botao titulo="Enviar para o treino" aoTocar={enviarRascunho} carregando={enviando} />
           <Botao titulo="Descartar" tipo="secundario" desativado={enviando} aoTocar={() => { setRascunho(null); setMsg(null); }} />
         </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
