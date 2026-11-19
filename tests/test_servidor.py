@@ -321,3 +321,9 @@ def test_clip_treinado_decide_e_ia_so_barra_quando_ele_desconfia(cliente, monkey
     monkeypatch.setattr(srv, "_clip", clip(0.65))   # CLIP também desconfia: a IA derruba
     r = _enviar(cliente, _jpeg(cor=(10, 200, 10)), apelido="bia")
     assert not r["cartao"]["aceita"] and "não é foto real" in r["cartao"]["motivo"]
+
+
+def test_sessao_do_supabase_monta_com_cliente_usuario_e_apelido():
+    from src import banco
+    s = banco.Sessao(object(), "uid-1", "ana")  # o servidor monta assim depois de ler o perfil
+    assert (s.usuario_id, s.apelido, s.convidado) == ("uid-1", "ana", False)

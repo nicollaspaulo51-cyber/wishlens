@@ -43,6 +43,7 @@ def para_brasilia(valor) -> datetime:
     return momento
 
 
+@dataclass
 class Sessao:
     convidado = False
     cliente: object
