@@ -28,6 +28,21 @@ const CHAVE_MODO = 'wl_modo_sessao';
 const CHAVE_APARELHO = 'wl_chave';
 type ModoSessao = 'conta' | 'convidado';
 
+// Erros do Supabase Auth vêm em inglês: os mais comuns em português, o resto como veio
+const ERROS: [RegExp, string][] = [
+  [/invalid login credentials/i, 'E-mail ou senha errados.'],
+  [/email not confirmed/i, 'Confirme o seu e-mail antes de entrar: abra o link que chegou na sua caixa de entrada (veja também o spam).'],
+  [/already registered|already exists/i, 'Já existe uma conta com este e-mail. Toque em Voltar e depois em Entrar.'],
+  [/password should be at least/i, 'A senha precisa ter pelo menos 6 caracteres.'],
+  [/unable to validate email|invalid format|invalid email/i, 'Esse e-mail não parece válido.'],
+  [/rate limit|too many requests|security purposes/i, 'Muitas tentativas seguidas. Espere um minuto e tente de novo.'],
+  [/database error saving new user/i, 'O banco não conseguiu criar o seu perfil. Talvez esse apelido já esteja em uso.'],
+  [/network request failed|failed to fetch/i, 'Sem conexão com a internet. Confira e tente de novo.'],
+];
+function emPortugues(msg: string) {
+  return ERROS.find(([r]) => r.test(msg))?.[1] ?? msg;
+}
+
 async function chaveDoAparelho() {
   const guardada = await AsyncStorage.getItem(CHAVE_APARELHO);
   if (guardada) return guardada;
@@ -91,7 +106,7 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
     criarAoSair,
     async entrar(email, senha) {
       const { error } = await supabase!.auth.signInWithPassword({ email: email.trim(), password: senha });
-      if (error) throw new Error(error.message === 'Invalid login credentials' ? 'E-mail ou senha errados.' : error.message);
+      if (error) throw new Error(emPortugues(error.message));
       await AsyncStorage.setItem(CHAVE_MODO, 'conta');
       setModo('conta');
       setCriarAoSair(false);
@@ -101,7 +116,7 @@ export function ProvedorSessao({ children }: { children: ReactNode }) {
       const { data, error } = await supabase!.auth.signUp({
         email: email.trim(), password: senha, options: { data: { apelido: apelidoNovo.trim() } },
       });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(emPortugues(error.message));
       if (data.session) {
         await AsyncStorage.setItem(CHAVE_MODO, 'conta');
         setModo('conta');

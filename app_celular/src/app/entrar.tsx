@@ -28,6 +28,8 @@ export default function Entrar() {
   );
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [confirma, setConfirma] = useState('');
+  const [verSenha, setVerSenha] = useState(false);
   const [apelido, setApelido] = useState('');
   const [msg, setMsg] = useState<{ texto: string; erro: boolean } | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -46,12 +48,21 @@ export default function Entrar() {
       setMsg({ texto: 'O apelido precisa ter de 2 a 30 letras ou números.', erro: true });
       return;
     }
+    if (modo === 'criar' && senha.length < 6) {
+      setMsg({ texto: 'A senha precisa ter pelo menos 6 caracteres.', erro: true });
+      return;
+    }
+    if (modo === 'criar' && senha !== confirma) {
+      setMsg({ texto: 'As duas senhas não são iguais.', erro: true });
+      return;
+    }
     setOcupado(true);
     try {
       if (modo === 'convidado') await s.entrarComoConvidado(apelido);
       else if (modo === 'entrar') await s.entrar(email, senha);
       else {
         setMsg({ texto: await s.cadastrar(email, senha, apelido), erro: false });
+        setConfirma('');
         setModo('entrar');
       }
     } catch (e) {
@@ -109,14 +120,27 @@ export default function Entrar() {
                   <>
                     <TextInput style={campo} placeholder="E-mail" placeholderTextColor={c.apagado} value={email} onChangeText={setEmail}
                       autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" accessibilityLabel="E-mail" />
-                    <TextInput style={campo} placeholder="Senha" placeholderTextColor={c.apagado} value={senha} onChangeText={setSenha}
-                      secureTextEntry autoComplete={modo === 'entrar' ? 'current-password' : 'new-password'} accessibilityLabel="Senha"
-                      onSubmitEditing={enviar} returnKeyType="go" />
+                    <View>
+                      <TextInput style={[campo, { paddingRight: 96 }]} placeholder="Senha" placeholderTextColor={c.apagado} value={senha}
+                        onChangeText={setSenha} secureTextEntry={!verSenha} autoCapitalize="none" autoCorrect={false}
+                        autoComplete={modo === 'entrar' ? 'current-password' : 'new-password'} accessibilityLabel="Senha"
+                        onSubmitEditing={modo === 'entrar' ? enviar : undefined} returnKeyType={modo === 'entrar' ? 'go' : 'next'} />
+                      <Pressable accessibilityRole="button" accessibilityLabel={verSenha ? 'Ocultar a senha' : 'Mostrar a senha'}
+                        onPress={() => setVerSenha((v) => !v)} hitSlop={8}
+                        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, minWidth: 88, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text className="font-texto-forte text-destaque text-[15px]">{verSenha ? 'Ocultar' : 'Mostrar'}</Text>
+                      </Pressable>
+                    </View>
+                    {modo === 'criar' ? (
+                      <TextInput style={campo} placeholder="Confirme a senha" placeholderTextColor={c.apagado} value={confirma}
+                        onChangeText={setConfirma} secureTextEntry={!verSenha} autoCapitalize="none" autoCorrect={false}
+                        autoComplete="new-password" accessibilityLabel="Confirme a senha" onSubmitEditing={enviar} returnKeyType="go" />
+                    ) : null}
                   </>
                 ) : null}
                 {msg ? <Text className="font-texto" accessibilityLiveRegion="polite" style={{ color: msg.erro ? c.recusa : c.destaque, fontSize: 15 }}>{msg.texto}</Text> : null}
                 <Botao titulo={modo === 'convidado' ? 'Começar a jogar' : modo === 'entrar' ? 'Entrar' : 'Criar conta'} aoTocar={enviar} carregando={ocupado} />
-                <Botao titulo="Voltar" tipo="secundario" desativado={ocupado} aoTocar={() => { setMsg(null); setSenha(''); setModo(null); }} />
+                <Botao titulo="Voltar" tipo="secundario" desativado={ocupado} aoTocar={() => { setMsg(null); setSenha(''); setConfirma(''); setModo(null); }} />
               </>
             )}
           </SafeAreaView>
