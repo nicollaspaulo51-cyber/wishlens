@@ -542,14 +542,18 @@ def no_periodo(pontuadas: pd.DataFrame, periodo: str, hoje: date | None = None) 
     return pontuadas[(dias >= inicio) & (dias <= hoje)]
 
 
+def _capturas_do_podio(pontuadas: pd.DataFrame, periodo: str, tema: str | None, hoje: date | None) -> pd.DataFrame:
+    df = no_periodo(_sem_convidados(pontuadas), periodo, hoje)
+    if tema:
+        df = df[df["tema"] == tema]
+    return df[df["aceita"]] if not df.empty else df
+
+
 def podio(pontuadas: pd.DataFrame, periodo: str = "hoje", tema: str | None = None,
           hoje: date | None = None) -> pd.DataFrame:
     """Ranking: usuario, pontos, achados, ultimo, posicao. Empate: quem chegou antes no total."""
     colunas = ["posicao", "usuario", "pontos", "achados", "ultimo"]
-    df = no_periodo(_sem_convidados(pontuadas), periodo, hoje)
-    if tema:
-        df = df[df["tema"] == tema]
-    df = df[df["aceita"]] if not df.empty else df
+    df = _capturas_do_podio(pontuadas, periodo, tema, hoje)
     if df.empty:
         return pd.DataFrame(columns=colunas)
     r = (df.groupby("usuario").agg(pontos=("pontos", "sum"), achados=("pontos", "size"),
@@ -557,6 +561,23 @@ def podio(pontuadas: pd.DataFrame, periodo: str = "hoje", tema: str | None = Non
          .reset_index().sort_values(["pontos", "ultimo"], ascending=[False, True]))
     r["posicao"] = range(1, len(r) + 1)
     return r[colunas].reset_index(drop=True)
+
+
+def graficos_podio(pontuadas: pd.DataFrame, ranking: pd.DataFrame, periodo: str, tema: str | None, hoje: date) -> dict:
+    """Séries de pontos dos três primeiros, com os mesmos filtros do ranking."""
+    lideres = ranking["usuario"].head(3).tolist()
+    if not lideres:
+        return {"dias": [], "temas": [], "jogadores": []}
+    df = _capturas_do_podio(pontuadas, periodo, tema, hoje)
+    df = df[df["usuario"].isin(lideres)]
+    quantos_dias = {"hoje": 1, "semana": hoje.weekday() + 1, "geral": DIAS_SERIE}[periodo]
+    dias = [hoje - timedelta(days=i) for i in range(quantos_dias - 1, -1, -1)]
+    temas = sorted(df["tema"].unique())
+    por_dia = df.groupby(["usuario", df["criado_em"].map(dia_de)])["pontos"].sum()
+    por_tema = df.groupby(["usuario", "tema"])["pontos"].sum()
+    return {"dias": [d.isoformat() for d in dias], "temas": temas,
+            "jogadores": [{"apelido": u, "por_dia": [int(por_dia.get((u, d), 0)) for d in dias],
+                           "por_tema": [int(por_tema.get((u, t), 0)) for t in temas]} for u in lideres]}
 
 
 def posicao_de(ranking: pd.DataFrame, usuario: str) -> int | None:

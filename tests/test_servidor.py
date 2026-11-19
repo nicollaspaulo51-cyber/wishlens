@@ -60,6 +60,8 @@ def test_foto_aceita_conta_no_placar_no_podio_e_na_colecao(cliente):
     podio = cliente.get("/podio", params={"periodo": "hoje"}, headers={"X-Apelido": "ana"}).json()
     assert podio["ranking"][0] == {"posicao": 1, "apelido": "ana", "pontos": r["cartao"]["pontos"],
                                    "achados": 1, "voce": True}
+    assert podio["graficos"]["jogadores"] == [{"apelido": "ana", "por_dia": [r["cartao"]["pontos"]],
+                                               "por_tema": [r["cartao"]["pontos"]]}]
     colecao = cliente.get("/colecao", headers={"X-Apelido": "ana"}).json()
     carros = next(p for p in colecao["album"] if p["tema"]["id"] == "carros")
     assert carros["colados"] == [{"achado": "volkswagen gol", "turma": 1}]

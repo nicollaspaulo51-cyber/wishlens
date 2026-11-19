@@ -40,7 +40,9 @@ export type Julgamento =
   | { status: 'borrada'; titulo?: string; mensagem: string }
   | { status: 'ok'; id: string; cartao: Cartao; avisos: string[]; aviso_juiz: string | null; pontos_hoje: number; posicao: number | null };
 export type LinhaPodio = { posicao: number; apelido: string; pontos: number; achados: number; voce: boolean };
-export type Podio = { ranking: LinhaPodio[]; guardioes: { apelido: string; quadrados: number }[]; donos?: { apelido: string; quadrados: number }[] };
+export type DadosGraficosPodio = { dias: string[]; temas: string[]; jogadores: { apelido: string; por_dia: number[]; por_tema: number[] }[] };
+export type Podio = { ranking: LinhaPodio[]; guardioes: { apelido: string; quadrados: number }[]; donos?: { apelido: string; quadrados: number }[];
+  graficos?: DadosGraficosPodio };
 export type Medalha = { id: string; nome: string; conta: string; nivel: 'bronze' | 'prata' | 'ouro' | null; valor: number; proximo: number };
 export type Colecao = {
   resumo: { pontos: number; achados: number; corrente: number; fotos: number; recusadas: number };
