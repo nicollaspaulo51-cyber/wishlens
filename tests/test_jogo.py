@@ -108,14 +108,22 @@ def test_graficos_do_podio_usam_os_mesmos_filtros_e_so_os_tres_primeiros():
         {**cap("ana", "Onix", tema="carros"), "pontos": 99, "aceita": False},
         {**cap("eva", "Mobi", tema="carros"), "pontos": 99, "aceita": True, "convidado": True},
         {**cap("ana", "Lírio", tema="plantas", dia=ontem - timedelta(days=1)), "pontos": 40, "aceita": True},
-    ])
+        {**cap("ana", "dono da academia", tema="plantas", hora=23), "pontos": 5, "aceita": True, "bonus_dono": True},
+    ]).assign(extra=[0, 0, 0, 0, 0, 0, 0, 0, 5])
     ranking = jogo.podio(df, "semana", hoje=DIA)
     graficos = jogo.graficos_podio(df, ranking, "semana", None, DIA)
     assert graficos == {"dias": [ontem.isoformat(), DIA.isoformat()], "temas": ["carros", "plantas"], "jogadores": [
-        {"apelido": "ana", "por_dia": [22, 18], "por_tema": [22, 18]},
-        {"apelido": "bia", "por_dia": [0, 20], "por_tema": [20, 0]},
-        {"apelido": "caio", "por_dia": [0, 16], "por_tema": [16, 0]},
+        {"apelido": "ana", "por_dia": [22, 23], "por_tema": [22, 23],
+         "capturas_por_dia": [1, 1], "capturas_por_tema": [1, 1], "pontos_jogo": 40, "bonus": 5},
+        {"apelido": "bia", "por_dia": [0, 20], "por_tema": [20, 0],
+         "capturas_por_dia": [0, 1], "capturas_por_tema": [1, 0], "pontos_jogo": 20, "bonus": 0},
+        {"apelido": "caio", "por_dia": [0, 16], "por_tema": [16, 0],
+         "capturas_por_dia": [0, 1], "capturas_por_tema": [1, 0], "pontos_jogo": 16, "bonus": 0},
     ]}
+    assert ranking.iloc[0]["achados"] == 2
+    dupla = jogo.graficos_podio(df, ranking, "semana", None, DIA, ["dani", "ana", "eva"])
+    assert [j["apelido"] for j in dupla["jogadores"]] == ["dani", "ana"]
+    assert dupla["jogadores"][0]["por_dia"] == [0, 12]
     carros = jogo.podio(df, "hoje", tema="carros", hoje=DIA)
     filtrados = jogo.graficos_podio(df, carros, "hoje", "carros", DIA)
     assert filtrados["temas"] == ["carros"]

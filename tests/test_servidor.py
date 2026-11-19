@@ -60,8 +60,15 @@ def test_foto_aceita_conta_no_placar_no_podio_e_na_colecao(cliente):
     podio = cliente.get("/podio", params={"periodo": "hoje"}, headers={"X-Apelido": "ana"}).json()
     assert podio["ranking"][0] == {"posicao": 1, "apelido": "ana", "pontos": r["cartao"]["pontos"],
                                    "achados": 1, "voce": True}
-    assert podio["graficos"]["jogadores"] == [{"apelido": "ana", "por_dia": [r["cartao"]["pontos"]],
-                                               "por_tema": [r["cartao"]["pontos"]]}]
+    [serie] = podio["graficos"]["jogadores"]
+    assert serie["apelido"] == "ana" and serie["por_dia"] == serie["por_tema"] == [r["cartao"]["pontos"]]
+    assert serie["capturas_por_dia"] == serie["capturas_por_tema"] == [1]
+    assert serie["pontos_jogo"] + serie["bonus"] == r["cartao"]["pontos"]
+    consulta = cliente.get("/podio", params=[("jogador", "ana"), ("jogador", "outro")], headers={"X-Apelido": "ana"})
+    assert consulta.json()["graficos"]["jogadores"] == [serie]
+    excesso = cliente.get("/podio", params=[("jogador", nome) for nome in ("ana", "bia", "caio", "dani")],
+                         headers={"X-Apelido": "ana"})
+    assert excesso.status_code == 422
     colecao = cliente.get("/colecao", headers={"X-Apelido": "ana"}).json()
     carros = next(p for p in colecao["album"] if p["tema"]["id"] == "carros")
     assert carros["colados"] == [{"achado": "volkswagen gol", "turma": 1}]
