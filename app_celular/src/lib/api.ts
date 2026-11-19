@@ -104,6 +104,11 @@ const json = (corpo: unknown): RequestInit => ({
   body: JSON.stringify(corpo),
 });
 
+export type Treino = {
+  total: number; minhas: number; por_tema: Record<string, number>; por_tipo: Record<string, number>;
+  meta_tema: number; meta_tipo: number;
+};
+
 async function anexarFoto(form: FormData, uri: string) {
   if (Platform.OS === 'web') {
     form.append('foto', await (await fetch(uri)).blob(), 'foto.jpg');
@@ -136,6 +141,18 @@ export const api = {
     form.append('modo', modo);
     return chamar<Julgamento>('/julgar', { method: 'POST', body: form }, envioDeArquivo());
   },
+
+  // Fotos para treinar o juiz: só no PC do juiz, sem GPS e sem EXIF
+  async treinoFoto(uri: string, tema: string, tipo: string, achado = '') {
+    const form = new FormData();
+    await anexarFoto(form, uri);
+    form.append('tema', tema);
+    form.append('tipo', tipo);
+    form.append('achado', achado);
+    form.append('aparelho', `${Platform.OS} ${Platform.Version}`);
+    return chamar<{ ok: boolean }>('/treino/foto', { method: 'POST', body: form }, envioDeArquivo());
+  },
+  treinoContagem: () => chamar<Treino>('/treino/contagem'),
 
   amigos: () => chamar<Amigos>('/amigos'),
   estatisticas: (com?: string | null) =>

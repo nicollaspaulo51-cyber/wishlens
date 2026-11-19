@@ -64,6 +64,14 @@ export default function Conta() {
         <Apagado>O juiz errou, o app travou ou algo ficou estranho? Mande um aviso: ele é lido e corrigido.</Apagado>
         <Botao titulo="Avisar um problema" aoTocar={() => router.push('/avisar')} />
 
+        {convidado ? null : (
+          <>
+            <Subtitulo>Ajudar a treinar o juiz</Subtitulo>
+            <Apagado>Fotografe objetos de verdade e também falsos (na tela, impressos, brinquedos) e diga o que são. Isso ensina o juiz a errar menos.</Apagado>
+            <Botao titulo="Treinar o juiz" tipo="secundario" aoTocar={() => router.push('/treinar')} />
+          </>
+        )}
+
         <Botao titulo={convidado ? 'Sair' : 'Sair da conta'} tipo="secundario"
           aoTocar={() => { setErroSaida(false); sair().catch(() => setErroSaida(true)); }} estilo={{ marginTop: 20 }} />
         {erroSaida ? <Text accessibilityLiveRegion="polite" className="font-texto text-tinta">Não deu para sair. Tente de novo.</Text> : null}

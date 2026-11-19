@@ -15,7 +15,7 @@ services:
       VISAO_MODELO: ${VISAO_MODELO:-qwen2.5vl:7b}
     ports: ["7860:7860"]
     # avisos do suporte e dados do chat (conversas e fotos): sobrevivem a reinícios
-    volumes: [avisos:/home/user/avisos, dados:/home/user/dados]
+    volumes: [avisos:/home/user/avisos, dados:/home/user/dados, treino:/home/user/treino]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860/saude')"]
       interval: 30s
@@ -43,4 +43,5 @@ volumes:
   caddy: {}
   avisos: {}
   dados: {}
+  treino: {}   # fotos do modo "Treinar o juiz" (só neste PC)
   ollama: {}

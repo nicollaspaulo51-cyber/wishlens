@@ -327,3 +327,43 @@ def test_sessao_do_supabase_monta_com_cliente_usuario_e_apelido():
     from src import banco
     s = banco.Sessao(object(), "uid-1", "ana")  # o servidor monta assim depois de ler o perfil
     assert (s.usuario_id, s.apelido, s.convidado) == ("uid-1", "ana", False)
+
+
+def _treinar(c, tema="carros", tipo="real", dados=None, apelido="ana", **extra):
+    return c.post("/treino/foto", files={"foto": ("f.jpg", dados or _jpeg(), "image/jpeg")},
+                  data={"tema": tema, "tipo": tipo, **extra}, headers={"X-Apelido": apelido})
+
+
+def test_treino_guarda_foto_sem_exif_e_conta(cliente, monkeypatch, tmp_path):
+    monkeypatch.setattr(srv, "TREINO", tmp_path)
+    srv._treino_recentes.clear()
+    img = Image.new("RGB", (64, 64), (10, 120, 10))
+    exif = Image.Exif()
+    exif[0x010F] = "MarcaSecreta"  # Make
+    buf = io.BytesIO()
+    img.save(buf, "JPEG", exif=exif)
+    assert b"MarcaSecreta" in buf.getvalue()
+    r = _treinar(cliente, "comidas", "tela", dados=buf.getvalue(), achado="manga", aparelho="Pixel 8")
+    assert r.status_code == 200
+    foto = (tmp_path / "fotos" / f"{r.json()['id']}.jpg").read_bytes()
+    assert b"MarcaSecreta" not in foto and Image.open(io.BytesIO(foto)).size == (64, 64)
+    _treinar(cliente, "carros", "real")
+    c = cliente.get("/treino/contagem", headers={"X-Apelido": "ana"}).json()
+    assert c["total"] == 2 and c["minhas"] == 2 and c["por_tema"]["comidas"] == 1 and c["por_tipo"]["tela"] == 1
+    assert "ana" in (tmp_path / "rotulos.csv").read_text(encoding="utf-8")
+
+
+def test_treino_recusa_etiqueta_invalida_convidado_e_excesso(cliente, monkeypatch, tmp_path):
+    monkeypatch.setattr(srv, "TREINO", tmp_path)
+    srv._treino_recentes.clear()
+    assert _treinar(cliente, "foguete").status_code == 400
+    assert _treinar(cliente, "carros", "magica").status_code == 400
+    assert _treinar(cliente, "carros", achado="<script>").status_code == 400
+    assert _treinar(cliente, dados=b"nao e foto").status_code == 400
+    convidado = cliente.post("/treino/foto", files={"foto": ("f.jpg", _jpeg(), "image/jpeg")},
+                             data={"tema": "carros", "tipo": "real"},
+                             headers={"X-Apelido": "gui", "X-Convidado": "1", "X-Chave": "abc"})
+    assert convidado.status_code == 403
+    assert not (tmp_path / "rotulos.csv").exists()  # nada foi gravado
+    monkeypatch.setattr(srv, "TREINO_POR_HORA", 2)
+    assert [_treinar(cliente).status_code for _ in range(3)] == [200, 200, 429]

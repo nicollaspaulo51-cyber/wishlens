@@ -40,6 +40,7 @@ export default function Camera() {
   const [resposta, setResposta] = useState<Julgamento | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [contestada, setContestada] = useState<string | null>(null);
+  const [treinoEnviado, setTreinoEnviado] = useState(false);
   const [era, setEra] = useState<string>('');
   const temas = useDados(api.temas);
   const modo = useModo();
@@ -70,7 +71,19 @@ export default function Camera() {
     setResposta(null);
     setErro(null);
     setContestada(null);
+    setTreinoEnviado(false);
     setEra('');
+  }
+
+  // Só quando a pessoa toca no botão (é o aceite): a foto vai para o treino com o tema que ela disse
+  async function mandarParaTreino(tema: string) {
+    if (!enviada) return;
+    try {
+      await api.treinoFoto(enviada, tema, 'real');
+      setTreinoEnviado(true);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não consegui mandar a foto para o treino.');
+    }
   }
 
   async function contestar(id: string) {
@@ -131,7 +144,16 @@ export default function Camera() {
               ) : null}
               {resposta.cartao.pode_contestar ? (
                 contestada ? (
-                  <Apagado>Contestação registrada: você disse que era {porId[contestada]?.nome.toLowerCase()}. Isso ajuda a melhorar o juiz.</Apagado>
+                  <View className="gap-[8px]">
+                    <Apagado>Contestação registrada: você disse que era {porId[contestada]?.nome.toLowerCase()}. Isso ajuda a melhorar o juiz.</Apagado>
+                    {enviada ? (
+                      treinoEnviado ? <Apagado>Foto enviada para o treino. Obrigado!</Apagado> : (
+                        <Botao titulo="Mandar esta foto para o treino" tipo="secundario"
+                          rotulo="Mandar esta foto para o treino do juiz: fica só no computador do juiz, sem localização"
+                          aoTocar={() => mandarParaTreino(contestada)} />
+                      )
+                    ) : null}
+                  </View>
                 ) : (
                   <View className="gap-[8px]">
                     <Text className="font-texto-forte text-tinta text-[15px]" >O juiz errou? Era…</Text>

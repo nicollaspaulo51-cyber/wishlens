@@ -497,6 +497,76 @@ def contestar(c: Contestacao, s=Depends(sessao)):
     return {"ok": True}
 
 
+# ---------------------------------------------------------------- fotos para treinar o juiz
+# A pessoa fotografa de propósito e diz o que é (modo "Treinar o juiz" do app) ou aceita mandar a foto de uma
+# contestação. A foto fica só neste PC (volume "treino"), sem EXIF/GPS; rotulos.csv guarda a resposta certa.
+TREINO = Path(os.environ.get("TREINO_DIR", "/home/user/treino"))
+TIPOS_TREINO = ("real", "tela", "impressa", "brinquedo", "desenho", "estatua")
+TEMAS_TREINO = (*(t.id for t in TEMAS), *ABAS, "nenhum")
+CAMPOS_ROTULOS = ("id", "quando", "tema", "tipo", "achado", "quem", "aparelho")
+TREINO_POR_HORA = 60
+META_POR_TEMA, META_POR_TIPO = 100, 100
+_treino_recentes: dict[str, list[float]] = {}
+_trava_treino = threading.Lock()
+
+
+def _rotulos() -> list[dict]:
+    import csv
+
+    if not (TREINO / "rotulos.csv").exists():
+        return []
+    with (TREINO / "rotulos.csv").open(encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
+
+
+@app.post("/treino/foto")
+def treino_foto(foto: UploadFile = File(...), tema: str = Form(...), tipo: str = Form(...), achado: str = Form(""),
+                aparelho: str = Form("", max_length=40), s=Depends(sessao)):
+    import csv
+
+    if getattr(s, "convidado", False):
+        raise HTTPException(403, "Entre numa conta para ajudar a treinar o juiz.")
+    if tema not in TEMAS_TREINO or tipo not in TIPOS_TREINO:
+        raise HTTPException(400, "Tema ou tipo inválido.")
+    achado = achado.strip()[:40]
+    if achado and not nome_valido(achado):
+        raise HTTPException(400, "Nome do achado inválido.")
+    dados = foto.file.read(FOTO_MAX + 1)
+    if len(dados) > FOTO_MAX:
+        raise HTTPException(413, "Foto grande demais (máximo 10 MB).")
+    try:
+        limpa = preparar_para_salvar(Image.open(io.BytesIO(dados)))  # sem EXIF/GPS
+    except (UnidentifiedImageError, OSError):
+        raise HTTPException(400, "Não consegui abrir a foto.")
+    instante = time.time()
+    with _trava_treino:
+        recentes = [t for t in _treino_recentes.get(s.apelido, []) if instante - t < 3600]
+        if len(recentes) >= TREINO_POR_HORA:
+            raise HTTPException(429, f"Você já mandou {TREINO_POR_HORA} fotos nesta hora. Volte daqui a pouco.")
+        _treino_recentes[s.apelido] = [*recentes, instante]
+        id_foto = uuid.uuid4().hex
+        (TREINO / "fotos").mkdir(parents=True, exist_ok=True)
+        (TREINO / "fotos" / f"{id_foto}.jpg").write_bytes(limpa)
+        novo = not (TREINO / "rotulos.csv").exists()
+        with (TREINO / "rotulos.csv").open("a", encoding="utf-8", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=CAMPOS_ROTULOS)
+            if novo:
+                w.writeheader()
+            w.writerow({"id": id_foto, "quando": agora().isoformat(timespec="seconds"), "tema": tema, "tipo": tipo,
+                        "achado": achado, "quem": s.apelido, "aparelho": aparelho.strip()})
+    return {"ok": True, "id": id_foto}
+
+
+@app.get("/treino/contagem")
+def treino_contagem(s=Depends(sessao)):
+    """Quantas fotos já há de cada tema e de cada tipo, e a meta, para orientar a turma."""
+    rotulos = _rotulos()
+    por_tema = {t: sum(r["tema"] == t for r in rotulos) for t in TEMAS_TREINO}
+    por_tipo = {t: sum(r["tipo"] == t for r in rotulos) for t in TIPOS_TREINO}
+    return {"total": len(rotulos), "minhas": sum(r["quem"] == s.apelido for r in rotulos),
+            "por_tema": por_tema, "por_tipo": por_tipo, "meta_tema": META_POR_TEMA, "meta_tipo": META_POR_TIPO}
+
+
 def _cartao(resultado: dict, captura: visao.Captura, vezes: int, juizes: dict) -> dict:
     t = TODOS.get(captura.tema or "")
     cartao = {"aceita": bool(resultado.get("aceita")), "pontos": int(resultado.get("pontos") or 0),
