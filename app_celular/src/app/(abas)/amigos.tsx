@@ -1,7 +1,7 @@
 // Amigos: adicionar pelo apelido, responder pedidos e comparar os pontos com os amigos, como no Pódio.
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Analises } from '../../componentes/Analises';
@@ -64,6 +64,7 @@ function AmigosDaConta() {
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-papel">
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }} keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={placar.carregando} onRefresh={() => fazer(async () => {})} tintColor={c.destaque} />}>
         <Titulo>Amigos</Titulo>
@@ -132,6 +133,7 @@ function AmigosDaConta() {
 
         <Analises amigos={(d?.amigos ?? []).map((a) => a.apelido)} visita={visita} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
