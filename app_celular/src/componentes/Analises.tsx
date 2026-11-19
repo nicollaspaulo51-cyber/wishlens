@@ -8,7 +8,7 @@ import { NOME_LIVRE } from '../lib/modo';
 import { useDados } from '../lib/useDados';
 import { Barras, Colunas, Legenda, useCoresGrafico } from './Graficos';
 import { Pizza, type Fatia } from './Pizza';
-import { Apagado, Aviso, Cartaz, Fichas, Subtitulo } from './ui';
+import { Apagado, Aviso, Botao, Cartaz, Fichas, Subtitulo } from './ui';
 
 const NUMEROS: { id: keyof Estatisticas['resumo']; nome: string; formato?: (v: number) => string }[] = [
   { id: 'pontos', nome: 'pontos' },
@@ -23,15 +23,43 @@ const NUMEROS: { id: keyof Estatisticas['resumo']; nome: string; formato?: (v: n
 
 const valores = (b: Balde[]) => b.map((x) => x.valor);
 
+function Top({ e, nome, privado }: { e: Estatisticas; nome: string; privado?: boolean }) {
+  return (
+    <View className="flex-1 gap-[6px]">
+      <Text className="font-texto text-apagado text-[13px]">{nome}</Text>
+      {privado ? <Apagado>Lista privada.</Apagado> : e.top_achados.length ? e.top_achados.map((t, i) => (
+        <Text className="font-texto text-tinta text-[14px]" key={t.chave} numberOfLines={1}><Text className="font-numero">{i + 1}.</Text> {t.chave} <Text className="font-numero text-apagado">×{t.valor}</Text></Text>
+      )) : <Apagado>Nada ainda.</Apagado>}
+    </View>
+  );
+}
+
 export function Analises({ amigos, visita }: { amigos: string[]; visita: number }) {
   const c = useCores();
   const cor = useCoresGrafico();
   const [com, setCom] = useState('');
+  const [salvando, setSalvando] = useState(false);
+  const [erroPrivacidade, setErroPrivacidade] = useState<string | null>(null);
   const est = useDados(() => api.estatisticas(com || null), [com]);
   const temas = useDados(api.temas);
   const eu = est.dados?.eu;
   const outro = est.dados?.amigo ?? null;
   const chave = `${visita}-${com}`;
+  const compartilha = eu?.compartilha_top_achados;
+
+  async function alterarPrivacidade() {
+    if (salvando || compartilha === undefined) return;
+    setSalvando(true);
+    setErroPrivacidade(null);
+    try {
+      await api.compartilharTopAchados(!compartilha);
+      await est.recarregar();
+    } catch (e) {
+      setErroPrivacidade(e instanceof Error ? e.message : 'Não foi possível salvar a preferência.');
+    } finally {
+      setSalvando(false);
+    }
+  }
 
   const nomeTema = Object.fromEntries((temas.dados?.temas ?? []).map((t) => [t.id, t.nome]));
   const nomeAba: Record<string, string> = { livre: NOME_LIVRE.nome,
@@ -43,16 +71,6 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
     b.map((x) => ({ nome: nome(x.chave), valor: x.valor, icone: comIcone ? x.chave : undefined }));
   const series = (f: (e: Estatisticas) => Balde[]) =>
     [eu, outro].filter((e): e is Estatisticas => !!e).map((e, i) => ({ nome: i ? e.apelido : 'Você', valores: valores(f(e)) }));
-
-  // Os achados mais fotografados não se alinham entre duas pessoas: cada um tem a sua lista
-  const Top = ({ e, nome }: { e: Estatisticas; nome: string }) => (
-    <View className="flex-1 gap-[6px]">
-      <Text className="font-texto text-apagado text-[13px]" >{nome}</Text>
-      {e.top_achados.length ? e.top_achados.map((t, i) => (
-        <Text className="font-texto text-tinta text-[14px]" key={t.chave} numberOfLines={1} ><Text className="font-numero">{i + 1}.</Text> {t.chave} <Text className="font-numero text-apagado">×{t.valor}</Text></Text>
-      )) : <Apagado>Nada ainda.</Apagado>}
-    </View>
-  );
 
   return (
     <View className="gap-[12px]">
@@ -129,8 +147,18 @@ export function Analises({ amigos, visita }: { amigos: string[]; visita: number 
             <Text className="font-texto-forte text-tinta text-[16px]" >Achados mais fotografados</Text>
             <View className="flex-row gap-[16px]">
               <Top e={eu} nome="Você" />
-              {outro ? <Top e={outro} nome={outro.apelido} /> : null}
+              {outro?.apelido === com && !est.carregando && !est.erro
+                ? <Top e={outro} nome={outro.apelido} privado={outro.compartilha_top_achados !== true} /> : null}
             </View>
+            {compartilha !== undefined ? (
+              <>
+                <Apagado>{compartilha ? 'Seus amigos podem ver sua lista.' : 'Sua lista está privada.'}</Apagado>
+                <Botao titulo={compartilha ? 'Ocultar dos amigos' : 'Mostrar aos amigos'} tipo="secundario"
+                  aoTocar={alterarPrivacidade} carregando={salvando} desativado={est.carregando || !!est.erro} />
+                {erroPrivacidade ? <Aviso texto={erroPrivacidade} /> : null}
+                {est.erro ? <Aviso texto={est.erro} aoTentar={est.recarregar} /> : null}
+              </>
+            ) : null}
           </Cartaz>
           <Apagado estilo={{ fontSize: 12 }}>Só amigos aceitos podem comparar. Nada mostra onde as fotos foram tiradas.</Apagado>
         </>

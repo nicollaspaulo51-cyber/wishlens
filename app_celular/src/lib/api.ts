@@ -65,6 +65,7 @@ export type Estatisticas = {
   apelido: string;
   resumo: { pontos: number; fotos: number; aceitas: number; achados: number; corrente: number; melhor_dia: number; km: number; dias_jogados: number };
   por_dia: Balde[]; por_tema: Balde[]; por_aba: Balde[]; por_hora: Balde[]; por_semana: Balde[]; por_clima: Balde[]; top_achados: Balde[];
+  compartilha_top_achados?: boolean;
 };
 export type Amigos = { amigos: Amigo[]; recebidos: string[]; enviados: string[] };
 
@@ -164,6 +165,8 @@ export const api = {
   amigos: () => chamar<Amigos>('/amigos'),
   estatisticas: (com?: string | null) =>
     chamar<{ eu: Estatisticas; amigo: Estatisticas | null }>(`/amigos/estatisticas${com ? `?com=${encodeURIComponent(com)}` : ''}`),
+  compartilharTopAchados: (compartilhar: boolean) =>
+    chamar<{ compartilha_top_achados: boolean }>('/amigos/estatisticas/privacidade', json({ compartilhar })),
   placarAmigos: (periodo: string, modo: Modo = 'livre') =>
     chamar<{ ranking: LinhaPodio[] }>(`/amigos/placar?periodo=${periodo}&modo=${modo}`),
   pedirAmizade: (apelido: string) => chamar<{ estado: 'pedido' | 'aceita' }>('/amigos', json({ apelido })),

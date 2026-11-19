@@ -23,10 +23,10 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import pandas as pd
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Response, UploadFile
 from fastapi.responses import FileResponse
 from PIL import Image, UnidentifiedImageError
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictBool
 
 from servidor.app import (ABAS, FOTO_MAX, SessaoMemoria, TEMAS, TODOS, _capturas, _pontuadas, _pontuadas_aba, gravar_aviso,
                           sessao)
@@ -53,6 +53,7 @@ create table if not exists chaves (apelido text primary key, hash text not null)
 create table if not exists amizades (de text not null, para text not null, estado text not null,
                                      criado_em text not null, primary key (de, para));
 create table if not exists bloqueios (de text not null, para text not null, primary key (de, para));
+create table if not exists top_achados_compartilhados (usuario text primary key not null);
 create table if not exists mensagens (id integer primary key autoincrement, de text not null, para text not null,
     texto text not null default '', foto text, cartao text, criado_em text not null,
     lida integer not null default 0, apagada integer not null default 0, sistema integer not null default 0);
@@ -206,10 +207,35 @@ def placar(periodo: str = "hoje", modo: str = "livre", mim: str = Depends(eu), s
                         for i, (a, p, n) in enumerate(todos, 1)]}
 
 
+def _chave_top_achados(s, apelido: str) -> str | None:
+    """No Supabase, a autorização segue a conta mesmo se o apelido mudar."""
+    if isinstance(s, SessaoMemoria):
+        return f"local:{apelido}"
+    if apelido == s.apelido:
+        return f"conta:{s.usuario_id}"
+    perfis = s.cliente.table("perfis").select("id").eq("apelido", apelido).limit(1).execute().data
+    return f"conta:{perfis[0]['id']}" if perfis else None
+
+
+class PrivacidadeAchados(BaseModel):
+    compartilhar: StrictBool
+
+
+@router.post("/amigos/estatisticas/privacidade")
+def privacidade_achados(p: PrivacidadeAchados, mim: str = Depends(eu), s=Depends(sessao)):
+    chave = _chave_top_achados(s, mim)
+    with _db() as db:
+        if p.compartilhar:
+            db.execute("insert or ignore into top_achados_compartilhados (usuario) values (?)", (chave,))
+        else:
+            db.execute("delete from top_achados_compartilhados where usuario = ?", (chave,))
+    return {"compartilha_top_achados": p.compartilhar}
+
+
 @router.get("/amigos/estatisticas")
-def estatisticas(com: str | None = None, mim: str = Depends(eu), s=Depends(sessao)):
-    """Seus números e, se `com` for um amigo aceito, os dele, para comparar. Só agregados: nada de linhas, lugar ou
-    célula. A amizade é a fronteira de privacidade (o horário em que alguém joga é um hábito pessoal)."""
+def estatisticas(response: Response, com: str | None = None, mim: str = Depends(eu), s=Depends(sessao)):
+    """Estatísticas agregadas de amigos aceitos. A lista de achados exige autorização do próprio dono."""
+    response.headers["Cache-Control"] = "private, no-store"
     outro = None
     if com and com.strip() != mim:
         outro = _outro(com, mim)
@@ -220,8 +246,18 @@ def estatisticas(com: str | None = None, mim: str = Depends(eu), s=Depends(sessa
     partes = [_pontuadas(s, todas).assign(aba="livre")] + [_pontuadas_aba(s, m, todas).assign(aba=m) for m in ABAS]
     p = pd.concat([x for x in partes if not x.empty]) if any(not x.empty for x in partes) else partes[0]
     temas, abas = [t.id for t in TEMAS], ["livre", *ABAS]
-    return {"eu": {"apelido": mim, **jogo.estatisticas(p, mim, temas, abas)},
-            "amigo": {"apelido": outro, **jogo.estatisticas(p, outro, temas, abas)} if outro else None}
+    chaves = (_chave_top_achados(s, mim), _chave_top_achados(s, outro) if outro else None)
+    with _db() as db:
+        linhas = db.execute("select usuario from top_achados_compartilhados where usuario in (?, ?)", chaves)
+        autorizados = {r[0] for r in linhas}
+    meus = {"apelido": mim, **jogo.estatisticas(p, mim, temas, abas), "compartilha_top_achados": chaves[0] in autorizados}
+    amigo = None
+    if outro:
+        mostrar = chaves[1] in autorizados
+        amigo = {"apelido": outro, **jogo.estatisticas(p, outro, temas, abas), "compartilha_top_achados": mostrar}
+        if not mostrar:
+            amigo["top_achados"] = []
+    return {"eu": meus, "amigo": amigo}
 
 
 @router.post("/amigos/responder")

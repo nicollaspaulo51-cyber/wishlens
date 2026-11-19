@@ -27,6 +27,7 @@ def c(monkeypatch, tmp_path):
     monkeypatch.setattr(srv, "AVISOS", tmp_path / "avisos.jsonl")
     monkeypatch.setattr(chat, "DADOS", tmp_path / "dados")
     srv._memoria.clear()
+    srv._recentes.clear()
     chat._enviadas.clear()
     with TestClient(srv.app) as cliente:
         yield cliente
@@ -170,3 +171,18 @@ def test_estatisticas_so_com_amigos(c, monkeypatch):
     assert r["amigo"]["resumo"]["pontos"] > 0 and r["amigo"]["por_dia"][-1]["valor"] == r["amigo"]["resumo"]["pontos"]
     assert {"cidade", "celula", "tipo_lugar"}.isdisjoint(json.dumps(r).split('"'))
     assert c.get("/amigos/estatisticas", headers=_h("ana")).json()["amigo"] is None
+
+    top = [{"chave": "fiat uno", "valor": 1}]
+    rota = "/amigos/estatisticas/privacidade"
+    assert r["amigo"]["compartilha_top_achados"] is False and r["amigo"]["top_achados"] == []
+    assert c.get("/amigos/estatisticas", headers=_h("bia")).json()["eu"]["top_achados"] == top
+    assert c.post(rota, json={"compartilhar": True, "apelido": "bia"}, headers=_h("ana")).status_code == 200
+    assert c.get("/amigos/estatisticas?com=bia", headers=_h("ana")).json()["amigo"]["top_achados"] == []
+    assert c.post(rota, json={"compartilhar": "true"}, headers=_h("bia")).status_code == 422
+    assert c.post(rota, json={"compartilhar": True}, headers=_h("bia")).json()["compartilha_top_achados"] is True
+    resposta = c.get("/amigos/estatisticas?com=bia", headers=_h("ana"))
+    assert resposta.headers["Cache-Control"] == "private, no-store"
+    assert resposta.json()["amigo"]["top_achados"] == top
+    assert c.get("/amigos/estatisticas?com=bia", headers=_h("caio")).status_code == 403
+    assert c.post(rota, json={"compartilhar": False}, headers=_h("bia")).json()["compartilha_top_achados"] is False
+    assert c.get("/amigos/estatisticas?com=bia", headers=_h("ana")).json()["amigo"]["top_achados"] == []
