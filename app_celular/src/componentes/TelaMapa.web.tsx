@@ -6,14 +6,14 @@ import type { TelaMapaRef } from './TelaMapa';
 
 export type { TelaMapaRef };
 type Props = { aoReceber: (mensagem: { tipo: string } & Record<string, unknown>) => void; rotulo: string };
-type JanelaMapa = Window & { receber: (m: object) => void; iniciar: (lat: number, lon: number) => void };
+type JanelaMapa = Window & { receber: (m: object) => void; iniciar: (lat: number, lon: number, escuro: boolean) => void };
 
 export const TelaMapa = forwardRef<TelaMapaRef, Props>(function TelaMapa({ aoReceber, rotulo }, ref) {
   const quadro = useRef<HTMLIFrameElement>(null);
   const janela = () => quadro.current?.contentWindow as JanelaMapa | null | undefined;
   useImperativeHandle(ref, () => ({
     mandar: (m) => janela()?.receber(m),
-    iniciar: (lat, lon) => janela()?.iniciar(lat, lon),
+    iniciar: (lat, lon, escuro) => janela()?.iniciar(lat, lon, escuro),
   }));
   useEffect(() => {
     const ouvir = (evento: MessageEvent) => {

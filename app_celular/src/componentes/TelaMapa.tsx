@@ -4,14 +4,14 @@ import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
 import { MAPA_HTML } from '../lib/mapaHtml';
 
-export type TelaMapaRef = { mandar: (mensagem: object) => void; iniciar: (lat: number, lon: number) => void };
+export type TelaMapaRef = { mandar: (mensagem: object) => void; iniciar: (lat: number, lon: number, escuro: boolean) => void };
 type Props = { aoReceber: (mensagem: { tipo: string } & Record<string, unknown>) => void; rotulo: string };
 
 export const TelaMapa = forwardRef<TelaMapaRef, Props>(function TelaMapa({ aoReceber, rotulo }, ref) {
   const web = useRef<WebView<object>>(null);
   useImperativeHandle(ref, () => ({
     mandar: (m) => web.current?.injectJavaScript(`window.receber(${JSON.stringify(m)});true;`),
-    iniciar: (lat, lon) => web.current?.injectJavaScript(`window.iniciar(${Number(lat)},${Number(lon)});true;`),
+    iniciar: (lat, lon, escuro) => web.current?.injectJavaScript(`window.iniciar(${Number(lat)},${Number(lon)},${Boolean(escuro)});true;`),
   }));
   return (
     <WebView<object> ref={web} source={{ html: MAPA_HTML, baseUrl: 'https://wishlens.local/' }} originWhitelist={['*']}

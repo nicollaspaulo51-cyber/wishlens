@@ -34,9 +34,9 @@ export const Mapa = memo(function Mapa({ posicao, dados, temas, mostrar, temaDoD
   const lugares = useMemo(() => (dados?.lugares ?? []).filter((l) => mostrar.includes(l.tema)), [dados?.lugares, mostrar]);
   const manchas = useMemo(() => (dados?.manchas ?? []).filter((m) => mostrar.includes(m.tema)), [dados?.manchas, mostrar]);
 
-  const inicio = useRef(posicao);
+  const inicio = useRef({ ...posicao, escuro });
   const aoReceber = useCallback((m: { tipo: string } & Record<string, unknown>) => {
-    if (m.tipo === 'carregou') tela.current?.iniciar(inicio.current.lat, inicio.current.lon);
+    if (m.tipo === 'carregou') tela.current?.iniciar(inicio.current.lat, inicio.current.lon, inicio.current.escuro);
     else if (m.tipo === 'pronto') setPronto(true);
     else if (m.tipo === 'regiao') setRegiao(m as unknown as Regiao & { largura: number });
   }, []);
