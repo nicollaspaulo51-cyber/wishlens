@@ -43,6 +43,9 @@ class Sonda:
     tema_da_ia: bool = True  # o tema vem da IA (com o achado detalhado) ou do CLIP treinado
     # Qual objeto é, dentro do tema (teclado x mouse x monitor...): tema -> (pesos, vieses, classes do Open Images)
     objetos: dict = field(default_factory=dict)
+    # Qual MODELO ou marca é (Gol x Onix, mouse Logitech x Razer), aprendido com as fotos que a turma marcou:
+    # tema -> (pesos, vieses, nomes dos modelos). Só existe para o tema que já tem exemplos suficientes de cada modelo.
+    modelos: dict = field(default_factory=dict)
 
 
 # Objetos de cada tema (classes do Open Images): nome em português e as palavras que o achado costuma ter.
@@ -61,6 +64,8 @@ OBJETOS: dict[str, dict[str, tuple[str, tuple[str, ...]]]] = {
               "Computer mouse": ("mouse", ("mouse",)), "Laptop": ("notebook", ("notebook", "laptop")),
               "Headphones": ("fone de ouvido", ("fone", "headset", "headphone"))},
 }
+MINIMO_POR_MODELO = 8   # fotos de cada modelo para ele entrar no classificador
+LIMIAR_MODELO = 0.8     # só troca o achado da IA quando tem bastante certeza (poucos exemplos = cuidado)
 LIMIAR_OBJETO = 0.6  # abaixo disto o classificador de objeto não tem certeza e não mexe no achado
 
 
@@ -86,9 +91,23 @@ def objeto(vetor, tema: str | None, s: Sonda) -> dict | None:
     return {"classe": classes[i], "nome": OBJETOS[tema][classes[i]][0], "conf": float(p[i])}
 
 
-def escolher_achado(achado_ia: str, tema: str | None, obj: dict | None) -> str:
+def modelo_de(vetor, tema: str | None, s: Sonda) -> dict | None:
+    """Qual modelo ou marca é, pelo classificador da turma: {nome, conf}, ou None (tema sem exemplos suficientes)."""
+    m = s.modelos.get(tema or "")
+    if m is None:
+        return None
+    w, b, nomes = m
+    p = _softmax(np.asarray(w) @ np.asarray(vetor, dtype=np.float32) + np.asarray(b))
+    i = int(p.argmax())
+    return {"nome": nomes[i], "conf": float(p[i])}
+
+
+def escolher_achado(achado_ia: str, tema: str | None, obj: dict | None, modelo: dict | None = None) -> str:
     """O achado final: o da IA (detalhado), a não ser que ela diga OUTRO objeto do mesmo tema que o classificador
     reconhece com certeza (a IA disse "mouse", o classificador viu um teclado com 90%): aí vale o nome do objeto."""
+    # O modelo aprendido com a turma (Gol, mouse Logitech G203...) vale quando tem bastante certeza
+    if modelo and modelo["conf"] >= LIMIAR_MODELO:
+        return modelo["nome"]
     if not obj or not tema or obj["conf"] < LIMIAR_OBJETO:
         return achado_ia
     if not achado_ia:
@@ -134,6 +153,8 @@ def salvar(s: Sonda, caminho: Path = CAMINHO) -> None:
                         w_falsa=s.w_falsa.astype(np.float32), b_falsa=np.float32(s.b_falsa), alfa=np.float32(s.alfa),
                         beta=np.float32(s.beta), limiar=np.float32(s.limiar), ordem=np.array(ORDEM), versao=np.array(s.versao),
                         limiar_ia=np.float32(s.limiar_ia), tema_da_ia=np.array(s.tema_da_ia),
+                        **{f"mod_{t}_{k}": v for t, (w, b, cl) in s.modelos.items()
+                           for k, v in (("w", np.asarray(w, np.float32)), ("b", np.asarray(b, np.float32)), ("nomes", np.array(cl)))},
                         **{f"obj_{t}_{k}": v for t, (w, b, cl) in s.objetos.items()
                            for k, v in (("w", np.asarray(w, np.float32)), ("b", np.asarray(b, np.float32)), ("classes", np.array(cl)))})
 
@@ -149,7 +170,9 @@ def carregar(caminho: Path = CAMINHO) -> Sonda | None:
                  float(d["limiar"]), str(d["versao"]), float(d["limiar_ia"]) if "limiar_ia" in d else 0.0,
                  bool(d["tema_da_ia"]) if "tema_da_ia" in d else True,
                  {t: (d[f"obj_{t}_w"], d[f"obj_{t}_b"], tuple(str(c) for c in d[f"obj_{t}_classes"]))
-                  for t in OBJETOS if f"obj_{t}_w" in d})
+                  for t in OBJETOS if f"obj_{t}_w" in d},
+                 {t: (d[f"mod_{t}_w"], d[f"mod_{t}_b"], tuple(str(c) for c in d[f"mod_{t}_nomes"]))
+                  for t in OBJETOS if f"mod_{t}_w" in d})
 
 
 # ---------------------------------------------------------------- dados
@@ -333,3 +356,71 @@ def resumo(df: pd.DataFrame, tema, real) -> dict:
             "falsa_aceita": float((real_s[~df["real"]] & (tema_s[~df["real"]] != "nenhum")).mean()),
             "tema_certo_nas_reais": float((tema_s[reais_tema] == df.loc[reais_tema, "tema"]).mean()),
             "n": int(len(df))}
+
+
+# ---------------------------------------------------------------- modelos (fotos que a turma marcou no app)
+def _chave_modelo(texto: str) -> str:
+    from src.jogo import normalizar
+
+    return normalizar(texto)
+
+
+def carregar_turma(pasta: Path, saida: Path) -> pd.DataFrame:
+    """As fotos reais da turma com o modelo marcado (rotulos.csv do volume "treino"), com o vetor do CLIP de cada uma.
+    Guarda em cache (pickle); só processa as fotos novas."""
+    from PIL import Image
+
+    from src.reconhecimento import julgar_clip
+
+    rotulos = pd.read_csv(pasta / "rotulos.csv", dtype=str).fillna("")
+    rotulos = rotulos[(rotulos["tipo"] == "real") & (rotulos["modelo"] != "")]
+    feitas = pd.read_pickle(saida) if saida.exists() else pd.DataFrame(columns=["id"])
+    novas = []
+    for r in rotulos[~rotulos["id"].isin(set(feitas["id"]))].itertuples(index=False):
+        img = Image.open(pasta / "fotos" / f"{r.id}.jpg").convert("RGB")
+        v = np.array(julgar_clip(img, "livre", treinado=False)["vetor"], dtype=np.float32)
+        novas.append({"id": r.id, "tema": r.tema, "objeto": r.achado, "modelo": r.modelo, "vetor": v, "parte": parte(r.id)})
+    if novas:
+        feitas = pd.concat([feitas, pd.DataFrame(novas)], ignore_index=True)
+        feitas.to_pickle(saida)
+    return feitas
+
+
+def treinar_modelos(turma: pd.DataFrame) -> tuple[dict, dict]:
+    """Um classificador de modelo por tema com as fotos da turma. Só entram os modelos com MINIMO_POR_MODELO fotos
+    ou mais (nomes iguais com maiúscula, acento ou espaço diferente contam como um só). O tema precisa de 2 modelos.
+    Devolve (tema -> (pesos, vieses, nomes), relatório com o acerto na validação)."""
+    from collections import Counter
+
+    from sklearn.linear_model import LogisticRegression
+
+    saida, relatorio = {}, {}
+    if turma.empty:
+        return saida, relatorio
+    turma = turma.assign(chave=turma["modelo"].map(_chave_modelo))
+    for tema, d in turma.groupby("tema"):
+        tamanho = d["chave"].value_counts()
+        validos = list(tamanho[tamanho >= MINIMO_POR_MODELO].index)
+        d = d[d["chave"].isin(validos)]
+        tr, va = d[d["parte"] == "treino"], d[d["parte"] == "validacao"]
+        if len(validos) < 2 or tr["chave"].nunique() < 2:
+            relatorio[tema] = {"aviso": f"ainda faltam fotos: precisa de {MINIMO_POR_MODELO} de pelo menos 2 modelos",
+                               "fotos_por_modelo": {k: int(v) for k, v in tamanho.items()}}
+            continue
+        nome_de = {k: Counter(g["modelo"]).most_common(1)[0][0] for k, g in d.groupby("chave")}
+        Xtr = np.stack(tr["vetor"].to_numpy())
+        melhor = None
+        for C in (0.3, 1.0, 3.0, 10.0):
+            m = LogisticRegression(C=C, max_iter=3000, class_weight="balanced").fit(Xtr, tr["chave"])
+            acc = float((m.predict(np.stack(va["vetor"].to_numpy())) == va["chave"]).mean()) if len(va) else float("nan")
+            if melhor is None or (not np.isnan(acc) and (np.isnan(melhor[0]) or acc > melhor[0])):
+                melhor = (acc, C, m)
+        acc, C, m = melhor
+        w, b = m.coef_.astype(np.float32), m.intercept_.astype(np.float32)
+        if w.shape[0] == 1:
+            w, b = np.vstack([-w[0] / 2, w[0] / 2]), np.array([-b[0] / 2, b[0] / 2], dtype=np.float32)
+        saida[tema] = (w, b, tuple(nome_de[k] for k in m.classes_))
+        relatorio[tema] = {"modelos": [nome_de[k] for k in m.classes_],
+                           "acerto_validacao": None if np.isnan(acc) else round(acc, 3),
+                           "fotos_validacao": int(len(va)), "C": C}
+    return saida, relatorio

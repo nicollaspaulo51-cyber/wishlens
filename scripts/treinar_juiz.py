@@ -11,6 +11,7 @@ não deixar a placa no máximo (a ponte da placa pausa a IA se ela passar de 85%
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 import json
 import os
 import random
@@ -156,6 +157,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dados", required=True, type=Path)
     ap.add_argument("--com-ia", type=int, default=0)
+    ap.add_argument("--turma", type=Path, default=None, help="pasta do volume treino (rotulos.csv e fotos da turma)")
     a = ap.parse_args()
     random.seed(0)
     np.random.seed(0)
@@ -163,6 +165,13 @@ def main() -> None:
     df = tj.extrair(a.dados, a.dados / "vetores.pkl")
     print(f"{len(df)} exemplos ({df['id'].nunique()} fotos)", flush=True)
     sonda, info = tj.treinar(df, versao=f"{date.today()} {df['id'].nunique()} fotos Open Images")
+    # fotos da turma com o modelo marcado no app (pasta do volume "treino", se existir): ensinam Gol x Onix etc.
+    if a.turma and (a.turma / "rotulos.csv").exists():
+        turma = tj.carregar_turma(a.turma, a.dados / "turma.pkl")
+        modelos, rel_modelos = tj.treinar_modelos(turma)
+        sonda = replace(sonda, modelos=modelos)
+        info["modelos"] = rel_modelos
+        print("modelos da turma:", json.dumps(rel_modelos, ensure_ascii=False), flush=True)
     ia = com_ia(df, a.dados, a.com_ia, a.dados / "respostas_ia.csv") if a.com_ia else None
     if ia is not None:
         sonda = calibrar_juncao(df, ia, sonda)

@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Apagado, Botao, Cartaz, Fichas, Subtitulo, Titulo } from '../componentes/ui';
@@ -37,6 +37,8 @@ export default function Treinar() {
   const [pronta, setPronta] = useState(false);
   const [apertado, setApertado] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  // a foto tirada espera aqui: a IA sugere o modelo e a pessoa confirma, corrige ou descarta
+  const [rascunho, setRascunho] = useState<{ uri: string; modelo: string; sugerindo: boolean; aviso: string | null } | null>(null);
   const [msg, setMsg] = useState<{ texto: string; erro: boolean } | null>(null);
   const temas = useDados(api.temas);
   const contagem = useDados(api.treinoContagem, [], 0);
@@ -62,17 +64,33 @@ export default function Treinar() {
   }
 
   async function fotografar() {
-    if (!camera.current || enviando) return;
-    setEnviando(true);
+    if (!camera.current || enviando || rascunho) return;
     setMsg(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     try {
       const crua = await camera.current.takePictureAsync({ quality: 0.9, shutterSound: false });
       const menor = await (await ImageManipulator.manipulate(crua.uri).resize({ width: 1024, height: null }).renderAsync())
         .saveAsync({ format: SaveFormat.JPEG, compress: 0.85 });
-      await api.treinoFoto(menor.uri, tema, tipo, tema === 'competicao' ? (resultado === 'vitoria' ? 'vitória' : 'derrota') : objeto);
+      setRascunho({ uri: menor.uri, modelo: '', sugerindo: true, aviso: null });
+      api.treinoSugerir(menor.uri)
+        .then((r) => setRascunho((a) => (a && a.uri === menor.uri
+          // a sugestão só vale se o tema que a IA viu é o que a pessoa escolheu (senão ela errou de assunto)
+          ? { ...a, sugerindo: false, aviso: r.aviso, modelo: !a.modelo && r.tema === tema ? r.achado : a.modelo } : a)))
+        .catch(() => setRascunho((a) => (a ? { ...a, sugerindo: false, aviso: 'Sem sugestão agora: escreva o modelo, se souber.' } : a)));
+    } catch (e) {
+      setMsg({ texto: e instanceof Error ? e.message : 'Não consegui tirar a foto.', erro: true });
+    }
+  }
+
+  async function enviarRascunho() {
+    if (!rascunho || enviando) return;
+    setEnviando(true);
+    try {
+      await api.treinoFoto(rascunho.uri, tema, tipo, tema === 'competicao' ? (resultado === 'vitoria' ? 'vitória' : 'derrota') : objeto,
+        tema === 'competicao' ? '' : rascunho.modelo.trim());
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setMsg({ texto: 'Foto enviada. Obrigado!', erro: false });
+      setRascunho(null);
       contagem.recarregar();
     } catch (e) {
       setMsg({ texto: e instanceof Error ? e.message : 'Não consegui enviar a foto.', erro: true });
@@ -103,6 +121,36 @@ export default function Treinar() {
           </Cartaz>
           <Botao titulo="Aceito, quero ajudar" aoTocar={aceitar} />
           <Botao titulo="Agora não" tipo="secundario" aoTocar={() => router.back()} />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (fotografando && rascunho) {
+    return (
+      <SafeAreaView className="flex-1 bg-papel">
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }} keyboardShouldPersistTaps="handled">
+          <Titulo>Confira a foto</Titulo>
+          <Image source={{ uri: rascunho.uri }} style={{ width: '100%', aspectRatio: 3 / 4, borderRadius: 6 }} resizeMode="cover"
+            accessibilityLabel="A foto que você tirou" />
+          <Apagado>{nomeTema}{objeto ? `: ${objeto}` : ''} · {TIPOS.find((t) => t.valor === tipo)?.texto}</Apagado>
+          {tema !== 'competicao' ? (
+            <View className="gap-[6px]">
+              <Text className="font-texto-forte text-tinta text-[15px]">Qual é o modelo ou a marca? (opcional)</Text>
+              <TextInput value={rascunho.modelo} onChangeText={(m) => setRascunho({ ...rascunho, modelo: m })} maxLength={60}
+                placeholder="Ex.: Volkswagen Gol, mouse Logitech G203" placeholderTextColor={c.apagado} accessibilityLabel="Modelo ou marca"
+                className="min-h-[52px] border border-linha rounded-[6px] px-[14px] text-[16px] text-tinta bg-fundo" />
+              {rascunho.sugerindo ? (
+                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                  <ActivityIndicator color={c.destaque} /><Apagado>A IA está sugerindo um modelo...</Apagado>
+                </View>
+              ) : rascunho.aviso ? <Apagado>{rascunho.aviso}</Apagado>
+                : <Apagado>Sugestão da IA: corrija se estiver errada. Deixe vazio se não souber.</Apagado>}
+            </View>
+          ) : null}
+          {msg?.erro ? <Text className="font-texto text-recusa text-[15px]" accessibilityLiveRegion="polite">{msg.texto}</Text> : null}
+          <Botao titulo="Enviar para o treino" aoTocar={enviarRascunho} carregando={enviando} />
+          <Botao titulo="Descartar" tipo="secundario" desativado={enviando} aoTocar={() => { setRascunho(null); setMsg(null); }} />
         </ScrollView>
       </SafeAreaView>
     );

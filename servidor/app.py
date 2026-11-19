@@ -504,7 +504,7 @@ def contestar(c: Contestacao, s=Depends(sessao)):
 TREINO = Path(os.environ.get("TREINO_DIR", "/home/user/treino"))
 TIPOS_TREINO = ("real", "tela", "impressa", "brinquedo", "desenho", "estatua")
 TEMAS_TREINO = (*(t.id for t in TEMAS), *ABAS, "nenhum")
-CAMPOS_ROTULOS = ("id", "quando", "tema", "tipo", "achado", "quem", "aparelho")
+CAMPOS_ROTULOS = ("id", "quando", "tema", "tipo", "achado", "modelo", "quem", "aparelho")
 TREINO_POR_HORA = 60
 META_POR_TEMA, META_POR_TIPO = 100, 100
 _treino_recentes: dict[str, list[float]] = {}
@@ -522,16 +522,16 @@ def _rotulos() -> list[dict]:
 
 @app.post("/treino/foto")
 def treino_foto(foto: UploadFile = File(...), tema: str = Form(...), tipo: str = Form(...), achado: str = Form(""),
-                aparelho: str = Form("", max_length=40), s=Depends(sessao)):
+                modelo: str = Form(""), aparelho: str = Form("", max_length=40), s=Depends(sessao)):
     import csv
 
     if getattr(s, "convidado", False):
         raise HTTPException(403, "Entre numa conta para ajudar a treinar o juiz.")
     if tema not in TEMAS_TREINO or tipo not in TIPOS_TREINO:
         raise HTTPException(400, "Tema ou tipo inválido.")
-    achado = achado.strip()[:40]
-    if achado and not nome_valido(achado):
-        raise HTTPException(400, "Nome do achado inválido.")
+    achado, modelo = achado.strip()[:40], " ".join(modelo.split())[:60]
+    if (achado and not nome_valido(achado)) or (modelo and not nome_valido(modelo)):
+        raise HTTPException(400, "Nome do achado ou do modelo inválido.")
     dados = foto.file.read(FOTO_MAX + 1)
     if len(dados) > FOTO_MAX:
         raise HTTPException(413, "Foto grande demais (máximo 10 MB).")
@@ -548,14 +548,43 @@ def treino_foto(foto: UploadFile = File(...), tema: str = Form(...), tipo: str =
         id_foto = uuid.uuid4().hex
         (TREINO / "fotos").mkdir(parents=True, exist_ok=True)
         (TREINO / "fotos" / f"{id_foto}.jpg").write_bytes(limpa)
-        novo = not (TREINO / "rotulos.csv").exists()
-        with (TREINO / "rotulos.csv").open("a", encoding="utf-8", newline="") as f:
+        arquivo = TREINO / "rotulos.csv"
+        antigos = _rotulos()
+        if antigos and tuple(antigos[0]) != CAMPOS_ROTULOS:  # arquivo de antes da coluna nova: regrava com ela
+            with arquivo.open("w", encoding="utf-8", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=CAMPOS_ROTULOS, restval="", extrasaction="ignore")
+                w.writeheader()
+                w.writerows(antigos)
+        novo = not arquivo.exists()
+        with arquivo.open("a", encoding="utf-8", newline="") as f:
             w = csv.DictWriter(f, fieldnames=CAMPOS_ROTULOS)
             if novo:
                 w.writeheader()
             w.writerow({"id": id_foto, "quando": agora().isoformat(timespec="seconds"), "tema": tema, "tipo": tipo,
-                        "achado": achado, "quem": s.apelido, "aparelho": aparelho.strip()})
+                        "achado": achado, "modelo": modelo, "quem": s.apelido, "aparelho": aparelho.strip()})
     return {"ok": True, "id": id_foto}
+
+
+@app.post("/treino/sugerir")
+def treino_sugerir(foto: UploadFile = File(...), s=Depends(sessao)):
+    """O que a IA de visão (Qwen, neste PC) acha que é a foto: tema e achado detalhado (modelo, marca, espécie).
+    É só uma sugestão para a pessoa confirmar ou corrigir; nada é gravado aqui."""
+    if getattr(s, "convidado", False):
+        raise HTTPException(403, "Entre numa conta para ajudar a treinar o juiz.")
+    dados = foto.file.read(FOTO_MAX + 1)
+    if len(dados) > FOTO_MAX:
+        raise HTTPException(413, "Foto grande demais (máximo 10 MB).")
+    try:
+        limpa = preparar_para_salvar(Image.open(io.BytesIO(dados)))
+    except (UnidentifiedImageError, OSError):
+        raise HTTPException(400, "Não consegui abrir a foto.")
+    if not VISAO[0]:
+        return {"tema": None, "achado": "", "aviso": "A IA de visão está desligada: escreva o modelo você mesmo."}
+    try:
+        c = visao.identificar_captura(limpa, VISAO[0], VISAO[2], VISAO[1])
+    except visao.ErroVisao as erro:
+        return {"tema": None, "achado": "", "aviso": f"A IA não respondeu agora ({erro}): escreva o modelo você mesmo."}
+    return {"tema": c.tema, "achado": c.achado, "aviso": None}
 
 
 @app.get("/treino/contagem")
@@ -652,7 +681,7 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
         # ela diga OUTRO objeto do tema que o classificador de objeto treinado reconhece com certeza
         from src.treino_juiz import escolher_achado
 
-        achado = escolher_achado(captura.achado, tema, clip.get("objeto")) if tema == captura.tema else clip["achado"]
+        achado = escolher_achado(captura.achado, tema, clip.get("objeto"), clip.get("modelo")) if tema == captura.tema else clip["achado"]
         captura = visao.Captura(tema, achado, real, clip["confianca"] if tema == clip["tema"] else captura.confianca)
 
     celula, cidade = None, None

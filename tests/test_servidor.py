@@ -368,3 +368,30 @@ def test_treino_recusa_etiqueta_invalida_convidado_e_excesso(cliente, monkeypatc
     assert not (tmp_path / "rotulos.csv").exists()  # nada foi gravado
     monkeypatch.setattr(srv, "TREINO_POR_HORA", 2)
     assert [_treinar(cliente).status_code for _ in range(3)] == [200, 200, 429]
+
+
+def test_treino_guarda_modelo_e_regrava_arquivo_antigo(cliente, monkeypatch, tmp_path):
+    monkeypatch.setattr(srv, "TREINO", tmp_path)
+    srv._treino_recentes.clear()
+    (tmp_path / "rotulos.csv").write_text("id,quando,tema,tipo,achado,quem,aparelho\nx1,2026,carros,real,carro,bia,\n",
+                                          encoding="utf-8")
+    assert _treinar(cliente, "carros", modelo="Volkswagen  Gol").status_code == 200
+    linhas = srv._rotulos()
+    assert [r["modelo"] for r in linhas] == ["", "Volkswagen Gol"] and linhas[0]["quem"] == "bia"
+    assert _treinar(cliente, "carros", modelo="<b>x</b>").status_code == 400
+
+
+def test_treino_sugere_pelo_qwen_sem_gravar(cliente, monkeypatch, tmp_path):
+    from src import visao
+    monkeypatch.setattr(srv, "TREINO", tmp_path)
+    monkeypatch.setattr(srv, "VISAO", ("http://ia", None, "m"))
+    monkeypatch.setattr(visao, "identificar_captura", lambda *a: visao.Captura("pecas", "mouse Logitech G203", True, 0.9))
+    r = cliente.post("/treino/sugerir", files={"foto": ("f.jpg", _jpeg(), "image/jpeg")}, headers={"X-Apelido": "ana"}).json()
+    assert r == {"tema": "pecas", "achado": "mouse Logitech G203", "aviso": None}
+    assert not (tmp_path / "rotulos.csv").exists()
+
+    def fora(*a):
+        raise visao.ErroVisao("pausada")
+    monkeypatch.setattr(visao, "identificar_captura", fora)
+    r = cliente.post("/treino/sugerir", files={"foto": ("f.jpg", _jpeg(), "image/jpeg")}, headers={"X-Apelido": "ana"}).json()
+    assert r["achado"] == "" and "escreva" in r["aviso"]

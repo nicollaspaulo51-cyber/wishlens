@@ -143,14 +143,21 @@ export const api = {
   },
 
   // Fotos para treinar o juiz: só no PC do juiz, sem GPS e sem EXIF
-  async treinoFoto(uri: string, tema: string, tipo: string, achado = '') {
+  async treinoFoto(uri: string, tema: string, tipo: string, achado = '', modelo = '') {
     const form = new FormData();
     await anexarFoto(form, uri);
     form.append('tema', tema);
     form.append('tipo', tipo);
     form.append('achado', achado);
+    form.append('modelo', modelo);
     form.append('aparelho', `${Platform.OS} ${Platform.Version}`);
     return chamar<{ ok: boolean }>('/treino/foto', { method: 'POST', body: form }, envioDeArquivo());
+  },
+  // A IA de visão sugere tema e modelo para a pessoa confirmar ou corrigir (nada é gravado)
+  async treinoSugerir(uri: string) {
+    const form = new FormData();
+    await anexarFoto(form, uri);
+    return chamar<{ tema: string | null; achado: string; aviso: string | null }>('/treino/sugerir', { method: 'POST', body: form }, envioDeArquivo());
   },
   treinoContagem: () => chamar<Treino>('/treino/contagem'),
 

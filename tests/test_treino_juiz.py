@@ -146,3 +146,52 @@ def test_treina_objetos_com_duas_classes_e_guarda(tmp_path):
     lida = tj.carregar(caminho)
     assert tj.objeto(np.eye(512, dtype=np.float32)[0], "carros", lida)["classe"] == "Car"
     assert tj.objeto(np.eye(512, dtype=np.float32)[1], "carros", lida)["classe"] == "Van"
+
+
+def _turma(rotulos_por_modelo, tema="carros"):
+    """Fotos sintéticas da turma: cada modelo tem uma direção própria no espaço do CLIP."""
+    rng = np.random.default_rng(1)
+    linhas = []
+    for k, (nome, quantas) in enumerate(rotulos_por_modelo.items()):
+        for i in range(quantas):
+            v = rng.normal(0, 0.05, 512).astype(np.float32)
+            v[10 + k] += 1.0
+            linhas.append({"id": f"{nome}{i}", "tema": tema, "objeto": "carro", "modelo": nome, "vetor": v,
+                           "parte": tj.parte(f"{nome}{i}")})
+    return pd.DataFrame(linhas)
+
+
+def test_aprende_modelos_com_as_fotos_da_turma_e_ignora_os_raros():
+    turma = _turma({"Volkswagen Gol": 40, "volkswagen  gol": 10, "Fiat Mobi": 50, "Chevrolet Onix": 3})
+    saida, rel = tj.treinar_modelos(turma)
+    w, b, nomes = saida["carros"]
+    assert set(nomes) == {"Volkswagen Gol", "Fiat Mobi"}          # Onix tem 3 fotos: ainda não entra
+    assert rel["carros"]["acerto_validacao"] > 0.9
+    base = _sonda()
+    s = tj.Sonda(base.w_tema, base.b_tema, base.w_falsa, base.b_falsa, 1, 1, 0.75, "t", modelos=saida)
+    v = turma[turma["modelo"] == "Fiat Mobi"].iloc[0]["vetor"]
+    m = tj.modelo_de(v, "carros", s)
+    assert m["nome"] == "Fiat Mobi" and m["conf"] > 0.8
+    assert tj.modelo_de(v, "pecas", s) is None
+
+
+def test_tema_sem_fotos_suficientes_nao_cria_classificador():
+    saida, rel = tj.treinar_modelos(_turma({"Fiat Mobi": 50, "Chevrolet Onix": 3}))
+    assert "carros" not in saida and "ainda faltam" in rel["carros"]["aviso"]
+    assert tj.treinar_modelos(pd.DataFrame(columns=["tema", "modelo", "vetor", "parte"])) == ({}, {})
+
+
+def test_modelo_aprendido_so_vale_com_certeza_e_sobrescreve_o_achado_da_ia():
+    forte, fraco = {"nome": "Fiat Mobi", "conf": 0.93}, {"nome": "Fiat Mobi", "conf": 0.6}
+    assert tj.escolher_achado("Volkswagen Gol", "carros", None, forte) == "Fiat Mobi"
+    assert tj.escolher_achado("Volkswagen Gol", "carros", None, fraco) == "Volkswagen Gol"
+    assert tj.escolher_achado("Volkswagen Gol", "carros", None, None) == "Volkswagen Gol"
+
+
+def test_salva_e_carrega_os_modelos(tmp_path):
+    saida, _ = tj.treinar_modelos(_turma({"Fiat Mobi": 30, "Volkswagen Gol": 30}))
+    base = _sonda()
+    s = tj.Sonda(base.w_tema, base.b_tema, base.w_falsa, base.b_falsa, 1, 1, 0.75, "t", modelos=saida)
+    tj.salvar(s, tmp_path / "j.npz")
+    lida = tj.carregar(tmp_path / "j.npz")
+    assert set(lida.modelos["carros"][2]) == {"Fiat Mobi", "Volkswagen Gol"}

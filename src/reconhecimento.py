@@ -181,7 +181,7 @@ def julgar_clip(imagem: Image.Image, modo: str = "livre", treinado: bool = True)
     por_grupo = probs_por_grupo(grupos, probs)
     vetor = vet_img[0].tolist()
     s = sonda() if treinado and modo == "livre" else None
-    obj = None
+    obj = mod = None
     if s is not None:
         from src.treino_juiz import aplicar_sonda
 
@@ -189,6 +189,9 @@ def julgar_clip(imagem: Image.Image, modo: str = "livre", treinado: bool = True)
         from src.treino_juiz import LIMIAR_OBJETO, objeto
 
         obj = objeto(vetor, tema, s)  # qual objeto do tema é (teclado x mouse x monitor...)
+        from src.treino_juiz import modelo_de
+
+        mod = modelo_de(vetor, tema, s)  # qual modelo ou marca é (aprendido com as fotos da turma)
     valor_nitidez = nitidez(imagem)
     achado = achado_do_tema(frases, probs, tema) if tema else ""
     if s is not None and obj and obj["conf"] >= LIMIAR_OBJETO:
@@ -196,6 +199,7 @@ def julgar_clip(imagem: Image.Image, modo: str = "livre", treinado: bool = True)
     return {"nitidez": round(valor_nitidez, 1),
             "nao_identificou": nao_identificou(valor_nitidez, max(por_grupo.values())),
             "tema": tema, "achado": achado, "objeto": obj if s is not None else None,
+            "modelo": mod if s is not None else None,
             "foto_real": real, "confianca": conf, "probs": por_grupo,
             "outra_aba": None if tema else outra_aba(grupos, probs), "treinado": s is not None,
             "vetor": [round(x, 4) for x in vetor]}
