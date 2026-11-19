@@ -51,8 +51,20 @@ function medir() {
     } else if (pausadaAte && Date.now() >= pausadaAte) {
       pausadaAte = 0;
       log('pausa acabou: IA de volta');
+      manterQuente();
     }
   });
+}
+
+// Mantém o modelo na memória da placa: o Ollama descarrega depois de 5 minutos parado, e recarregar leva ~45 s
+// (com o modelo quente a foto leva ~2 s). keep_alive de 24 h, renovado de tempos em tempos e depois de cada pausa.
+function manterQuente() {
+  if (Date.now() < pausadaAte) return;
+  const corpo = JSON.stringify({ model: MODELO, keep_alive: '24h' });
+  const req = http.request({ host: '127.0.0.1', port: PORTA, path: '/api/generate', method: 'POST', timeout: 120_000,
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(corpo) } }, (r) => r.resume());
+  req.on('error', () => {});
+  req.end(corpo);
 }
 
 // Tira o modelo da memória da placa (keep_alive 0)
@@ -113,3 +125,5 @@ function conferirIp() {
 conferirIp();
 setInterval(conferirIp, 30_000);  // o WSL pode subir depois do Windows, e o IP muda a cada reinício
 setInterval(medir, 15_000);
+manterQuente();
+setInterval(manterQuente, 20 * 60_000);

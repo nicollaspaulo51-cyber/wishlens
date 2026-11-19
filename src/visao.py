@@ -95,7 +95,8 @@ def _chamar(jpeg: bytes, url: str, modelo: str, prompt: str, chave: str | None =
     }
     cabecalhos = {"Authorization": f"Bearer {chave}"} if chave else {}
     try:
-        resp = requests.post(url.rstrip("/") + "/chat/completions", json=corpo, timeout=TIMEOUT, headers=cabecalhos)
+        # conectar em 3 s ou desistir: se a ponte da placa cair, a foto não espera TIMEOUT à toa e o CLIP julga logo
+        resp = requests.post(url.rstrip("/") + "/chat/completions", json=corpo, timeout=(3, TIMEOUT), headers=cabecalhos)
     except requests.RequestException as e:
         raise ErroVisao(f"sem conexão com a API ({type(e).__name__})") from e
     if resp.status_code != 200:

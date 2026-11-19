@@ -166,6 +166,8 @@ async function main() {
   } catch {}
   try { await atualizarJuiz(); } catch (e) { log(`não consegui ligar o juiz: ${e.message}`); }
 
+  // A ponte da placa de vídeo (Ollama): se ela cai, o juiz espera à toa e a foto demora. Aqui ela volta sozinha.
+  vigiar('ponte da placa de vídeo', process.execPath, [path.join(REPO, 'servidor', 'ponte_gpu.js')]);
   vigiar('ponte do Expo', process.execPath, [path.join(REPO, 'servidor', 'ponte_expo.js'), '8083', '8084', '0.0.0.0', APP]);
   // dentro do WSL: além do túnel, mantém o WSL (e o juiz) ligado
   vigiar('túnel do juiz', 'wsl.exe', ['-d', 'Ubuntu', '-u', 'root', '-e', '/opt/cloudflared/cloudflared', 'tunnel',
