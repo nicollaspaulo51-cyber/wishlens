@@ -50,7 +50,8 @@ function PodioDaConta() {
         {dados && ranking.length === 0 ? <Aviso texto="Ninguém pontuou neste período ainda. Tire a primeira foto em Jogar." /> : null}
         {ranking.length ? <Degraus ranking={ranking} chave={`${modo}-${periodo}-${tema}-${visita}`} /> : null}
         {eu ? <Text className="font-texto text-tinta text-[16px]" >Você está em <Text className="font-numero">{eu.posicao}º</Text> de <Text className="font-numero">{ranking.length}</Text>.</Text> : null}
-        {ranking.length ? <GraficosPodio lideres={ranking.slice(0, 3)} dados={dados?.graficos} temas={temas.dados?.temas ?? []}
+        {ranking.length ? <GraficosPodio key={chaveFiltro} ranking={ranking} dados={dados?.graficos} temas={temas.dados?.temas ?? []}
+          buscarDados={async (jogadores) => (await api.podio(periodo, temaFiltrado, modo, jogadores)).graficos}
           periodo={periodo} chave={`${chaveFiltro}-${visita}`} /> : null}
         {ranking.length > 3 ? (
           <Cartaz estilo={{ padding: 0, overflow: 'hidden' }}>

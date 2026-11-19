@@ -546,7 +546,10 @@ def _capturas_do_podio(pontuadas: pd.DataFrame, periodo: str, tema: str | None, 
     df = no_periodo(_sem_convidados(pontuadas), periodo, hoje)
     if tema:
         df = df[df["tema"] == tema]
-    return df[df["aceita"]] if not df.empty else df
+    if df.empty:
+        return df
+    df = df[df["aceita"]]
+    return df.assign(conta_foto=~df["bonus_dono"].eq(True) if "bonus_dono" in df else True)
 
 
 def podio(pontuadas: pd.DataFrame, periodo: str = "hoje", tema: str | None = None,
@@ -556,28 +559,41 @@ def podio(pontuadas: pd.DataFrame, periodo: str = "hoje", tema: str | None = Non
     df = _capturas_do_podio(pontuadas, periodo, tema, hoje)
     if df.empty:
         return pd.DataFrame(columns=colunas)
-    r = (df.groupby("usuario").agg(pontos=("pontos", "sum"), achados=("pontos", "size"),
+    r = (df.groupby("usuario").agg(pontos=("pontos", "sum"), achados=("conta_foto", "sum"),
                                     ultimo=("criado_em", "max"))
          .reset_index().sort_values(["pontos", "ultimo"], ascending=[False, True]))
     r["posicao"] = range(1, len(r) + 1)
     return r[colunas].reset_index(drop=True)
 
 
-def graficos_podio(pontuadas: pd.DataFrame, ranking: pd.DataFrame, periodo: str, tema: str | None, hoje: date) -> dict:
-    """Séries de pontos dos três primeiros, com os mesmos filtros do ranking."""
-    lideres = ranking["usuario"].head(3).tolist()
-    if not lideres:
+def graficos_podio(pontuadas: pd.DataFrame, ranking: pd.DataFrame, periodo: str, tema: str | None, hoje: date,
+                   jogadores: list[str] | None = None) -> dict:
+    """Agregados dos jogadores selecionados, com os mesmos filtros do ranking."""
+    no_ranking = set(ranking["usuario"])
+    nomes = (ranking["usuario"].head(3).tolist() if jogadores is None else
+             [nome for nome in dict.fromkeys(jogadores) if nome in no_ranking][:3])
+    if not nomes:
         return {"dias": [], "temas": [], "jogadores": []}
     df = _capturas_do_podio(pontuadas, periodo, tema, hoje)
-    df = df[df["usuario"].isin(lideres)]
+    df = df[df["usuario"].isin(nomes)]
     quantos_dias = {"hoje": 1, "semana": hoje.weekday() + 1, "geral": DIAS_SERIE}[periodo]
     dias = [hoje - timedelta(days=i) for i in range(quantos_dias - 1, -1, -1)]
     temas = sorted(df["tema"].unique())
-    por_dia = df.groupby(["usuario", df["criado_em"].map(dia_de)])["pontos"].sum()
-    por_tema = df.groupby(["usuario", "tema"])["pontos"].sum()
+    medidas = {"pontos": ("pontos", "sum"), "capturas": ("conta_foto", "sum")}
+    por_dia = df.groupby(["usuario", df["criado_em"].map(dia_de)]).agg(**medidas)
+    por_tema = df.groupby(["usuario", "tema"]).agg(**medidas)
+    totais = df.groupby("usuario")[["pontos", "extra"]].sum()
+
+    def valores(grupo, campo, nome, rotulos):
+        return [int(grupo[campo].get((nome, r), 0)) for r in rotulos]
+
     return {"dias": [d.isoformat() for d in dias], "temas": temas,
-            "jogadores": [{"apelido": u, "por_dia": [int(por_dia.get((u, d), 0)) for d in dias],
-                           "por_tema": [int(por_tema.get((u, t), 0)) for t in temas]} for u in lideres]}
+            "jogadores": [{"apelido": u, "por_dia": valores(por_dia, "pontos", u, dias),
+                           "por_tema": valores(por_tema, "pontos", u, temas),
+                           "capturas_por_dia": valores(por_dia, "capturas", u, dias),
+                           "capturas_por_tema": valores(por_tema, "capturas", u, temas),
+                           "pontos_jogo": int(totais.at[u, "pontos"] - totais.at[u, "extra"]),
+                           "bonus": int(totais.at[u, "extra"])} for u in nomes]}
 
 
 def posicao_de(ranking: pd.DataFrame, usuario: str) -> int | None:

@@ -40,7 +40,11 @@ export type Julgamento =
   | { status: 'borrada'; titulo?: string; mensagem: string }
   | { status: 'ok'; id: string; cartao: Cartao; avisos: string[]; aviso_juiz: string | null; pontos_hoje: number; posicao: number | null };
 export type LinhaPodio = { posicao: number; apelido: string; pontos: number; achados: number; voce: boolean };
-export type DadosGraficosPodio = { dias: string[]; temas: string[]; jogadores: { apelido: string; por_dia: number[]; por_tema: number[] }[] };
+export type DadosGraficosPodio = {
+  dias: string[]; temas: string[];
+  jogadores: { apelido: string; por_dia: number[]; por_tema: number[];
+    capturas_por_dia?: number[]; capturas_por_tema?: number[]; pontos_jogo?: number; bonus?: number }[];
+};
 export type Podio = { ranking: LinhaPodio[]; guardioes: { apelido: string; quadrados: number }[]; donos?: { apelido: string; quadrados: number }[];
   graficos?: DadosGraficosPodio };
 export type Medalha = { id: string; nome: string; conta: string; nivel: 'bronze' | 'prata' | 'ouro' | null; valor: number; proximo: number };
@@ -125,8 +129,9 @@ const envioDeArquivo = () => (Platform.OS === 'web' ? undefined : (fetchExpo as 
 
 export const api = {
   estado: () => chamar<Estado>('/estado'),
-  podio: (periodo: string, tema?: string | null, modo: Modo = 'livre') =>
-    chamar<Podio>(`/podio?periodo=${periodo}&modo=${modo}${tema ? `&tema=${encodeURIComponent(tema)}` : ''}`),
+  podio: (periodo: string, tema?: string | null, modo: Modo = 'livre', jogadores: string[] = []) =>
+    chamar<Podio>(`/podio?periodo=${periodo}&modo=${modo}${tema ? `&tema=${encodeURIComponent(tema)}` : ''}` +
+      jogadores.map((nome) => `&jogador=${encodeURIComponent(nome)}`).join('')),
   colecao: () => chamar<Colecao>('/colecao'),
   temas: () => chamar<{ temas: Tema[]; tema_do_dia: string; modos: string[]; abas?: Aba[] }>('/temas'),
   // A posição vai no corpo, nunca na URL (a URL acaba nos logs do servidor)

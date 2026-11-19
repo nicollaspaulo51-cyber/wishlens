@@ -26,7 +26,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 import pandas as pd
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import BaseModel, Field
@@ -340,11 +340,14 @@ def estado(s=Depends(sessao)):
 
 
 @app.get("/podio")
-def podio(periodo: str = "hoje", tema: str | None = None, modo: str = "livre", s=Depends(sessao)):
+def podio(periodo: str = "hoje", tema: str | None = None, modo: str = "livre",
+          jogador: list[str] | None = Query(default=None, max_length=3), s=Depends(sessao)):
     if s.convidado:
         raise HTTPException(403, "Crie uma conta para entrar no pódio.")
     if periodo not in ("hoje", "semana", "geral") or (tema and tema not in POR_ID) or modo not in MODOS:
         raise HTTPException(400, "Período, tema ou aba inválido.")
+    if jogador and any(not nome.strip() or len(nome) > 30 for nome in jogador):
+        raise HTTPException(400, "Apelido inválido para comparar.")
     contar = lambda nomes: [{"apelido": str(u), "quadrados": int(n)} for u, n in pd.Series(nomes, dtype=object).value_counts().items()]
     if modo == "livre":
         p = _pontuadas(s)
@@ -361,7 +364,7 @@ def podio(periodo: str = "hoje", tema: str | None = None, modo: str = "livre", s
     linhas = [{"posicao": int(r.posicao), "apelido": str(r.usuario), "pontos": int(r.pontos),
                "achados": int(r.achados), "voce": r.usuario == s.apelido} for r in ranking.itertuples()]
     return {"ranking": linhas, "guardioes": contar(guardioes), "donos": contar(donos),
-            "graficos": jogo.graficos_podio(p, ranking, periodo, tema, hoje)}
+            "graficos": jogo.graficos_podio(p, ranking, periodo, tema, hoje, jogador)}
 
 
 @app.get("/colecao")
