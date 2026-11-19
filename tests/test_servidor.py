@@ -71,6 +71,18 @@ def test_mesmo_objeto_de_novo_nao_vale(cliente):
     assert not r["cartao"]["aceita"] and r["cartao"]["pontos"] == 0
 
 
+@pytest.mark.parametrize(("achado_ia", "esperado"), [
+    ("Mouse", "mouse gamer vermelho de carcaça vazada"),
+    ("Mouse Logitech G203", "Mouse Logitech G203"),
+    ("teclado", "teclado"),
+])
+def test_juizes_preservam_detalhes_do_periferico(cliente, monkeypatch, achado_ia, esperado):
+    monkeypatch.setattr(srv, "VISAO", ("http://ia", None, "m"))
+    monkeypatch.setattr(srv.visao, "identificar_captura", lambda *a: srv.visao.Captura("pecas", achado_ia, True, 0.9))
+    monkeypatch.setattr(srv, "_clip", _clip_falso("pecas", "mouse gamer vermelho de carcaça vazada"))
+    assert _enviar(cliente)["cartao"]["achado"] == esperado
+
+
 def test_mesmo_envio_duas_vezes_devolve_a_1a_resposta_sem_gravar_de_novo(cliente):
     """Toque duplo ou POST reenviado: a tela mostrava a 2ª resposta (0 pontos) e o placar ficava com os pontos da 1ª."""
     foto = _jpeg()

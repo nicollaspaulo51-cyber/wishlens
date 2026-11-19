@@ -37,7 +37,7 @@ from src.cartao import linha_juizes, partes_e_destaque
 from src.categorias import nome_valido
 from src.fotos import preparar_para_salvar
 from src.lugares import buscar_pontos_temas, distancia_km
-from src.treino_juiz import OBJETOS
+from src.treino_juiz import OBJETOS, classe_do_nome
 from src.temas import MODOS as ABAS, POR_ID, TEMAS, TEMAS_ANTIGOS, TODOS, agora, tema_do_dia
 
 MODOS = ("livre", *ABAS)
@@ -722,6 +722,12 @@ def _julgar(s, imagem, lat, lon, modo):
 
         achado = escolher_achado(captura.achado, tema, clip.get("objeto"), clip.get("modelo")) if tema == captura.tema else clip["achado"]
         captura = visao.Captura(tema, achado, real, clip["confianca"] if tema == clip["tema"] else captura.confianca)
+
+    if captura.tema == clip["tema"] == "pecas":
+        classe = classe_do_nome("pecas", clip["achado"])
+        peca = OBJETOS["pecas"].get(classe)
+        if peca and jogo.normalizar(captura.achado) == jogo.normalizar(peca[0]):
+            captura.achado = clip["achado"]
 
     celula, cidade = None, None
     contexto = {"mirante": None, "tipo_lugar": None, "clima": None, "km_anterior": None, "min_anterior": None}
