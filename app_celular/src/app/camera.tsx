@@ -33,6 +33,7 @@ export default function Camera() {
   const c = useCores();
   const [permissao, pedirPermissao] = useCameraPermissions();
   const camera = useRef<CameraView>(null);
+  const enviando = useRef(false);
   const [apertado, setApertado] = useState(false);
   const [pronta, setPronta] = useState(false);
   const [foto, setFoto] = useState<string | null>(null);
@@ -47,7 +48,9 @@ export default function Camera() {
   const falta = useEsperaPartida(modo === 'competicao' && !foto); // volta a perguntar ao juiz depois de cada foto
 
   async function fotografar() {
-    if (!camera.current) return;
+    // dois toques rápidos mandavam duas fotos ao juiz: a 1ª ganhava os pontos e a tela mostrava a 2ª ("já achou isso hoje", 0)
+    if (!camera.current || enviando.current) return;
+    enviando.current = true;
     setErro(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     const local = posicaoAgora(); // ao mesmo tempo que a foto
@@ -62,6 +65,8 @@ export default function Camera() {
       if (r.status === 'ok' && r.cartao.aceita) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não consegui enviar a foto.');
+    } finally {
+      enviando.current = false;
     }
   }
 

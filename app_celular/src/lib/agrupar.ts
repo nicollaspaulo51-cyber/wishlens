@@ -1,10 +1,11 @@
-import type { Region } from 'react-native-maps';
+// Região visível do mapa (centro e tamanho em graus), a mesma forma que a página do mapa manda.
+export type Regiao = { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
 import type { Lugar } from './api';
 
 type ItemMapa = { tipo: 'lugar'; lugar: Lugar }
   | { tipo: 'grupo'; lat: number; lon: number; quantos: number; tema: string; lugares: Lugar[] };
 
-export function agrupar(lugares: Lugar[], regiao: Region, larguraTelaPx: number, tamanhoPx = 48): ItemMapa[] {
+export function agrupar(lugares: Lugar[], regiao: Regiao, larguraTelaPx: number, tamanhoPx = 48): ItemMapa[] {
   const passo = (regiao.longitudeDelta / larguraTelaPx) * tamanhoPx;
   if (!Number.isFinite(passo) || passo <= 0) return lugares.map((lugar) => ({ tipo: 'lugar', lugar }));
 
