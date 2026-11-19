@@ -113,6 +113,12 @@ alter table public.desejos  enable row level security;
 alter table public.conexoes enable row level security;
 alter table public.capturas enable row level security;
 
+-- Projetos novos do Supabase não liberam mais as tabelas para a API sozinhos ("permission denied for table").
+-- Só quem está logado ganha acesso; a RLS (políticas abaixo) continua decidindo quais linhas cada um vê.
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on public.perfis, public.desejos, public.conexoes to authenticated;
+grant insert on public.capturas to authenticated;
+
 -- capturas: todo jogador logado vê todas (pódio e raridade); cada um só cria as suas; a única coisa
 -- que dá para alterar é a contestação ("o juiz errou, era X") na própria captura, que não muda pontos.
 drop policy if exists capturas_ler on public.capturas;
