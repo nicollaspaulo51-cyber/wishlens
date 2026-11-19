@@ -140,7 +140,8 @@ Regras de foto_real (é a regra mais importante: o jogo é sobre achar coisas na
   escala pequena perto de mãos/móveis, plástico brilhante, costuras, base de exposição.
 - true se o próprio objeto está na frente da câmera. Um monitor, notebook ou celular fotografado como objeto
   (tema pecas) é foto real, mesmo com a tela ligada.
-Não invente: se não der para ver o modelo, a espécie ou a raça, use o nome genérico (ex.: "carro", "planta", "pássaro", "mouse")."""
+Não invente marca, modelo, espécie ou raça. Se não puder identificar com segurança, descreva o objeto usando
+características visíveis que o distinguem. Use só o nome genérico quando não houver detalhe claro."""
 
 
 @dataclass

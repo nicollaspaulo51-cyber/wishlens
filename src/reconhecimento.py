@@ -183,19 +183,15 @@ def julgar_clip(imagem: Image.Image, modo: str = "livre", treinado: bool = True)
     s = sonda() if treinado and modo == "livre" else None
     obj = mod = None
     if s is not None:
-        from src.treino_juiz import aplicar_sonda
+        from src.treino_juiz import LIMIAR_OBJETO, aplicar_sonda, classe_do_nome, modelo_de, objeto
 
         por_grupo, tema, real, conf = aplicar_sonda(vetor, por_grupo, s)
-        from src.treino_juiz import LIMIAR_OBJETO, objeto
-
         obj = objeto(vetor, tema, s)  # qual objeto do tema é (teclado x mouse x monitor...)
-        from src.treino_juiz import modelo_de
-
         mod = modelo_de(vetor, tema, s)  # qual modelo ou marca é (aprendido com as fotos da turma)
-    valor_nitidez = nitidez(imagem)
     achado = achado_do_tema(frases, probs, tema) if tema else ""
-    if s is not None and obj and obj["conf"] >= LIMIAR_OBJETO:
-        achado = obj["nome"]  # o classificador treinado sabe o objeto melhor que as frases do zero-shot
+    if s is not None and obj and obj["conf"] >= LIMIAR_OBJETO and classe_do_nome(tema, achado) != obj["classe"]:
+        achado = obj["nome"]  # preserva o detalhe da frase quando ela e o classificador veem o mesmo objeto
+    valor_nitidez = nitidez(imagem)
     return {"nitidez": round(valor_nitidez, 1),
             "nao_identificou": nao_identificou(valor_nitidez, max(por_grupo.values())),
             "tema": tema, "achado": achado, "objeto": obj if s is not None else None,

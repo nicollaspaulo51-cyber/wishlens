@@ -85,8 +85,13 @@ TEMAS: list[Tema] = [
          "#F76B15"),
     Tema("pecas", "Peças e periféricos de computador", "🖥️", "peça de computador",
          "nome da peça ou periférico em português (ex.: mouse, teclado, monitor, headset, webcam, pendrive, "
-         "placa de vídeo, memória RAM, processador, placa-mãe, SSD, fonte)",
-         (("a computer mouse", "mouse"), ("a computer keyboard", "teclado"), ("a computer monitor", "monitor"),
+         "placa de vídeo, memória RAM, processador, placa-mãe, SSD, fonte). Inclua a marca ou o modelo se for "
+         "identificável; senão, use características visíveis do objeto (ex.: mouse preto de carcaça lisa, "
+         "mouse gamer vermelho de carcaça vazada, teclado branco compacto)",
+         (("a computer mouse", "mouse"),
+          ("a plain black computer mouse with a solid shell", "mouse preto de carcaça lisa"),
+          ("a red gaming mouse with an open perforated shell", "mouse gamer vermelho de carcaça vazada"),
+          ("a computer keyboard", "teclado"), ("a computer monitor", "monitor"),
           ("a gaming headset", "headset"), ("over-ear headphones", "fone de ouvido"),
           # Sem estas, fone comum e fone sem fio viravam "mouse" (a peça de formato mais parecido)
           ("wireless earbuds in their charging case", "fone de ouvido"), ("in-ear earphones", "fone de ouvido"),
