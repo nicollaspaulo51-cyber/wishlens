@@ -155,6 +155,15 @@ async function main() {
   });
   log('ligando o WishLens');
   try { await atualizarRepo(); } catch (e) { log(`não consegui atualizar o projeto: ${e.message}`); }
+  // O atalho do Windows roda a cópia em %LOCALAPPDATA%\WishLens; a versão do GitHub vale a partir do próximo início
+  try {
+    const novo = path.join(REPO, 'servidor', 'iniciar_wishlens.js');
+    if (fs.existsSync(novo) && path.resolve(__filename) !== path.resolve(novo)
+        && fs.readFileSync(novo, 'utf8') !== fs.readFileSync(__filename, 'utf8')) {
+      fs.copyFileSync(novo, __filename);
+      log('ligador atualizado: a versão nova vale a partir do próximo início');
+    }
+  } catch {}
   try { await atualizarJuiz(); } catch (e) { log(`não consegui ligar o juiz: ${e.message}`); }
 
   vigiar('ponte do Expo', process.execPath, [path.join(REPO, 'servidor', 'ponte_expo.js'), '8083', '8084', '0.0.0.0', APP]);
