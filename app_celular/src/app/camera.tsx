@@ -5,8 +5,9 @@ import * as Haptics from 'expo-haptics';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { Fragment, useEffect, useRef, useState, type ComponentProps } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { GestureDetector, usePinchGesture, type PinchGestureConfig } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CartaoPontos } from '../componentes/CartaoPontos';
@@ -19,7 +20,8 @@ import { useModo } from '../lib/modo';
 import { useTransicao } from '../lib/movimento';
 import { useDados } from '../lib/useDados';
 
-const NIVEIS_ZOOM = 10;
+// O CameraX calcula o zoom como fração do máximo e limita o resultado a pelo menos 1×.
+const SENSIBILIDADE_PINCA = Platform.OS === 'android' ? 0.72 : 0.32;
 
 async function posicaoAgora() {
   try {
@@ -53,6 +55,18 @@ export default function Camera() {
   const temas = useDados(api.temas);
   const modo = useModo();
   const falta = useEsperaPartida(modo === 'competicao' && !foto); // volta a perguntar ao juiz depois de cada foto
+
+  const ajustarZoom = useCallback((delta: number) => {
+    if (!pronta || enviando.current || !Number.isFinite(delta)) return;
+    setZoom((nivel) => Math.max(0, Math.min(1, nivel + delta)));
+  }, [pronta]);
+
+  const gestoZoom = useMemo<PinchGestureConfig>(() => ({
+    enabled: pronta,
+    runOnJS: true,
+    onUpdate: ({ scaleChange }) => ajustarZoom(Math.log2(scaleChange) * SENSIBILIDADE_PINCA),
+  }), [ajustarZoom, pronta]);
+  const pinca = usePinchGesture(gestoZoom);
 
   async function fotografar() {
     // dois toques rápidos mandavam duas fotos ao juiz: a 1ª ganhava os pontos e a tela mostrava a 2ª ("já achou isso hoje", 0)
@@ -199,18 +213,28 @@ export default function Camera() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
-      <CameraView ref={camera} className="flex-1" facing="back" enableTorch={lanterna} zoom={zoom / NIVEIS_ZOOM}
-        onCameraReady={() => setPronta(true)} />
-      {grade ? (
-        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          {(['33.33%', '66.67%'] as const).map((posicao) => (
-            <Fragment key={posicao}>
-              <View style={[estilosCamera.vertical, { left: posicao }]} />
-              <View style={[estilosCamera.horizontal, { top: posicao }]} />
-            </Fragment>
-          ))}
+      <GestureDetector gesture={pinca} touchAction="none">
+        <View style={{ flex: 1 }} accessible accessibilityRole="adjustable" accessibilityLabel="Zoom da câmera"
+          accessibilityValue={{ min: 0, max: 100, now: Math.round(zoom * 100) }}
+          accessibilityActions={[{ name: 'increment', label: 'Aproximar' }, { name: 'decrement', label: 'Afastar' }]}
+          onAccessibilityAction={({ nativeEvent }) => {
+            if (nativeEvent.actionName === 'increment') ajustarZoom(0.1);
+            if (nativeEvent.actionName === 'decrement') ajustarZoom(-0.1);
+          }}>
+          <CameraView ref={camera} style={{ flex: 1 }} facing="back" enableTorch={lanterna} zoom={zoom}
+            onCameraReady={() => setPronta(true)} />
+          {grade ? (
+            <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+              {(['33.33%', '66.67%'] as const).map((posicao) => (
+                <Fragment key={posicao}>
+                  <View style={[estilosCamera.vertical, { left: posicao }]} />
+                  <View style={[estilosCamera.horizontal, { top: posicao }]} />
+                </Fragment>
+              ))}
+            </View>
+          ) : null}
         </View>
-      ) : null}
+      </GestureDetector>
       <SafeAreaView edges={['top', 'bottom']} className="absolute top-[0px] left-[0px] right-[0px] bottom-[0px] justify-between"
         pointerEvents="box-none">
         <View className="flex-row justify-between items-center p-[16px]">
@@ -221,17 +245,6 @@ export default function Camera() {
           <SeletorAba />
         </View>
         <View style={{ alignItems: 'center', gap: 12, paddingBottom: Platform.OS === 'web' ? 24 : 12 }}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, paddingHorizontal: 16 }}>
-            {Platform.OS !== 'web' ? (
-              <ControleCamera titulo="Lanterna" ativa={lanterna} icone={lanterna ? 'flashlight' : 'flashlight-outline'}
-                desativado={!pronta} aoTocar={() => { if (!enviando.current) setLanterna((ligada) => !ligada); }} />
-            ) : null}
-            <ControleCamera titulo="Grade" ativa={grade} icone={grade ? 'grid' : 'grid-outline'}
-              aoTocar={() => setGrade((visivel) => !visivel)} />
-            <ZoomCamera nivel={zoom} pronta={pronta} aoAjustar={(passo) => {
-              if (!enviando.current) setZoom((nivel) => Math.max(0, Math.min(NIVEIS_ZOOM, nivel + passo)));
-            }} />
-          </View>
           {modo === 'competicao' ? (
             <Text className="font-texto-forte" accessibilityLiveRegion="polite" style={{ color: '#fff', fontSize: 15, fontWeight: '700', backgroundColor: 'rgba(0,0,0,0.55)',
               paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, overflow: 'hidden', textAlign: 'center' }}>
@@ -239,14 +252,22 @@ export default function Camera() {
                 : 'Fotografe a tela do fim da partida'}
             </Text>
           ) : null}
-          <Pressable accessibilityRole="button" accessibilityLabel={falta > 0 ? 'Tirar a foto (espere a próxima partida)' : 'Tirar a foto'}
-            disabled={!pronta || falta > 0} onPress={fotografar}
-            onPressIn={() => setApertado(true)} onPressOut={() => setApertado(false)}
-            // estilo fixo e sem className: no celular um Pressable só com classes ficava sem tamanho (botão invisível)
-            style={{ width: 78, height: 78, borderRadius: 39, borderWidth: 5, borderColor: '#fff', alignItems: 'center', justifyContent: 'center',
-              backgroundColor: apertado ? c.destaque : 'rgba(255,255,255,0.25)', opacity: pronta && falta <= 0 ? 1 : 0.4 }}>
-            <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#fff' }} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+            {Platform.OS !== 'web' ? (
+              <ControleCamera titulo="Lanterna" ativa={lanterna} icone={lanterna ? 'flashlight' : 'flashlight-outline'}
+                desativado={!pronta} aoTocar={() => { if (!enviando.current) setLanterna((ligada) => !ligada); }} />
+            ) : <View style={{ width: 44 }} />}
+            <Pressable accessibilityRole="button" accessibilityLabel={falta > 0 ? 'Tirar a foto (espere a próxima partida)' : 'Tirar a foto'}
+              disabled={!pronta || falta > 0} onPress={fotografar}
+              onPressIn={() => setApertado(true)} onPressOut={() => setApertado(false)}
+              // estilo fixo e sem className: no celular um Pressable só com classes ficava sem tamanho (botão invisível)
+              style={{ width: 78, height: 78, borderRadius: 39, borderWidth: 5, borderColor: '#fff', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: apertado ? c.destaque : 'rgba(255,255,255,0.25)', opacity: pronta && falta <= 0 ? 1 : 0.4 }}>
+              <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#fff' }} />
+            </Pressable>
+            <ControleCamera titulo="Grade" ativa={grade} icone={grade ? 'grid' : 'grid-outline'}
+              aoTocar={() => setGrade((visivel) => !visivel)} />
+          </View>
         </View>
       </SafeAreaView>
     </View>
@@ -261,29 +282,10 @@ function ControleCamera({ titulo, ativa, icone, aoTocar, desativado = false }: {
   return (
     <Pressable accessibilityRole="switch" accessibilityLabel={titulo} accessibilityState={{ checked: ativa, disabled: desativado }}
       disabled={desativado} onPress={aoTocar}
-      style={{ minHeight: 44, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6,
+      style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
         backgroundColor: ativa ? c.destaque : 'rgba(0,0,0,0.68)', opacity: desativado ? 0.55 : 1 }}>
-      <Ionicons name={icone} size={18} color={cor} />
-      <Text className="font-texto-forte" style={{ color: cor, fontSize: 14 }}>{titulo}</Text>
+      <Ionicons name={icone} size={21} color={cor} />
     </Pressable>
-  );
-}
-
-function ZoomCamera({ nivel, pronta, aoAjustar }: { nivel: number; pronta: boolean; aoAjustar: (passo: number) => void }) {
-  const podeDiminuir = pronta && nivel > 0;
-  const podeAumentar = pronta && nivel < NIVEIS_ZOOM;
-  return (
-    <View style={estilosCamera.zoom}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Diminuir zoom" accessibilityState={{ disabled: !podeDiminuir }}
-        disabled={!podeDiminuir} onPress={() => aoAjustar(-1)} style={estilosCamera.botaoZoom}>
-        <Ionicons name="remove" size={19} color={podeDiminuir ? '#fff' : '#aaa'} />
-      </Pressable>
-      <Text className="font-texto-forte" style={{ color: '#fff', fontSize: 14 }}>Zoom</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Aumentar zoom" accessibilityState={{ disabled: !podeAumentar }}
-        disabled={!podeAumentar} onPress={() => aoAjustar(1)} style={estilosCamera.botaoZoom}>
-        <Ionicons name="add" size={19} color={podeAumentar ? '#fff' : '#aaa'} />
-      </Pressable>
-    </View>
   );
 }
 
@@ -291,8 +293,6 @@ const linhaGrade = { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.
 const estilosCamera = StyleSheet.create({
   vertical: { ...linhaGrade, top: 0, bottom: 0, width: 1 },
   horizontal: { ...linhaGrade, left: 0, right: 0, height: 1 },
-  zoom: { flexDirection: 'row', alignItems: 'center', borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.68)' },
-  botaoZoom: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });
 
 function FotoCapturada({ uri }: { uri: string }) {
