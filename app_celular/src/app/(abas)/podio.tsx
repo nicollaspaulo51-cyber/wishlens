@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Degraus } from '../../componentes/Degraus';
+import { GraficosPodio } from '../../componentes/GraficosPodio';
 import { SeletorAba } from '../../componentes/SeletorAba';
 import { PrecisaDeConta } from '../../componentes/PrecisaDeConta';
 import { Apagado, Aviso, Cartaz, Fichas, Subtitulo, Titulo } from '../../componentes/ui';
@@ -25,8 +26,11 @@ function PodioDaConta() {
   const [tema, setTema] = useState('todos');
   const temas = useDados(api.temas);
   const modo = useModo();
-  const podio = useDados(() => api.podio(periodo, modo === 'livre' && tema !== 'todos' ? tema : null, modo), [periodo, tema, modo], 30);
-  const ranking = podio.dados?.ranking ?? [];
+  const temaFiltrado = modo === 'livre' && tema !== 'todos' ? tema : null;
+  const chaveFiltro = `${modo}-${periodo}-${temaFiltrado ?? 'todos'}`;
+  const podio = useDados(async () => ({ chave: chaveFiltro, valor: await api.podio(periodo, temaFiltrado, modo) }), [chaveFiltro], 30);
+  const dados = podio.dados?.chave === chaveFiltro ? podio.dados.valor : null;
+  const ranking = dados?.ranking ?? [];
   const eu = ranking.find((r) => r.voce);
   const visita = useVisita();
 
@@ -42,10 +46,12 @@ function PodioDaConta() {
           <Fichas rotulo="Tema" valor={tema} aoEscolher={setTema}
             opcoes={[{ valor: 'todos', texto: 'Todos' }, ...(temas.dados?.temas ?? []).map((t) => ({ valor: t.id, texto: t.nome, icone: t }))]} />
         ) : null}
-        {podio.erro && !podio.dados ? <Aviso texto={podio.erro} aoTentar={podio.recarregar} /> : null}
-        {podio.dados && ranking.length === 0 ? <Aviso texto="Ninguém pontuou neste período ainda. Tire a primeira foto em Jogar." /> : null}
+        {podio.erro && !dados ? <Aviso texto={podio.erro} aoTentar={podio.recarregar} /> : null}
+        {dados && ranking.length === 0 ? <Aviso texto="Ninguém pontuou neste período ainda. Tire a primeira foto em Jogar." /> : null}
         {ranking.length ? <Degraus ranking={ranking} chave={`${modo}-${periodo}-${tema}-${visita}`} /> : null}
         {eu ? <Text className="font-texto text-tinta text-[16px]" >Você está em <Text className="font-numero">{eu.posicao}º</Text> de <Text className="font-numero">{ranking.length}</Text>.</Text> : null}
+        {ranking.length ? <GraficosPodio lideres={ranking.slice(0, 3)} dados={dados?.graficos} temas={temas.dados?.temas ?? []}
+          periodo={periodo} chave={`${chaveFiltro}-${visita}`} /> : null}
         {ranking.length > 3 ? (
           <Cartaz estilo={{ padding: 0, overflow: 'hidden' }}>
             {ranking.slice(3).map((r, i) => (
@@ -63,9 +69,9 @@ function PodioDaConta() {
           <>
             <Subtitulo>Donos das academias</Subtitulo>
             <Apagado>Quem tem mais aparelhos diferentes numa academia na semana é o dono dela: +5 por dia e +10 a cada 3 dias seguidos. Só contam academias onde 2 pessoas ou mais jogaram.</Apagado>
-            {podio.dados?.donos?.length ? (
+            {dados?.donos?.length ? (
               <Cartaz estilo={{ paddingVertical: 4 }}>
-                {podio.dados.donos.map((d) => (
+                {dados.donos.map((d) => (
                   <View key={d.apelido} className="flex-row py-[10px]">
                     <Text className="font-texto flex-1 text-tinta text-[16px]" >{d.apelido}</Text>
                     <Text className="font-texto text-apagado" ><Text className="font-numero">{d.quadrados}</Text> {d.quadrados === 1 ? 'academia' : 'academias'}</Text>
@@ -78,9 +84,9 @@ function PodioDaConta() {
         {modo === 'livre' ? (<>
         <Subtitulo>Guardiões da semana</Subtitulo>
         <Apagado>Quem tem mais achados diferentes num quadrado de ~500 m guarda aquele quadrado até domingo. Só contam quadrados onde 2 pessoas ou mais jogaram.</Apagado>
-        {podio.dados?.guardioes.length ? (
+        {dados?.guardioes.length ? (
           <Cartaz estilo={{ paddingVertical: 4 }}>
-            {podio.dados.guardioes.map((g) => (
+            {dados.guardioes.map((g) => (
               <View key={g.apelido} className="flex-row py-[10px]">
                 <Text className="font-texto flex-1 text-tinta text-[16px]" >{g.apelido}</Text>
                 <Text className="font-texto text-apagado" ><Text className="font-numero">{g.quadrados}</Text> {g.quadrados === 1 ? 'quadrado' : 'quadrados'}</Text>

@@ -97,6 +97,32 @@ def test_pontuar_nova_e_vezes():
     assert jogo.vezes_achado(hist, OUTRO, "FIAT MOBI") == 1
 
 
+def test_graficos_do_podio_usam_os_mesmos_filtros_e_so_os_tres_primeiros():
+    ontem = DIA - timedelta(days=1)
+    df = pd.DataFrame([
+        {**cap("ana", "Gol", tema="carros", dia=ontem), "pontos": 22, "aceita": True},
+        {**cap("ana", "Rosa", tema="plantas"), "pontos": 18, "aceita": True},
+        {**cap("bia", "Clio", tema="carros"), "pontos": 20, "aceita": True},
+        {**cap("caio", "Uno", tema="carros"), "pontos": 16, "aceita": True},
+        {**cap("dani", "Polo", tema="carros"), "pontos": 12, "aceita": True},
+        {**cap("ana", "Onix", tema="carros"), "pontos": 99, "aceita": False},
+        {**cap("eva", "Mobi", tema="carros"), "pontos": 99, "aceita": True, "convidado": True},
+        {**cap("ana", "Lírio", tema="plantas", dia=ontem - timedelta(days=1)), "pontos": 40, "aceita": True},
+    ])
+    ranking = jogo.podio(df, "semana", hoje=DIA)
+    graficos = jogo.graficos_podio(df, ranking, "semana", None, DIA)
+    assert graficos == {"dias": [ontem.isoformat(), DIA.isoformat()], "temas": ["carros", "plantas"], "jogadores": [
+        {"apelido": "ana", "por_dia": [22, 18], "por_tema": [22, 18]},
+        {"apelido": "bia", "por_dia": [0, 20], "por_tema": [20, 0]},
+        {"apelido": "caio", "por_dia": [0, 16], "por_tema": [16, 0]},
+    ]}
+    carros = jogo.podio(df, "hoje", tema="carros", hoje=DIA)
+    filtrados = jogo.graficos_podio(df, carros, "hoje", "carros", DIA)
+    assert filtrados["temas"] == ["carros"]
+    assert [j["apelido"] for j in filtrados["jogadores"]] == ["bia", "caio", "dani"]
+    assert [sum(j["por_dia"]) for j in filtrados["jogadores"]] == carros["pontos"].tolist()
+
+
 def test_podio_periodos_e_desempate():
     r = pts(cap("ana", "A", hora=8), cap("bia", "B", hora=9),  # empatam: ana chegou antes
             cap("caio", "C", dia=DIA - timedelta(days=20)))

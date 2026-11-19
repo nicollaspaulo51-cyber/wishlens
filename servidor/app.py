@@ -347,16 +347,21 @@ def podio(periodo: str = "hoje", tema: str | None = None, modo: str = "livre", s
         raise HTTPException(400, "Período, tema ou aba inválido.")
     contar = lambda nomes: [{"apelido": str(u), "quadrados": int(n)} for u, n in pd.Series(nomes, dtype=object).value_counts().items()]
     if modo == "livre":
-        ranking, guardioes, donos = jogo.podio(_pontuadas(s), periodo, tema=tema), [g["apelido"] for g in _guardioes(s)], []
+        p = _pontuadas(s)
+        guardioes, donos = [g["apelido"] for g in _guardioes(s)], []
     else:
         p = _pontuadas_aba(s, modo)
         # shortcut: os donos saem da célula, que no Supabase não é legível pela API: lá a lista fica vazia
         # até existir uma função security definer como guardioes_quadrados
-        ranking, guardioes = jogo.podio(p, periodo), []
+        guardioes = []
         donos = list(jogo.donos_academia(p)["usuario"]) if modo == "academia" else []
+    tema = tema if modo == "livre" else None
+    hoje = agora().date()
+    ranking = jogo.podio(p, periodo, tema, hoje)
     linhas = [{"posicao": int(r.posicao), "apelido": str(r.usuario), "pontos": int(r.pontos),
                "achados": int(r.achados), "voce": r.usuario == s.apelido} for r in ranking.itertuples()]
-    return {"ranking": linhas, "guardioes": contar(guardioes), "donos": contar(donos)}
+    return {"ranking": linhas, "guardioes": contar(guardioes), "donos": contar(donos),
+            "graficos": jogo.graficos_podio(p, ranking, periodo, tema, hoje)}
 
 
 @app.get("/colecao")

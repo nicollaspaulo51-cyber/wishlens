@@ -1,5 +1,4 @@
-// Gráficos da aba Amigos, feitos só com Views (sem biblioteca nova): colunas e barras, de uma pessoa ou de duas lado a
-// lado. A legenda identifica as séries; tocar numa coluna mostra sua contagem.
+// Gráficos de Amigos e Pódio. A legenda identifica as séries e tocar numa coluna mostra sua contagem.
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, useColorScheme, View } from 'react-native';
 
@@ -8,11 +7,15 @@ import { Surge } from '../lib/movimento';
 import { IconeTema } from './icones/Icone';
 
 export function useCoresGrafico() {
-  const { agua } = useCores();
-  return { voce: useColorScheme() === 'dark' ? '#FF9663' : '#C24A06', amigo: agua };
+  const { agua, apagado } = useCores();
+  return { voce: useColorScheme() === 'dark' ? '#FF9663' : '#C24A06', amigo: agua, terceiro: apagado };
 }
 
-type Serie = { nome: string; valores: number[] };
+type Serie = { nome: string; valores: number[]; cor?: string };
+
+function corDaSerie(serie: Pick<Serie, 'cor'>, indice: number, cores: ReturnType<typeof useCoresGrafico>) {
+  return serie.cor ?? [cores.voce, cores.amigo, cores.terceiro][indice] ?? cores.terceiro;
+}
 
 // "Você: mais às 9-12h · Carlos: mais às 18-21h"
 function resumo(rotulos: string[], series: Serie[], prefixo: string) {
@@ -22,14 +25,14 @@ function resumo(rotulos: string[], series: Serie[], prefixo: string) {
   }).join('. ');
 }
 
-export function Legenda({ series }: { series: Serie[] }) {
+export function Legenda({ series }: { series: Pick<Serie, 'nome' | 'cor'>[] }) {
   const cor = useCoresGrafico();
   if (series.length < 2) return null;
   return (
-    <View className="flex-row gap-[16px]" accessibilityElementsHidden>
+    <View className="flex-row flex-wrap gap-[12px]" accessibilityElementsHidden>
       {series.map((s, i) => (
         <View key={s.nome} className="flex-row items-center gap-[6px]">
-          <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: i ? cor.amigo : cor.voce }} />
+          <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: corDaSerie(s, i, cor) }} />
           <Text className="font-texto text-apagado text-[13px]" >{s.nome}</Text>
         </View>
       ))}
@@ -37,7 +40,7 @@ export function Legenda({ series }: { series: Serie[] }) {
   );
 }
 
-/** Colunas verticais (uma ou duas por grupo). Só a maior coluna de cada pessoa leva o número em cima. */
+/** Colunas verticais por grupo. Só a maior coluna de cada pessoa leva o número em cima. */
 export function Colunas({ rotulos, series, prefixo = 'mais em', altura = 120, chave }: {
   rotulos: string[]; series: Serie[]; prefixo?: string; altura?: number; chave?: unknown;
 }) {
@@ -67,7 +70,7 @@ export function Colunas({ rotulos, series, prefixo = 'mais em', altura = 120, ch
                 <Surge key={s.nome} ordem={i} chave={chave} estilo={{ flex: 1, maxWidth: 16, alignItems: 'center' }}>
                   {maiores[k] === i ? <Text className="font-numero text-tinta text-[10px]">{s.valores[i]}</Text> : null}
                   <View style={{ width: '100%', height: Math.max(s.valores[i] ? 3 : 0, (s.valores[i] / max) * altura),
-                    borderTopLeftRadius: 4, borderTopRightRadius: 4, backgroundColor: k ? cor.amigo : cor.voce }} />
+                    borderTopLeftRadius: 4, borderTopRightRadius: 4, backgroundColor: corDaSerie(s, k, cor) }} />
                 </Surge>
               ))}
             </View>
@@ -99,7 +102,7 @@ export function Barras({ rotulos, icones, series, prefixo = 'mais em', chave }: 
             {series.map((s, k) => (
               <View key={s.nome} className="flex-row items-center gap-[6px]">
                 <View style={{ height: 10, width: `${(s.valores[i] / max) * 82}%`, minWidth: s.valores[i] ? 3 : 0,
-                  borderTopRightRadius: 4, borderBottomRightRadius: 4, backgroundColor: k ? cor.amigo : cor.voce }} />
+                  borderTopRightRadius: 4, borderBottomRightRadius: 4, backgroundColor: corDaSerie(s, k, cor) }} />
                 <Text className="font-numero text-apagado text-[11px]">{s.valores[i]}</Text>
               </View>
             ))}
