@@ -162,11 +162,12 @@ function Lugares({ lugares, temas, c, regiao, largura, posicao, temaDoDia, aprox
           <Fragment key={lugar.mapa}>
             {pulsa ? <Pulso centro={{ latitude: lugar.lat, longitude: lugar.lon }} raioBase={18 * metrosPorPx}
               progresso={ritmos[Number.parseInt(lugar.mapa.slice(-2), 36) % ritmos.length || 0]}
-              cor={doDia ? c.destaque : escurecerParaBranco(tema?.cor ?? c.agua)} forte={doDia} /> : null}
+              cor={escurecerParaBranco(tema?.cor ?? c.agua)} forte={doDia} /> : null}
+            {/* o pulso tem a cor do próprio tema; o tema do dia se destaca só por pulsar mais forte */}
             <Marker coordinate={{ latitude: lugar.lat, longitude: lugar.lon }} anchor={CENTRO}
               tracksViewChanges={desenhando} title={lugar.nome} description={`${distancia}${dica}`}>
               <View style={[estilosMarcador.circulo, { backgroundColor: escurecerParaBranco(tema?.cor ?? c.agua),
-                borderColor: doDia ? c.destaque : c.superficie }]}>
+                borderColor: c.superficie }]}>
                 <IconeTema id={lugar.tema} tamanho={18} cor="#FFFFFF" />
               </View>
               <Balao c={c} titulo={lugar.nome} distancia={lugar.distancia_km} linha={tema ? `procure ${tema.nome.toLowerCase()}` : undefined} />
