@@ -19,7 +19,7 @@ import os
 import threading
 import time
 import uuid
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from functools import lru_cache
 from pathlib import Path
@@ -629,7 +629,46 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
         imagem = ImageOps.exif_transpose(Image.open(io.BytesIO(dados))).convert("RGB")
     except (UnidentifiedImageError, OSError):
         raise HTTPException(400, "Não consegui abrir a foto.")
+    return _sem_repetir(s, imagem, lambda: _julgar(s, imagem, lat, lon, modo))
 
+
+# O mesmo envio chegando duas vezes (toque duplo ou o Android reenviando o POST numa conexão que caiu) julgava a foto
+# duas vezes: a 1ª valia os pontos e a 2ª, igual à 1ª, vinha "você já fotografou este mesmo objeto" com 0 na tela.
+_recentes: dict = {}
+_trava_recentes = threading.Lock()
+REPETIDO_SEGUNDOS = 120
+
+
+def _sem_repetir(s, imagem, julgar_de_verdade):
+    """Mesma foto do mesmo jogador em 2 min: espera e devolve a resposta da 1ª, sem julgar nem gravar de novo.
+    shortcut: só compara o hash exato (reenvio do mesmo arquivo); dois toques com fotos diferentes ficam por conta do app."""
+    chave = (s.apelido, getattr(s, "_dispositivo", None), jogo.hash_foto(imagem))
+    agora_ = time.monotonic()
+    with _trava_recentes:
+        for velha in [k for k, (t, _) in _recentes.items() if agora_ - t > REPETIDO_SEGUNDOS]:
+            del _recentes[velha]
+        if chave in _recentes:
+            futuro, dono = _recentes[chave][1], False
+        else:
+            futuro, dono = Future(), True
+            _recentes[chave] = (agora_, futuro)
+    if not dono:
+        return futuro.result(timeout=90)
+    try:
+        resposta = julgar_de_verdade()
+    except BaseException as erro:
+        with _trava_recentes:
+            _recentes.pop(chave, None)
+        futuro.set_exception(erro)
+        raise
+    if resposta.get("status") != "ok":  # "borrada" não gravou nada: tirar de novo tem que julgar de novo
+        with _trava_recentes:
+            _recentes.pop(chave, None)
+    futuro.set_result(resposta)
+    return resposta
+
+
+def _julgar(s, imagem, lat, lon, modo):
     gps = (lat, lon) if lat is not None and lon is not None else None
     livre = modo == "livre"
     if modo == "competicao" and (falta := jogo.espera_competicao(_capturas(s), s.apelido)):

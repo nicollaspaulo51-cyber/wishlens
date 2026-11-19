@@ -41,6 +41,7 @@ def cliente(monkeypatch):
     monkeypatch.setattr(srv, "_clima", lambda *a: None)
     srv._memoria.clear()
     srv._ultima_foto.clear()
+    srv._recentes.clear()
     with TestClient(srv.app) as c:
         yield c
 
@@ -68,6 +69,15 @@ def test_mesmo_objeto_de_novo_nao_vale(cliente):
     _enviar(cliente)
     r = _enviar(cliente, _jpeg(deslocar=30))  # outra foto, mesmo vetor do CLIP
     assert not r["cartao"]["aceita"] and r["cartao"]["pontos"] == 0
+
+
+def test_mesmo_envio_duas_vezes_devolve_a_1a_resposta_sem_gravar_de_novo(cliente):
+    """Toque duplo ou POST reenviado: a tela mostrava a 2ª resposta (0 pontos) e o placar ficava com os pontos da 1ª."""
+    foto = _jpeg()
+    primeira = _enviar(cliente, foto)
+    segunda = _enviar(cliente, foto)
+    assert primeira["cartao"]["aceita"] and segunda == primeira
+    assert len(srv._memoria) == 1
 
 
 def test_foto_borrada_pede_outra_e_nao_salva(cliente, monkeypatch):
@@ -204,7 +214,7 @@ def test_treino_e_academia_exigem_estar_no_lugar(cliente, monkeypatch):
     perto = _enviar(cliente, _jpeg(deslocar=40), modo="treino", lat=-20.3, lon=-40.3)
     assert perto["cartao"]["aceita"] and any("praça nova" in b for b in perto["cartao"]["bonus"])
     monkeypatch.setattr(srv, "lugares_perto", lambda lat, lon, modo="livre": None)
-    assert _enviar(cliente, modo="treino", lat=-20.3, lon=-40.3)["titulo"] == "Lugar não confirmado"
+    assert _enviar(cliente, _jpeg(deslocar=70), modo="treino", lat=-20.3, lon=-40.3)["titulo"] == "Lugar não confirmado"
 
 
 def test_dono_da_academia_aparece_com_duas_pessoas(cliente, monkeypatch):
