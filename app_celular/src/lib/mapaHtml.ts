@@ -14,7 +14,8 @@ export const MAPA_HTML = `<!doctype html>
   body.escuro .maplibregl-canvas { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9); }
   .lugar, .grupo, .voce, .guardiao { display: flex; align-items: center; justify-content: center; border-radius: 50%;
     box-sizing: border-box; cursor: pointer; font-family: system-ui, sans-serif; }
-  .lugar { width: 36px; height: 36px; border: 2px solid; font-size: 18px; position: relative; }
+  /* sem position aqui: o MapLibre já põe position:absolute nos marcadores, e é ele que ancora o ::before do pulso */
+  .lugar { width: 36px; height: 36px; border: 2px solid; font-size: 18px; }
   .grupo { width: 40px; height: 40px; border: 2px solid; color: #fff; font-size: 14px; font-weight: 700; }
   .voce { width: 18px; height: 18px; border: 2px solid; cursor: default; }
   .guardiao { width: 44px; height: 44px; border: 1px solid; font-size: 22px; opacity: 0.9; }
