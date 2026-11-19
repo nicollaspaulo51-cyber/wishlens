@@ -50,6 +50,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
+    "checar": "node ../scripts/checar_app.js && tsc --noEmit",
     "postinstall": "setup-skia-web public"
   },
   "private": true

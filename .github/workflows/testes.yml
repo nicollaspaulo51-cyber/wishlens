@@ -16,3 +16,26 @@ jobs:
           cache-dependency-path: requirements-dev.txt
       - run: pip install -r requirements-dev.txt
       - run: python -m pytest -q tests/
+
+  # App do celular: tipos do TypeScript + checagens contra bugs que já voltaram (scripts/checar_app.js)
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app_celular
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app_celular/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run checar
+
+  # Ligador dos servidores: pelo menos precisa abrir sem erro de sintaxe
+  ligador:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check servidor/iniciar_wishlens.js && node --check servidor/ponte_expo.js
