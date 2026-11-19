@@ -99,3 +99,11 @@ def test_foto_grande_vai_reduzida_para_a_ia():
     menor = Image.open(io.BytesIO(visao._reduzir(buf.getvalue())))
     assert max(menor.size) == visao.LADO_MAX
     assert visao._reduzir(b"nao-e-jpeg") == b"nao-e-jpeg"
+
+
+def test_conecta_em_poucos_segundos_ou_desiste():
+    """Se a ponte da placa cair, a foto não pode esperar o tempo todo da IA: o CLIP julga logo."""
+    with patch("src.visao.requests.post", return_value=_api('{"tema": "nenhum", "achado": "", "foto_real": true}')) as post:
+        visao.identificar_captura(b"x", URL)
+    conectar, ler = post.call_args.kwargs["timeout"]
+    assert conectar <= 5 and ler >= 30
