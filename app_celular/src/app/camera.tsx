@@ -5,7 +5,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CartaoPontos } from '../componentes/CartaoPontos';
@@ -15,6 +15,7 @@ import { Apagado, Botao, Fichas, Titulo } from '../componentes/ui';
 import { api, type Julgamento, type Tema } from '../lib/api';
 import { useCores } from '../lib/cores';
 import { useModo } from '../lib/modo';
+import { useTransicao } from '../lib/movimento';
 import { useDados } from '../lib/useDados';
 
 async function posicaoAgora() {
@@ -119,7 +120,7 @@ export default function Camera() {
     return (
       <SafeAreaView className="flex-1 bg-papel">
         <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-          <Image source={{ uri: foto }} style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 6 }} accessibilityLabel="Sua foto" />
+          <FotoCapturada uri={foto} />
           {!resposta && !erro ? (
             <View className="flex-row gap-[12px] items-center" accessibilityLiveRegion="polite">
               <ActivityIndicator color={c.destaque} />
@@ -222,10 +223,20 @@ export default function Camera() {
   );
 }
 
+function FotoCapturada({ uri }: { uri: string }) {
+  const entrada = useTransicao(1, 200, { inicial: 0 });
+  return (
+    <Animated.Image source={{ uri }} accessibilityLabel="Sua foto"
+      style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 6,
+        opacity: entrada.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }),
+        transform: [{ scale: entrada.interpolate({ inputRange: [0, 1], outputRange: [0.97, 1] }) }] }} />
+  );
+}
+
 // Competição: segundos até poder mandar a próxima foto de partida (o juiz manda o número; aqui só conta para baixo)
 function useEsperaPartida(ativa: boolean) {
   const [fim, setFim] = useState(0);
-  const [agora, setAgora] = useState(Date.now());
+  const [agora, setAgora] = useState(Date.now);
   useEffect(() => {
     if (!ativa) return;
     api.estado().then((e) => setFim(Date.now() + (e.espera_competicao ?? 0) * 1000)).catch(() => {});
