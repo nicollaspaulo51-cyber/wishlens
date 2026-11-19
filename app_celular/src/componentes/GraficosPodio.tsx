@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { DadosGraficosPodio, LinhaPodio, Tema } from '../lib/api';
 import { useCores } from '../lib/cores';
 import { useDados } from '../lib/useDados';
-import { Barras, Colunas, Legenda, useCoresGrafico } from './Graficos';
+import { Barras, Colunas, Legenda, Linhas, useCoresGrafico } from './Graficos';
+import { Pizza } from './Pizza';
 import { Apagado, Aviso, Cartaz, ModalTema, Subtitulo } from './ui';
 
 type Pessoa = LinhaPodio & { nome: string; cor: string };
@@ -63,6 +64,10 @@ export function GraficosPodio({ ranking, dados, buscarDados, temas, periodo, cha
           series={pessoas.map(({ nome, cor, pontos }) => ({ nome, cor, valores: [pontos] }))} />
         <Barras chave={chaveGrafico} rotulos={['Capturas aceitas']} prefixo="total de"
           series={pessoas.map(({ nome, cor, achados }) => ({ nome, cor, valores: [achados] }))} />
+      </CartaoGrafico>
+      <CartaoGrafico titulo="Participação nas capturas aceitas">
+        <Pizza key={chaveSelecao} inteira pessoas={[{ nome: 'Jogadores comparados', fatias: pessoas.map(({ nome, cor, achados }) =>
+          ({ nome, cor, valor: achados })) }]} />
       </CartaoGrafico>
       {dadosLocais ? <DetalhesPodio dados={dadosLocais} pessoas={pessoas} temas={temas} periodo={periodo} chave={chaveGrafico} /> :
         <BuscarDetalhes key={chaveSelecao} buscarDados={buscarDados} pessoas={pessoas} temas={temas} periodo={periodo} chave={chaveGrafico} />}
@@ -140,17 +145,56 @@ function DetalhesPodio({ dados, pessoas, temas, periodo, chave }: {
   const novosAgregados = porPessoa.every(({ dados: d }) =>
     d.pontos_jogo !== undefined && d.bonus !== undefined && d.capturas_por_dia && d.capturas_por_tema);
   const sufixo = periodo === 'geral' ? ' (últimas 2 semanas)' : '';
+  const acumulados = serie('por_dia').map((s) => {
+    let total = 0;
+    return { ...s, valores: s.valores.map((v) => (total += v)) };
+  });
+  const indicadores = [
+    { nome: 'Melhor dia (pontos)', valores: porPessoa.map(({ dados: d }) => Math.max(0, ...d.por_dia)) },
+    ...(novosAgregados ? [
+      { nome: 'Dias com capturas', valores: porPessoa.map(({ dados: d }) => d.capturas_por_dia!.filter((n) => n > 0).length) },
+      { nome: 'Temas fotografados', valores: porPessoa.map(({ dados: d }) => d.capturas_por_tema!.filter((n) => n > 0).length) },
+      { nome: 'Pontos de jogo por captura', valores: porPessoa.map(({ dados: d, achados }) => achados > 0
+        ? Math.round(d.pontos_jogo! / achados * 10) / 10 : null) },
+    ] : []),
+  ];
 
   return (
     <>
+      <CartaoGrafico titulo="Números dos jogadores">
+        <View className="flex-row items-end gap-2">
+          <View className="w-[40%]" />
+          {pessoas.map(({ nome, cor }) => (
+            <Text key={nome} className="flex-1 font-texto-forte text-center text-[12px]" style={{ color: cor }} numberOfLines={2}>{nome}</Text>
+          ))}
+        </View>
+        {indicadores.map(({ nome, valores }) => (
+          <View key={nome} className="flex-row items-center gap-2 border-t border-linha pt-2" accessible
+            accessibilityLabel={`${nome}. ${pessoas.map((p, i) => `${p.nome}: ${valores[i]?.toLocaleString('pt-BR') ?? 'sem capturas'}`).join('. ')}`}>
+            <Text className="w-[40%] font-texto text-tinta text-[13px]">{nome}</Text>
+            {valores.map((valor, i) => (
+              <Text key={pessoas[i].nome} className="flex-1 font-numero text-center text-tinta text-[13px]">
+                {valor?.toLocaleString('pt-BR') ?? '—'}
+              </Text>
+            ))}
+          </View>
+        ))}
+        {periodo === 'geral' ? <Apagado estilo={{ fontSize: 12 }}>Melhor dia e dias com capturas consideram as últimas 2 semanas.</Apagado> : null}
+      </CartaoGrafico>
       {novosAgregados ? (
         <CartaoGrafico titulo="De onde vêm os pontos">
+          <Pizza key={chave} pessoas={porPessoa.map(({ nome, dados: d }) => ({ nome, fatias: [
+            { nome: 'Pontos de jogo', valor: d.pontos_jogo! }, { nome: 'Bônus extras', valor: d.bonus! },
+          ] }))} />
           <Barras chave={chave} rotulos={['Pontos de jogo', 'Bônus extras']}
             series={porPessoa.map(({ nome, cor, dados: d }) => ({ nome, cor, valores: [d.pontos_jogo ?? 0, d.bonus ?? 0] }))} />
         </CartaoGrafico>
       ) : null}
       {dias.length > 1 ? (
         <>
+          <CartaoGrafico titulo={`Pontos acumulados por dia${sufixo}`}>
+            <Linhas key={chave} rotulos={dias} series={acumulados} />
+          </CartaoGrafico>
           <CartaoGrafico titulo={`Pontos por dia${sufixo}`}>
             <Colunas key={`pontos-${chave}`} chave={chave} prefixo="mais pontos em" rotulos={dias} series={serie('por_dia')} />
           </CartaoGrafico>
@@ -158,7 +202,7 @@ function DetalhesPodio({ dados, pessoas, temas, periodo, chave }: {
             <Colunas key={`capturas-${chave}`} chave={chave} prefixo="mais capturas em" rotulos={dias} series={serie('capturas_por_dia')} />
           </CartaoGrafico> : null}
         </>
-      ) : null}
+      ) : <Apagado estilo={{ fontSize: 12 }}>Selecione Geral para ver a evolução dos pontos por dia.</Apagado>}
       {rotulosTema.length > 1 ? (
         <>
           <CartaoGrafico titulo="Pontos por tema">

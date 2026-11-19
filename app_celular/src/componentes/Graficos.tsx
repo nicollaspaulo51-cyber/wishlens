@@ -1,6 +1,7 @@
 // Gráficos de Amigos e Pódio. A legenda identifica as séries e tocar numa coluna mostra sua contagem.
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Pressable, ScrollView, Text, useColorScheme, View } from 'react-native';
+import Svg, { Circle, Line, Polyline, Text as TextoSvg } from 'react-native-svg';
 
 import { useCores } from '../lib/cores';
 import { Surge } from '../lib/movimento';
@@ -36,6 +37,62 @@ export function Legenda({ series }: { series: Pick<Serie, 'nome' | 'cor'>[] }) {
           <Text className="font-texto text-apagado text-[13px]" >{s.nome}</Text>
         </View>
       ))}
+    </View>
+  );
+}
+
+export function Linhas({ rotulos, series }: { rotulos: string[]; series: Serie[] }) {
+  const c = useCores();
+  const cores = useCoresGrafico();
+  const [largura, setLargura] = useState(0);
+  const [dia, setDia] = useState(0);
+  const max = Math.max(0, ...series.flatMap((s) => s.valores));
+  if (!max) return <Text className="font-texto text-apagado">Sem pontos para mostrar nesses dias.</Text>;
+  const teto = Math.ceil(max / 2) * 2;
+  const margem = 40;
+  const passo = Math.max(44, (largura - margem) / rotulos.length);
+  const larguraGrafico = margem + passo * rotulos.length;
+  const x = (i: number) => margem + passo * (i + 0.5);
+  const y = (valor: number) => 134 - 122 * valor / teto;
+
+  return (
+    <View className="gap-[6px]" onLayout={(e) => setLargura(e.nativeEvent.layout.width)}>
+      <Text className="font-texto text-tinta text-[13px]" accessibilityLiveRegion="polite">
+        {rotulos[dia]} · {series.map((s) => `${s.nome} ${s.valores[dia]} pts`).join(' · ')}
+      </Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator>
+        <View>
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <Svg width={larguraGrafico} height={144}>
+              {[0, teto / 2, teto].map((v) => (
+                <Fragment key={v}>
+                  <Line x1={margem} x2={larguraGrafico} y1={y(v)} y2={y(v)} stroke={c.linha} />
+                  <TextoSvg x={margem - 5} y={y(v) + 4} fill={c.apagado} fontSize={10} textAnchor="end">{v}</TextoSvg>
+                </Fragment>
+              ))}
+              {series.map((s, k) => (
+                <Polyline key={s.nome} points={s.valores.map((valor, i) => `${x(i)},${y(valor)}`).join(' ')}
+                  fill="none" stroke={corDaSerie(s, k, cores)} strokeWidth={2.5} strokeLinejoin="round" />
+              ))}
+              {series.map((s, k) => (
+                <Circle key={s.nome} cx={x(dia)} cy={y(s.valores[dia])} r={4}
+                  fill={corDaSerie(s, k, cores)} stroke={c.superficie} strokeWidth={1} />
+              ))}
+            </Svg>
+          </View>
+          <View className="flex-row" style={{ paddingLeft: margem }}>
+            {rotulos.map((rotulo, i) => (
+              <Pressable key={rotulo} onPress={() => setDia(i)} accessibilityRole="button"
+                accessibilityState={{ selected: dia === i }}
+                accessibilityLabel={`${rotulo}, ${series.map((s) => `${s.nome} ${s.valores[i]} pontos acumulados`).join(', ')}`}
+                className="min-h-[44px] items-center justify-center rounded-ficha"
+                style={{ width: passo, backgroundColor: dia === i ? c.suave : 'transparent' }}>
+                <Text className="font-texto text-apagado text-[11px]">{rotulo}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
     </View>
   );
 }
