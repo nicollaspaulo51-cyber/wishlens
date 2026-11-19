@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+  <title>Confirmação de e-mail • WishLens</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; min-height: 100dvh; display: grid; place-items: center; background: #f3f0ea; color: #242720; }
+    main { width: min(27rem, calc(100% - 2rem)); box-sizing: border-box; padding: clamp(1.5rem, 6vw, 2.5rem);
+      border: 1px solid #d5cfc4; border-radius: 10px; background: #fbf9f4; }
+    .marca { color: #965020; font-weight: 700; margin: 0 0 0.75rem; }
+    h1 { font-size: clamp(1.65rem, 6vw, 2rem); line-height: 1.15; margin: 0 0 0.75rem; }
+    p { font-size: 1rem; line-height: 1.55; margin: 0; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #141715; color: #f0eee7; }
+      main { background: #1c211e; border-color: #394139; }
+      .marca { color: #ffa163; }
+    }
+  </style>
+  <script src="./confirmacao.js" defer></script>
+</head>
+<body>
+  <main>
+    <p class="marca">WishLens</p>
+    <h1>Confirmação de e-mail</h1>
+    <p id="mensagem">Se você acabou de confirmar seu e-mail, volte ao WishLens no Expo Go e entre na sua conta.</p>
+  </main>
+</body>
+</html>
