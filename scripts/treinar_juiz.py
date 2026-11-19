@@ -121,6 +121,37 @@ def regras_com_ia(df: pd.DataFrame, ia: pd.DataFrame, sonda) -> dict:
     return res
 
 
+def medir_objetos(teste: pd.DataFrame, sonda) -> dict:
+    """Qual OBJETO é, dentro do tema (teclado x mouse x monitor...), nas fotos reais do teste: CLIP sem treino x treinado."""
+    import torch
+
+    from src.reconhecimento import _carregar, _vetores_captura, achado_do_tema
+
+    modelo, _ = _carregar()
+    vet_texto, frases = _vetores_captura("livre")
+    escala = float(modelo.logit_scale.exp())
+    res = {}
+    for tema, classes in tj.OBJETOS.items():
+        d = teste[(teste["tema"] == tema) & teste["real"] & teste["classe"].isin(classes)]
+        if d.empty or tema not in sonda.objetos:
+            continue
+        verdade = d["classe"].to_numpy()
+        obj = [tj.objeto(v, tema, sonda) for v in d["vetor"]]
+        prev = np.array([o["classe"] for o in obj])
+        confiante = np.array([o["conf"] >= tj.LIMIAR_OBJETO for o in obj])
+        r = {"n": int(len(d)), "treinado": round(float((prev == verdade).mean()), 3),
+             "cobertura_confiante": round(float(confiante.mean()), 3),
+             "treinado_quando_confiante": round(float((prev == verdade)[confiante].mean()), 3) if confiante.any() else None,
+             "confusao": pd.crosstab(pd.Series(verdade, name="era"), pd.Series(prev, name="disse")).to_dict()}
+        if all(palavras for _, palavras in classes.values()):  # dá para ligar o nome do zero-shot a uma classe
+            with torch.no_grad():
+                chances = (escala * torch.tensor(np.stack(d["vetor"].to_numpy())) @ vet_texto.T).softmax(dim=-1).tolist()
+            zs = np.array([tj.classe_do_nome(tema, achado_do_tema(frases, p, tema)) for p in chances], dtype=object)
+            r["zero_shot"] = round(float((zs == verdade).mean()), 3)
+        res[tema] = r
+    return res
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dados", required=True, type=Path)
@@ -142,6 +173,7 @@ def main() -> None:
                 "por_parte": df.groupby("parte").size().to_dict(),
                 "teste": {"clip_zero_shot": tj.resumo(teste, *tj.decisoes(teste, None)[["tema", "real"]].T.to_numpy()),
                           "clip_treinado": tj.resumo(teste, *tj.decisoes(teste, sonda)[["tema", "real"]].T.to_numpy())}}
+    metricas["objetos_teste"] = medir_objetos(teste[teste["variante"].isin(["original", "celular"])], sonda)
     # previsões do teste, linha a linha, para o notebook 06 (matriz de confusão, erros com miniatura)
     zs, tr = tj.decisoes(teste, None), tj.decisoes(teste, sonda)
     prev = teste[["id", "grupo", "classe", "tema", "variante", "real"]].assign(

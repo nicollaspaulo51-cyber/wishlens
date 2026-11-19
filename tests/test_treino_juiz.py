@@ -93,3 +93,56 @@ def test_juntar_ia_so_derruba_com_o_clip_desconfiado():
     assert tj.juntar("pets", False, "carros", True, 0.1, s) == ("carros", True)
     assert tj.juntar("pets", False, "carros", True, 0.7, s) == ("carros", False)
     assert tj.juntar("pets", True, "carros", False, 0.9, s) == ("carros", False)  # o CLIP sozinho já barra
+
+
+def test_nome_diz_qual_objeto_e():
+    assert tj.classe_do_nome("pecas", "teclado mecânico") == "Computer keyboard"
+    assert tj.classe_do_nome("pecas", "Teclados") == "Computer keyboard"
+    assert tj.classe_do_nome("pecas", "Notebook Dell") == "Laptop"
+    assert tj.classe_do_nome("pets", "cachorro vira-lata caramelo") == "Dog"
+    assert tj.classe_do_nome("comidas", "macarrão") is None      # "maca" não é "maçã"
+    assert tj.classe_do_nome("pecas", "placa de vídeo") is None  # peça sem classe própria: o nome da IA vale
+    assert tj.classe_do_nome("carros", "Volkswagen Gol") is None  # modelo de carro nunca é trocado
+
+
+def _com_objetos(tema, classes, conf):
+    """Sonda de brinquedo: o vetor e0 aponta para classes[0] com a força `conf`."""
+    w = np.zeros((len(classes), 512), dtype=np.float32)
+    w[0, 0] = conf
+    base = _sonda()
+    return tj.Sonda(base.w_tema, base.b_tema, base.w_falsa, base.b_falsa, 1, 1, 0.75, "t",
+                    objetos={tema: (w, np.zeros(len(classes), dtype=np.float32), tuple(classes))})
+
+
+def test_achado_so_troca_quando_a_ia_diz_outro_objeto_e_o_classificador_tem_certeza():
+    classes = ["Computer keyboard", "Computer monitor", "Computer mouse"]
+    forte = tj.objeto(E0, "pecas", _com_objetos("pecas", classes, 12.0))
+    assert forte["classe"] == "Computer keyboard" and forte["nome"] == "teclado" and forte["conf"] > 0.9
+    assert tj.objeto(E0, "plantas", _com_objetos("pecas", classes, 12.0)) is None  # tema sem classificador
+    assert tj.escolher_achado("mouse", "pecas", forte) == "teclado"                # a IA disse outro objeto
+    assert tj.escolher_achado("teclado mecânico", "pecas", forte) == "teclado mecânico"  # concorda: fica o detalhe
+    assert tj.escolher_achado("Logitech MX Keys", "pecas", forte) == "Logitech MX Keys"  # nada a contradizer
+    assert tj.escolher_achado("", "pecas", forte) == "teclado"
+    fraco = tj.objeto(E0, "pecas", _com_objetos("pecas", classes, 0.1))
+    assert fraco["conf"] < tj.LIMIAR_OBJETO and tj.escolher_achado("mouse", "pecas", fraco) == "mouse"
+
+
+def test_treina_objetos_com_duas_classes_e_guarda(tmp_path):
+    rng = np.random.default_rng(0)
+    linhas = []
+    for i in range(80):
+        classe = "Car" if i % 2 else "Van"
+        v = rng.normal(0, 0.05, 512).astype(np.float32)
+        v[0 if classe == "Car" else 1] += 1.0
+        linhas.append({"tema": "carros", "real": True, "classe": classe, "vetor": v,
+                       "parte": "treino" if i < 56 else "validacao" if i < 68 else "teste"})
+    saida, rel = tj.treinar_objetos(pd.DataFrame(linhas))
+    w, b, classes = saida["carros"]
+    assert w.shape == (2, 512) and classes == ("Car", "Van") and rel["carros"]["acerto_validacao"] > 0.9
+    base = _sonda()
+    s = tj.Sonda(base.w_tema, base.b_tema, base.w_falsa, base.b_falsa, 1, 1, 0.75, "t", objetos=saida)
+    caminho = tmp_path / "j.npz"
+    tj.salvar(s, caminho)
+    lida = tj.carregar(caminho)
+    assert tj.objeto(np.eye(512, dtype=np.float32)[0], "carros", lida)["classe"] == "Car"
+    assert tj.objeto(np.eye(512, dtype=np.float32)[1], "carros", lida)["classe"] == "Van"

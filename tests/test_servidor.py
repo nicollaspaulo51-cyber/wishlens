@@ -351,6 +351,7 @@ def test_treino_guarda_foto_sem_exif_e_conta(cliente, monkeypatch, tmp_path):
     c = cliente.get("/treino/contagem", headers={"X-Apelido": "ana"}).json()
     assert c["total"] == 2 and c["minhas"] == 2 and c["por_tema"]["comidas"] == 1 and c["por_tipo"]["tela"] == 1
     assert "ana" in (tmp_path / "rotulos.csv").read_text(encoding="utf-8")
+    assert "teclado" in c["objetos"]["pecas"] and "mouse" in c["objetos"]["pecas"]
 
 
 def test_treino_recusa_etiqueta_invalida_convidado_e_excesso(cliente, monkeypatch, tmp_path):

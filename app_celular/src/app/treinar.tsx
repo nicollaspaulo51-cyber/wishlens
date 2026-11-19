@@ -29,6 +29,7 @@ export default function Treinar() {
   const [aceitou, setAceitou] = useState<boolean | null>(null);
   const [tema, setTema] = useState('carros');
   const [tipo, setTipo] = useState('real');
+  const [objeto, setObjeto] = useState('');
   const [resultado, setResultado] = useState<'vitoria' | 'derrota'>('vitoria');
   const [fotografando, setFotografando] = useState(false);
   const [permissao, pedirPermissao] = useCameraPermissions();
@@ -50,6 +51,7 @@ export default function Treinar() {
     { valor: 'nenhum', texto: 'Nenhum deles' },
   ];
   const nomeTema = opcoesTema.find((o) => o.valor === tema)?.texto ?? tema;
+  const objetos = contagem.dados?.objetos[tema] ?? [];
   const dicaTipo = TIPOS.find((t) => t.valor === tipo)?.dica;
   const d = contagem.dados;
   const falta = d ? Math.max(0, d.meta_tema - (d.por_tema[tema] ?? 0)) : null;
@@ -68,7 +70,7 @@ export default function Treinar() {
       const crua = await camera.current.takePictureAsync({ quality: 0.9, shutterSound: false });
       const menor = await (await ImageManipulator.manipulate(crua.uri).resize({ width: 1024, height: null }).renderAsync())
         .saveAsync({ format: SaveFormat.JPEG, compress: 0.85 });
-      await api.treinoFoto(menor.uri, tema, tipo, tema === 'competicao' ? (resultado === 'vitoria' ? 'vitória' : 'derrota') : '');
+      await api.treinoFoto(menor.uri, tema, tipo, tema === 'competicao' ? (resultado === 'vitoria' ? 'vitória' : 'derrota') : objeto);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setMsg({ texto: 'Foto enviada. Obrigado!', erro: false });
       contagem.recarregar();
@@ -129,7 +131,7 @@ export default function Treinar() {
               <Text className="font-texto-forte" style={{ color: '#fff', fontSize: 15 }}>Mudar</Text>
             </Pressable>
             <Text className="font-texto" style={{ color: '#fff', fontSize: 15, backgroundColor: 'rgba(0,0,0,0.55)', padding: 8, borderRadius: 6, overflow: 'hidden' }}>
-              {nomeTema}{tema === 'competicao' ? ` (${resultado === 'vitoria' ? 'vitória' : 'derrota'})` : ''} · {TIPOS.find((t) => t.valor === tipo)?.texto}
+              {nomeTema}{tema === 'competicao' ? ` (${resultado === 'vitoria' ? 'vitória' : 'derrota'})` : objeto ? `: ${objeto}` : ''} · {TIPOS.find((t) => t.valor === tipo)?.texto}
             </Text>
           </View>
           <View style={{ alignItems: 'center', gap: 12, paddingBottom: 12 }}>
@@ -167,7 +169,14 @@ export default function Treinar() {
         ) : null}
 
         <Subtitulo>O que é</Subtitulo>
-        <Fichas rotulo="O que vai fotografar" valor={tema} aoEscolher={setTema} opcoes={opcoesTema} />
+        <Fichas rotulo="O que vai fotografar" valor={tema} aoEscolher={(t) => { setTema(t); setObjeto(''); }} opcoes={opcoesTema} />
+        {objetos.length ? (
+          <>
+            <Apagado>Qual objeto? O juiz aprende a diferenciar um do outro.</Apagado>
+            <Fichas rotulo="Qual objeto" valor={objeto} aoEscolher={setObjeto}
+              opcoes={[{ valor: '', texto: 'Não sei / outro' }, ...objetos.map((o) => ({ valor: o, texto: o }))]} />
+          </>
+        ) : null}
         {tema === 'competicao' ? (
           <Fichas rotulo="Resultado da partida" valor={resultado} aoEscolher={setResultado}
             opcoes={[{ valor: 'vitoria', texto: 'Vitória' }, { valor: 'derrota', texto: 'Derrota' }]} />

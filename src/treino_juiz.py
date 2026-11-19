@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import numpy as np
@@ -41,6 +41,60 @@ class Sonda:
     # (sozinha ela recusava 1 em cada 3 fotos reais). 1.0 = a IA nunca derruba sozinha.
     limiar_ia: float = 0.0
     tema_da_ia: bool = True  # o tema vem da IA (com o achado detalhado) ou do CLIP treinado
+    # Qual objeto é, dentro do tema (teclado x mouse x monitor...): tema -> (pesos, vieses, classes do Open Images)
+    objetos: dict = field(default_factory=dict)
+
+
+# Objetos de cada tema (classes do Open Images): nome em português e as palavras que o achado costuma ter.
+# Classe sem palavras = o achado detalhado da IA (modelo do carro, espécie da flor) nunca é trocado por este nome.
+OBJETOS: dict[str, dict[str, tuple[str, tuple[str, ...]]]] = {
+    "carros": {"Car": ("carro", ()), "Van": ("van", ())},
+    "plantas": {"Flower": ("flor", ()), "Houseplant": ("planta em vaso", ()), "Tree": ("árvore", ()), "Plant": ("planta", ())},
+    "comidas": {"Apple": ("maçã", ("maca",)), "Banana": ("banana", ("banana",)), "Strawberry": ("morango", ("morango",)),
+                "Bread": ("pão", ("pao", "pao frances")), "Baked goods": ("doce ou salgado", ()),
+                "Fast food": ("lanche", ()), "Fruit": ("fruta", ()), "Vegetable": ("legume", ())},
+    "pets": {"Dog": ("cachorro", ("cachorro", "cachorra")), "Cat": ("gato", ("gato", "gata")),
+             "Bird": ("pássaro", ("passaro", "pombo", "bem te vi", "sabia", "periquito", "galinha", "pato", "tucano", "beija flor")),
+             "Horse": ("cavalo", ("cavalo", "egua")), "Butterfly": ("borboleta", ("borboleta",)),
+             "Lizard": ("lagarto", ("lagarto", "lagartixa"))},
+    "pecas": {"Computer keyboard": ("teclado", ("teclado",)), "Computer monitor": ("monitor", ("monitor",)),
+              "Computer mouse": ("mouse", ("mouse",)), "Laptop": ("notebook", ("notebook", "laptop")),
+              "Headphones": ("fone de ouvido", ("fone", "headset", "headphone"))},
+}
+LIMIAR_OBJETO = 0.6  # abaixo disto o classificador de objeto não tem certeza e não mexe no achado
+
+
+def classe_do_nome(tema: str, nome: str | None) -> str | None:
+    """A classe de objeto que um nome em português diz ("teclado mecânico" -> Computer keyboard), ou None."""
+    from src.jogo import normalizar
+
+    x = f" {normalizar(nome)} "
+    for classe, (_, palavras) in OBJETOS.get(tema, {}).items():
+        if any(f" {p} " in x or f" {p}s " in x for p in palavras):
+            return classe
+    return None
+
+
+def objeto(vetor, tema: str | None, s: Sonda) -> dict | None:
+    """Qual objeto do tema é, pelo classificador treinado: {classe, nome, conf}, ou None (tema sem classificador)."""
+    o = s.objetos.get(tema or "")
+    if o is None:
+        return None
+    w, b, classes = o
+    p = _softmax(np.asarray(w) @ np.asarray(vetor, dtype=np.float32) + np.asarray(b))
+    i = int(p.argmax())
+    return {"classe": classes[i], "nome": OBJETOS[tema][classes[i]][0], "conf": float(p[i])}
+
+
+def escolher_achado(achado_ia: str, tema: str | None, obj: dict | None) -> str:
+    """O achado final: o da IA (detalhado), a não ser que ela diga OUTRO objeto do mesmo tema que o classificador
+    reconhece com certeza (a IA disse "mouse", o classificador viu um teclado com 90%): aí vale o nome do objeto."""
+    if not obj or not tema or obj["conf"] < LIMIAR_OBJETO:
+        return achado_ia
+    if not achado_ia:
+        return obj["nome"]
+    dito = classe_do_nome(tema, achado_ia)
+    return achado_ia if dito is None or dito == obj["classe"] else obj["nome"]
 
 
 def juntar(ia_tema: str | None, ia_real: bool, clip_tema: str | None, clip_real: bool, falsa: float,
@@ -79,7 +133,9 @@ def salvar(s: Sonda, caminho: Path = CAMINHO) -> None:
     np.savez_compressed(caminho, w_tema=s.w_tema.astype(np.float32), b_tema=s.b_tema.astype(np.float32),
                         w_falsa=s.w_falsa.astype(np.float32), b_falsa=np.float32(s.b_falsa), alfa=np.float32(s.alfa),
                         beta=np.float32(s.beta), limiar=np.float32(s.limiar), ordem=np.array(ORDEM), versao=np.array(s.versao),
-                        limiar_ia=np.float32(s.limiar_ia), tema_da_ia=np.array(s.tema_da_ia))
+                        limiar_ia=np.float32(s.limiar_ia), tema_da_ia=np.array(s.tema_da_ia),
+                        **{f"obj_{t}_{k}": v for t, (w, b, cl) in s.objetos.items()
+                           for k, v in (("w", np.asarray(w, np.float32)), ("b", np.asarray(b, np.float32)), ("classes", np.array(cl)))})
 
 
 def carregar(caminho: Path = CAMINHO) -> Sonda | None:
@@ -91,7 +147,9 @@ def carregar(caminho: Path = CAMINHO) -> Sonda | None:
         return None
     return Sonda(d["w_tema"], d["b_tema"], d["w_falsa"], float(d["b_falsa"]), float(d["alfa"]), float(d["beta"]),
                  float(d["limiar"]), str(d["versao"]), float(d["limiar_ia"]) if "limiar_ia" in d else 0.0,
-                 bool(d["tema_da_ia"]) if "tema_da_ia" in d else True)
+                 bool(d["tema_da_ia"]) if "tema_da_ia" in d else True,
+                 {t: (d[f"obj_{t}_w"], d[f"obj_{t}_b"], tuple(str(c) for c in d[f"obj_{t}_classes"]))
+                  for t in OBJETOS if f"obj_{t}_w" in d})
 
 
 # ---------------------------------------------------------------- dados
@@ -211,9 +269,39 @@ def treinar(df: pd.DataFrame, versao: str = "") -> tuple[Sonda, dict]:
 
     sonda = Sonda(m_tema.coef_.astype(np.float32), m_tema.intercept_.astype(np.float32),
                   m_falsa.coef_[0].astype(np.float32), float(m_falsa.intercept_[0]), alfa, beta, limiar, versao)
+    objetos, info_objetos = treinar_objetos(df)
+    sonda = replace(sonda, objetos=objetos)
     info = {"C_tema": C_tema, "C_falsa": C_falsa, "alfa": alfa, "beta": beta, "limiar": limiar,
-            "acerto_tema_por_alfa": acc_alfa}
+            "acerto_tema_por_alfa": acc_alfa, "objetos": info_objetos}
     return sonda, info
+
+
+def treinar_objetos(df: pd.DataFrame) -> tuple[dict, dict]:
+    """Um classificador de objeto por tema, só com fotos reais: o que é, entre as classes do tema (teclado x mouse...).
+    O C sai da validação. Devolve (tema -> (pesos, vieses, classes), relatório)."""
+    from sklearn.linear_model import LogisticRegression
+
+    saida, relatorio = {}, {}
+    for tema, classes in OBJETOS.items():
+        d = df[(df["tema"] == tema) & df["real"] & df["classe"].isin(classes)]
+        tr, va = d[d["parte"] == "treino"], d[d["parte"] == "validacao"]
+        presentes = sorted(set(tr["classe"]))
+        if len(presentes) < 2 or va.empty:
+            continue
+        Xtr, Xva = np.stack(tr["vetor"].to_numpy()), np.stack(va["vetor"].to_numpy())
+        melhor = None
+        for C in (0.1, 0.3, 1.0, 3.0, 10.0, 30.0):
+            m = LogisticRegression(C=C, max_iter=3000, class_weight="balanced").fit(Xtr, tr["classe"])
+            acc = float((m.predict(Xva) == va["classe"]).mean())
+            if melhor is None or acc > melhor[0]:
+                melhor = (acc, C, m)
+        acc, C, m = melhor
+        w, b = m.coef_.astype(np.float32), m.intercept_.astype(np.float32)
+        if w.shape[0] == 1:  # duas classes: o sklearn dá uma linha só; softmax([-z/2, z/2]) = sigmoide(z)
+            w, b = np.vstack([-w[0] / 2, w[0] / 2]), np.array([-b[0] / 2, b[0] / 2], dtype=np.float32)
+        saida[tema] = (w, b, tuple(str(c) for c in m.classes_))
+        relatorio[tema] = {"C": C, "acerto_validacao": round(acc, 3), "classes": list(m.classes_)}
+    return saida, relatorio
 
 
 # ---------------------------------------------------------------- medição

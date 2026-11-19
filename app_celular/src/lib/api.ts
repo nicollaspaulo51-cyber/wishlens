@@ -106,7 +106,7 @@ const json = (corpo: unknown): RequestInit => ({
 
 export type Treino = {
   total: number; minhas: number; por_tema: Record<string, number>; por_tipo: Record<string, number>;
-  meta_tema: number; meta_tipo: number;
+  meta_tema: number; meta_tipo: number; objetos: Record<string, string[]>;
 };
 
 async function anexarFoto(form: FormData, uri: string) {

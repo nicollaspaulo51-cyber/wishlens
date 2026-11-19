@@ -18,6 +18,63 @@
       "0.9": 0.9537815126050421,
       "1.0": 0.9516806722689075
     },
+    "objetos": {
+      "carros": {
+        "C": 30.0,
+        "acerto_validacao": 0.915,
+        "classes": [
+          "Car",
+          "Van"
+        ]
+      },
+      "plantas": {
+        "C": 1.0,
+        "acerto_validacao": 0.718,
+        "classes": [
+          "Flower",
+          "Houseplant",
+          "Plant",
+          "Tree"
+        ]
+      },
+      "comidas": {
+        "C": 3.0,
+        "acerto_validacao": 0.791,
+        "classes": [
+          "Apple",
+          "Baked goods",
+          "Banana",
+          "Bread",
+          "Fast food",
+          "Fruit",
+          "Strawberry",
+          "Vegetable"
+        ]
+      },
+      "pets": {
+        "C": 10.0,
+        "acerto_validacao": 0.975,
+        "classes": [
+          "Bird",
+          "Butterfly",
+          "Cat",
+          "Dog",
+          "Horse",
+          "Lizard"
+        ]
+      },
+      "pecas": {
+        "C": 1.0,
+        "acerto_validacao": 0.833,
+        "classes": [
+          "Computer keyboard",
+          "Computer monitor",
+          "Computer mouse",
+          "Headphones",
+          "Laptop"
+        ]
+      }
+    },
     "limiar_ia": 0.6,
     "tema_da_ia": false
   },
@@ -42,6 +99,245 @@
       "falsa_aceita": 0.1697952218430034,
       "tema_certo_nas_reais": 0.9653739612188366,
       "n": 2078
+    }
+  },
+  "objetos_teste": {
+    "carros": {
+      "n": 118,
+      "treinado": 0.941,
+      "cobertura_confiante": 0.983,
+      "treinado_quando_confiante": 0.948,
+      "confusao": {
+        "Car": {
+          "Car": 61,
+          "Van": 4
+        },
+        "Van": {
+          "Car": 3,
+          "Van": 50
+        }
+      }
+    },
+    "plantas": {
+      "n": 152,
+      "treinado": 0.684,
+      "cobertura_confiante": 0.375,
+      "treinado_quando_confiante": 0.895,
+      "confusao": {
+        "Flower": {
+          "Flower": 20,
+          "Houseplant": 0,
+          "Plant": 12,
+          "Tree": 1
+        },
+        "Houseplant": {
+          "Flower": 3,
+          "Houseplant": 24,
+          "Plant": 7,
+          "Tree": 0
+        },
+        "Plant": {
+          "Flower": 5,
+          "Houseplant": 1,
+          "Plant": 27,
+          "Tree": 4
+        },
+        "Tree": {
+          "Flower": 0,
+          "Houseplant": 7,
+          "Plant": 8,
+          "Tree": 33
+        }
+      }
+    },
+    "comidas": {
+      "n": 138,
+      "treinado": 0.775,
+      "cobertura_confiante": 0.601,
+      "treinado_quando_confiante": 0.928,
+      "confusao": {
+        "Apple": {
+          "Apple": 14,
+          "Baked goods": 0,
+          "Banana": 0,
+          "Bread": 0,
+          "Fast food": 0,
+          "Fruit": 8,
+          "Strawberry": 0,
+          "Vegetable": 0
+        },
+        "Baked goods": {
+          "Apple": 0,
+          "Baked goods": 9,
+          "Banana": 0,
+          "Bread": 0,
+          "Fast food": 1,
+          "Fruit": 0,
+          "Strawberry": 1,
+          "Vegetable": 0
+        },
+        "Banana": {
+          "Apple": 0,
+          "Baked goods": 0,
+          "Banana": 19,
+          "Bread": 0,
+          "Fast food": 0,
+          "Fruit": 0,
+          "Strawberry": 0,
+          "Vegetable": 1
+        },
+        "Bread": {
+          "Apple": 0,
+          "Baked goods": 3,
+          "Banana": 0,
+          "Bread": 22,
+          "Fast food": 2,
+          "Fruit": 0,
+          "Strawberry": 0,
+          "Vegetable": 0
+        },
+        "Fast food": {
+          "Apple": 0,
+          "Baked goods": 3,
+          "Banana": 0,
+          "Bread": 4,
+          "Fast food": 13,
+          "Fruit": 0,
+          "Strawberry": 0,
+          "Vegetable": 0
+        },
+        "Fruit": {
+          "Apple": 1,
+          "Baked goods": 1,
+          "Banana": 0,
+          "Bread": 0,
+          "Fast food": 0,
+          "Fruit": 6,
+          "Strawberry": 0,
+          "Vegetable": 2
+        },
+        "Strawberry": {
+          "Apple": 0,
+          "Baked goods": 2,
+          "Banana": 0,
+          "Bread": 0,
+          "Fast food": 0,
+          "Fruit": 0,
+          "Strawberry": 13,
+          "Vegetable": 0
+        },
+        "Vegetable": {
+          "Apple": 1,
+          "Baked goods": 0,
+          "Banana": 1,
+          "Bread": 0,
+          "Fast food": 0,
+          "Fruit": 0,
+          "Strawberry": 0,
+          "Vegetable": 11
+        }
+      }
+    },
+    "pets": {
+      "n": 170,
+      "treinado": 1.0,
+      "cobertura_confiante": 1.0,
+      "treinado_quando_confiante": 1.0,
+      "confusao": {
+        "Bird": {
+          "Bird": 30,
+          "Butterfly": 0,
+          "Cat": 0,
+          "Dog": 0,
+          "Horse": 0,
+          "Lizard": 0
+        },
+        "Butterfly": {
+          "Bird": 0,
+          "Butterfly": 16,
+          "Cat": 0,
+          "Dog": 0,
+          "Horse": 0,
+          "Lizard": 0
+        },
+        "Cat": {
+          "Bird": 0,
+          "Butterfly": 0,
+          "Cat": 38,
+          "Dog": 0,
+          "Horse": 0,
+          "Lizard": 0
+        },
+        "Dog": {
+          "Bird": 0,
+          "Butterfly": 0,
+          "Cat": 0,
+          "Dog": 28,
+          "Horse": 0,
+          "Lizard": 0
+        },
+        "Horse": {
+          "Bird": 0,
+          "Butterfly": 0,
+          "Cat": 0,
+          "Dog": 0,
+          "Horse": 36,
+          "Lizard": 0
+        },
+        "Lizard": {
+          "Bird": 0,
+          "Butterfly": 0,
+          "Cat": 0,
+          "Dog": 0,
+          "Horse": 0,
+          "Lizard": 22
+        }
+      },
+      "zero_shot": 0.988
+    },
+    "pecas": {
+      "n": 144,
+      "treinado": 0.819,
+      "cobertura_confiante": 0.59,
+      "treinado_quando_confiante": 0.953,
+      "confusao": {
+        "Computer keyboard": {
+          "Computer keyboard": 16,
+          "Computer monitor": 0,
+          "Computer mouse": 0,
+          "Headphones": 0,
+          "Laptop": 4
+        },
+        "Computer monitor": {
+          "Computer keyboard": 2,
+          "Computer monitor": 26,
+          "Computer mouse": 0,
+          "Headphones": 0,
+          "Laptop": 2
+        },
+        "Computer mouse": {
+          "Computer keyboard": 0,
+          "Computer monitor": 0,
+          "Computer mouse": 26,
+          "Headphones": 0,
+          "Laptop": 0
+        },
+        "Headphones": {
+          "Computer keyboard": 2,
+          "Computer monitor": 0,
+          "Computer mouse": 0,
+          "Headphones": 32,
+          "Laptop": 4
+        },
+        "Laptop": {
+          "Computer keyboard": 6,
+          "Computer monitor": 6,
+          "Computer mouse": 0,
+          "Headphones": 0,
+          "Laptop": 18
+        }
+      },
+      "zero_shot": 0.75
     }
   },
   "com_ia": {

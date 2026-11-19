@@ -37,6 +37,7 @@ from src.cartao import linha_juizes, partes_e_destaque
 from src.categorias import nome_valido
 from src.fotos import preparar_para_salvar
 from src.lugares import buscar_pontos_temas, distancia_km
+from src.treino_juiz import OBJETOS
 from src.temas import MODOS as ABAS, POR_ID, TEMAS, TEMAS_ANTIGOS, TODOS, agora, tema_do_dia
 
 MODOS = ("livre", *ABAS)
@@ -564,7 +565,9 @@ def treino_contagem(s=Depends(sessao)):
     por_tema = {t: sum(r["tema"] == t for r in rotulos) for t in TEMAS_TREINO}
     por_tipo = {t: sum(r["tipo"] == t for r in rotulos) for t in TIPOS_TREINO}
     return {"total": len(rotulos), "minhas": sum(r["quem"] == s.apelido for r in rotulos),
-            "por_tema": por_tema, "por_tipo": por_tipo, "meta_tema": META_POR_TEMA, "meta_tipo": META_POR_TIPO}
+            "por_tema": por_tema, "por_tipo": por_tipo, "meta_tema": META_POR_TEMA, "meta_tipo": META_POR_TIPO,
+            # os objetos que o juiz sabe distinguir em cada tema (teclado, mouse...): o app deixa escolher qual é
+            "objetos": {t: [nome for nome, _ in o.values()] for t, o in OBJETOS.items()}}
 
 
 def _cartao(resultado: dict, captura: visao.Captura, vezes: int, juizes: dict) -> dict:
@@ -645,8 +648,11 @@ def julgar(foto: UploadFile = File(...), lat: float | None = Form(None, ge=-90, 
         from src.reconhecimento import sonda
 
         tema, real = juntar(captura.tema, captura.foto_real, clip["tema"], clip["foto_real"], clip["probs"].get("tela", 0.0), sonda())
-        # o achado detalhado da IA (modelo do carro, espécie) vale quando ela concorda com o tema
-        achado = captura.achado if tema == captura.tema else clip["achado"]
+        # o achado detalhado da IA (modelo do carro, espécie) vale quando ela concorda com o tema, a não ser que
+        # ela diga OUTRO objeto do tema que o classificador de objeto treinado reconhece com certeza
+        from src.treino_juiz import escolher_achado
+
+        achado = escolher_achado(captura.achado, tema, clip.get("objeto")) if tema == captura.tema else clip["achado"]
         captura = visao.Captura(tema, achado, real, clip["confianca"] if tema == clip["tema"] else captura.confianca)
 
     celula, cidade = None, None
