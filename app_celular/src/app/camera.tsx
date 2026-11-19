@@ -1,11 +1,12 @@
 // Câmera: tira a foto, diminui para 1024 px (envio rápido), manda para o juiz e mostra o cartão de pontos.
+import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Fragment, useEffect, useRef, useState, type ComponentProps } from 'react';
+import { ActivityIndicator, Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CartaoPontos } from '../componentes/CartaoPontos';
@@ -17,6 +18,8 @@ import { useCores } from '../lib/cores';
 import { useModo } from '../lib/modo';
 import { useTransicao } from '../lib/movimento';
 import { useDados } from '../lib/useDados';
+
+const NIVEIS_ZOOM = 10;
 
 async function posicaoAgora() {
   try {
@@ -37,6 +40,9 @@ export default function Camera() {
   const enviando = useRef(false);
   const [apertado, setApertado] = useState(false);
   const [pronta, setPronta] = useState(false);
+  const [lanterna, setLanterna] = useState(false);
+  const [grade, setGrade] = useState(false);
+  const [zoom, setZoom] = useState(0);
   const [foto, setFoto] = useState<string | null>(null);
   const [enviada, setEnviada] = useState<string | null>(null); // a versão menor, que foi ao juiz
   const [resposta, setResposta] = useState<Julgamento | null>(null);
@@ -57,6 +63,8 @@ export default function Camera() {
     const local = posicaoAgora(); // ao mesmo tempo que a foto
     try {
       const crua = await camera.current.takePictureAsync({ quality: 0.9, shutterSound: false });
+      setLanterna(false);
+      setPronta(false);
       setFoto(crua.uri);
       const menor = await (await ImageManipulator.manipulate(crua.uri).resize({ width: 1024, height: null }).renderAsync())
         .saveAsync({ format: SaveFormat.JPEG, compress: 0.85 });
@@ -191,7 +199,18 @@ export default function Camera() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
-      <CameraView ref={camera} className="flex-1" facing="back" onCameraReady={() => setPronta(true)} />
+      <CameraView ref={camera} className="flex-1" facing="back" enableTorch={lanterna} zoom={zoom / NIVEIS_ZOOM}
+        onCameraReady={() => setPronta(true)} />
+      {grade ? (
+        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+          {(['33.33%', '66.67%'] as const).map((posicao) => (
+            <Fragment key={posicao}>
+              <View style={[estilosCamera.vertical, { left: posicao }]} />
+              <View style={[estilosCamera.horizontal, { top: posicao }]} />
+            </Fragment>
+          ))}
+        </View>
+      ) : null}
       <SafeAreaView edges={['top', 'bottom']} className="absolute top-[0px] left-[0px] right-[0px] bottom-[0px] justify-between"
         pointerEvents="box-none">
         <View className="flex-row justify-between items-center p-[16px]">
@@ -202,6 +221,17 @@ export default function Camera() {
           <SeletorAba />
         </View>
         <View style={{ alignItems: 'center', gap: 12, paddingBottom: Platform.OS === 'web' ? 24 : 12 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, paddingHorizontal: 16 }}>
+            {Platform.OS !== 'web' ? (
+              <ControleCamera titulo="Lanterna" ativa={lanterna} icone={lanterna ? 'flashlight' : 'flashlight-outline'}
+                desativado={!pronta} aoTocar={() => { if (!enviando.current) setLanterna((ligada) => !ligada); }} />
+            ) : null}
+            <ControleCamera titulo="Grade" ativa={grade} icone={grade ? 'grid' : 'grid-outline'}
+              aoTocar={() => setGrade((visivel) => !visivel)} />
+            <ZoomCamera nivel={zoom} pronta={pronta} aoAjustar={(passo) => {
+              if (!enviando.current) setZoom((nivel) => Math.max(0, Math.min(NIVEIS_ZOOM, nivel + passo)));
+            }} />
+          </View>
           {modo === 'competicao' ? (
             <Text className="font-texto-forte" accessibilityLiveRegion="polite" style={{ color: '#fff', fontSize: 15, fontWeight: '700', backgroundColor: 'rgba(0,0,0,0.55)',
               paddingHorizontal: 14, paddingVertical: 8, borderRadius: 6, overflow: 'hidden', textAlign: 'center' }}>
@@ -222,6 +252,48 @@ export default function Camera() {
     </View>
   );
 }
+
+function ControleCamera({ titulo, ativa, icone, aoTocar, desativado = false }: {
+  titulo: string; ativa: boolean; icone: ComponentProps<typeof Ionicons>['name']; aoTocar: () => void; desativado?: boolean;
+}) {
+  const c = useCores();
+  const cor = ativa ? c.destaqueTinta : '#fff';
+  return (
+    <Pressable accessibilityRole="switch" accessibilityLabel={titulo} accessibilityState={{ checked: ativa, disabled: desativado }}
+      disabled={desativado} onPress={aoTocar}
+      style={{ minHeight: 44, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6,
+        backgroundColor: ativa ? c.destaque : 'rgba(0,0,0,0.68)', opacity: desativado ? 0.55 : 1 }}>
+      <Ionicons name={icone} size={18} color={cor} />
+      <Text className="font-texto-forte" style={{ color: cor, fontSize: 14 }}>{titulo}</Text>
+    </Pressable>
+  );
+}
+
+function ZoomCamera({ nivel, pronta, aoAjustar }: { nivel: number; pronta: boolean; aoAjustar: (passo: number) => void }) {
+  const podeDiminuir = pronta && nivel > 0;
+  const podeAumentar = pronta && nivel < NIVEIS_ZOOM;
+  return (
+    <View style={estilosCamera.zoom}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Diminuir zoom" accessibilityState={{ disabled: !podeDiminuir }}
+        disabled={!podeDiminuir} onPress={() => aoAjustar(-1)} style={estilosCamera.botaoZoom}>
+        <Ionicons name="remove" size={19} color={podeDiminuir ? '#fff' : '#aaa'} />
+      </Pressable>
+      <Text className="font-texto-forte" style={{ color: '#fff', fontSize: 14 }}>Zoom</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="Aumentar zoom" accessibilityState={{ disabled: !podeAumentar }}
+        disabled={!podeAumentar} onPress={() => aoAjustar(1)} style={estilosCamera.botaoZoom}>
+        <Ionicons name="add" size={19} color={podeAumentar ? '#fff' : '#aaa'} />
+      </Pressable>
+    </View>
+  );
+}
+
+const linhaGrade = { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.62)' } as const;
+const estilosCamera = StyleSheet.create({
+  vertical: { ...linhaGrade, top: 0, bottom: 0, width: 1 },
+  horizontal: { ...linhaGrade, left: 0, right: 0, height: 1 },
+  zoom: { flexDirection: 'row', alignItems: 'center', borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.68)' },
+  botaoZoom: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+});
 
 function FotoCapturada({ uri }: { uri: string }) {
   const entrada = useTransicao(1, 200, { inicial: 0 });
